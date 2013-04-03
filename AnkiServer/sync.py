@@ -39,9 +39,18 @@ class SyncMediaHandler(MediaSyncer):
     def __init__(self, col):
         MediaSyncer.__init__(self, col)
 
-    # Client passes 'minUsn' but MediaSyncer doesn't have the argument
     def files(self, minUsn=0):
-        return MediaSyncer.files(self)
+        import zipfile, StringIO
+
+        zipdata, fnames = MediaSyncer.files(self)
+
+        # add a _usn element to the zipdata
+        fd = StringIO.StringIO(zipdata)
+        zfd = zipfile.ZipFile(fd, "a", compression=zipfile.ZIP_DEFLATED)
+        zfd.writestr("_usn", str(minUsn + len(fnames)))
+        zfd.close()
+
+        return fd.getvalue()
 
 class SyncUser(object):
     def __init__(self, name, path):
@@ -74,7 +83,7 @@ class SyncApp(object):
 
     def authenticate(self, username, password):
         """Override this to change how users are authenticated."""
-	    # TODO: This should have the exact opposite default ;-)
+        # TODO: This should have the exact opposite default ;-)
         return True
 
     def username2dirname(self, username):
@@ -120,7 +129,7 @@ class SyncApp(object):
                 data = req.POST['data'].file.read()
                 data = self._decode_data(data, compression)
             except KeyError:
-                data = None
+                data = {}
             except ValueError:
                 # Bad JSON
                 raise HTTPBadRequest()
@@ -182,11 +191,14 @@ class SyncApp(object):
                 finally:
                     col.close()
 
-                print result
+                # If it's a complex data type, we convert it to JSON
+                if type(result) not in (str, unicode):
+                    result = json.dumps(result)
+        
                 return Response(
                     status='200 OK',
                     content_type='application/json',
-                    body=json.dumps(result))
+                    body=result)
 
             elif url == 'upload':
                 # TODO: deal with thread pool
