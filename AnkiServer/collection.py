@@ -48,10 +48,10 @@ class CollectionWrapper(object):
     def open(self):
         if self._col is None:
             if os.path.exists(self.path):
-                self._col = anki.DeckStorage.Deck(self.path)
+                self._col = anki.storage.Collection(self.path)
             else:
-                self._deck = self._create_deck()
-        return self._deck
+                self._col = self._create_collection()
+        return self._col
 
     def close(self):
         if self._col is None:
@@ -106,19 +106,19 @@ class CollectionThread(object):
             return ret
 
     def _run(self):
-        logging.info('DeckThread[%s]: Starting...', self.path)
+        logging.info('CollectionThread[%s]: Starting...', self.path)
 
         try:
             while self._running:
                 func, args, kw, return_queue = self._queue.get(True)
 
-                logging.info('DeckThread[%s]: Running %s(*%s, **%s)', self.path, func.func_name, repr(args), repr(kw))
+                logging.info('CollectionThread[%s]: Running %s(*%s, **%s)', self.path, func.func_name, repr(args), repr(kw))
                 self.last_timestamp = time.time()
 
                 try:
                     ret = func(*args, **kw)
                 except Exception, e:
-                    logging.error('DeckThread[%s]: Unable to %s(*%s, **%s): %s',
+                    logging.error('CollectionThread[%s]: Unable to %s(*%s, **%s): %s',
                         self.path, func.func_name, repr(args), repr(kw), e, exc_info=True)
                     # we return the Exception which will be raise'd on the other end
                     ret = e
@@ -126,7 +126,7 @@ class CollectionThread(object):
                 if return_queue is not None:
                     return_queue.put(ret)
         except Exception, e:
-            logging.error('DeckThread[%s]: Thread crashed! Exception: %s', e, exc_info=True)
+            logging.error('CollectionThread[%s]: Thread crashed! Exception: %s', e, exc_info=True)
         finally:
             self.wrapper.close()
             # clean out old thread object
@@ -134,7 +134,7 @@ class CollectionThread(object):
             # in case we got here via an exception
             self._running = False
 
-            logging.info('DeckThread[%s]: Stopped!' % self.path)
+            logging.info('CollectionThread[%s]: Stopped!' % self.path)
 
     def start(self):
         if not self._running:
