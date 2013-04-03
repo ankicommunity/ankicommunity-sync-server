@@ -1,0 +1,37 @@
+
+Instructions for installing and running AnkiServer:
+
+ 1. First, you need to install "virtualenv".  If your system has easy_install, this is
+    just a matter of:
+
+      $ easy_install virtualenv
+
+    If your system doesn't have easy_install, I recommend getting it!
+
+ 2. Next, you need to create a Python environment for running AnkiServer and install some of
+    the dependencies we need there:
+
+      $ virtualenv AnkiServer.env
+      $ AnkiServer.env/bin/easy_install webob PasteDeploy PasteScript sqlalchemy simplejson MySQL-python
+
+ 3. Download and install libanki.  You can find the latest release of Anki here:
+
+    http://code.google.com/p/anki/downloads/list 
+
+    Look for a *.tgz file with a Summary of "Anki Source".  At the time of this writing
+    that is anki-1.0.1.tgz.
+
+    Download this file and extract.  Inside you will find a libanki/ directory with a
+    setup.py.  You will want to run setup.py with the python executable inside our virtualenv,
+    or AnkiServer.env/bin/python, like so:
+
+      anki-1.0.1/libanki$ ../../AnkiServer.env/bin/python setup.py install
+
+ 4. Make the egg info files (so paster can see our app):
+
+      $ AnkiServer.env/bin/python setup.py egg_info
+
+ 5. Then we can run AnkiServer like so:
+
+      $ AnkiServer.env/bin/paster serve development.ini
+
