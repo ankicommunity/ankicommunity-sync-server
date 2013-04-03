@@ -3,8 +3,8 @@ from setuptools import setup, find_packages
 
 setup(
     name="AnkiServer",
-    version="0.0.1",
-    description="Provides the a RESTful API to manipulating Anki decks",
+    version="2.0.0a1",
+    description="A personal Anki sync server (so you can sync against your own server rather than AnkiWeb)",
     author="David Snopek",
     author_email="dsnopek@gmail.com",
     install_requires=["PasteDeploy>=1.3.2"],
@@ -13,7 +13,6 @@ setup(
     test_suite='nose.collector',
     entry_points="""
     [paste.app_factory]
-    deckapp = AnkiServer.deck:make_app
     syncapp = AnkiServer.sync:make_app
 
     [paste.server_runner]
