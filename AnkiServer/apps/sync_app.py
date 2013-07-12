@@ -3,21 +3,17 @@ from webob.dec import wsgify
 from webob.exc import *
 from webob import Response
 
-# TODO: I don't think this should have to be at the top of every module!
-import sys
-sys.path.insert(0, "/usr/share/anki")
+import AnkiServer
 
 import anki
 from anki.sync import LocalServer, MediaSyncer
-# TODO: shouldn't use this directly! This should be through the thread pool
-from anki.storage import Collection
 
 try:
     import simplejson as json
 except ImportError:
     import json
 
-import os, tempfile
+import os
 
 class SyncCollectionHandler(LocalServer):
     operations = ['meta', 'applyChanges', 'start', 'chunk', 'applyChunk', 'sanityCheck2', 'finish']
@@ -61,10 +57,11 @@ class SyncMediaHandler(MediaSyncer):
         return fd.getvalue()
 
 class SyncUserSession(object):
-    def __init__(self, name, path):
+    def __init__(self, name, path, collection_manager):
         import time
         self.name = name
         self.path = path
+        self.collection_manager = collection_manager
         self.version = 0
         self.created = time.time()
 
@@ -79,8 +76,7 @@ class SyncUserSession(object):
         return os.path.realpath(os.path.join(self.path, 'collection.anki2'))
     
     def get_thread(self):
-        from AnkiServer.collection import thread_pool
-        return thread_pool.start(self.get_collection_path())
+        return self.collection_manager.get_collection(self.get_collection_path())
 
     def get_handler_for_operation(self, operation, col):
         if operation in SyncCollectionHandler.operations:
@@ -96,9 +92,16 @@ class SyncApp(object):
     valid_urls = SyncCollectionHandler.operations + SyncMediaHandler.operations + ['hostKey', 'upload', 'download', 'getDecks']
 
     def __init__(self, **kw):
+        from AnkiServer.threading import getCollectionManager
+
         self.data_root = os.path.abspath(kw.get('data_root', '.'))
         self.base_url  = kw.get('base_url', '/')
         self.sessions = {}
+
+        try:
+            self.collection_manager = kw['collection_manager']
+        except KeyError:
+            self.collection_manager = getCollectionManager()
 
         # make sure the base_url has a trailing slash
         if len(self.base_url) == 0:
@@ -137,7 +140,7 @@ class SyncApp(object):
     def create_session(self, hkey, username, user_path):
         """Creates, stores and returns a new session for the given hkey and username."""
 
-        session = self.sessions[hkey] = SyncUserSession(username, user_path)
+        session = self.sessions[hkey] = SyncUserSession(username, user_path, self.collection_manager)
         return session
 
     def load_session(self, hkey):
@@ -165,14 +168,14 @@ class SyncApp(object):
 
         return data
 
-    def operation_upload(self, wrapper, data, session):
+    def operation_upload(self, col, data, session):
         # TODO: deal with thread pool
 
         fd = open(session.get_collection_path(), 'wb')
         fd.write(data)
         fd.close()
 
-    def operation_download(self, wrapper, data, session):
+    def operation_download(self, col, data, session):
         pass
 
     @wsgify
@@ -247,8 +250,8 @@ class SyncApp(object):
                     del data['v']
 
                 # Create a closure to run this operation inside of the thread allocated to this collection
-                def runFunc(wrapper):
-                    handler = session.get_handler_for_operation(url, wrapper.open())
+                def runFunc(col):
+                    handler = session.get_handler_for_operation(url, col)
                     func = getattr(handler, url)
                     result = func(**data)
                     handler.col.save()
@@ -257,7 +260,7 @@ class SyncApp(object):
 
                 # Send to the thread to execute
                 thread = session.get_thread()
-                result = thread.execute(runFunc, [thread.wrapper])
+                result = thread.execute(runFunc)
 
                 # If it's a complex data type, we convert it to JSON
                 if type(result) not in (str, unicode):
@@ -278,7 +281,7 @@ class SyncApp(object):
                     func = self.operation_download
 
                 thread = session.get_thread()
-                thread.execute(self.operation_upload, [thread.wrapper, data['data'], session])
+                thread.execute(self.operation_upload, [data['data'], session])
 
                 return Response(
                     status='200 OK',
@@ -296,7 +299,7 @@ def make_app(global_conf, **local_conf):
 
 def main():
     from wsgiref.simple_server import make_server
-    from AnkiServer.collection import thread_pool
+    from AnkiServer.threading import shutdown
 
     ankiserver = SyncApp()
     httpd = make_server('', 8001, ankiserver)
@@ -306,7 +309,7 @@ def main():
     except KeyboardInterrupt:
         print "Exiting ..."
     finally:
-        thread_pool.shutdown()
+        shutdown()
 
 if __name__ == '__main__': main()
 

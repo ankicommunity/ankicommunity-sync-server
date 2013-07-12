@@ -1,4 +1,6 @@
 *~
 *.pyc
+AnkiServer.egg-info
 development.ini
-
+server.log
+collections

@@ -13,7 +13,8 @@ setup(
     test_suite='nose.collector',
     entry_points="""
     [paste.app_factory]
-    syncapp = AnkiServer.sync:make_app
+    sync_app = AnkiServer.apps.sync_app:make_app
+    rest_app = AnkiServer.apps.rest_app:make_app
 
     [paste.server_runner]
     server = AnkiServer:server_runner
