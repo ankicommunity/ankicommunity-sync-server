@@ -37,5 +37,5 @@ Instructions for installing and running AnkiServer:
 
  6. Then we can run AnkiServer like so:
 
-      $ AnkiServer.env/bin/paster serve development.ini
+      $ AnkiServer.env/bin/paster serve production.ini
 
