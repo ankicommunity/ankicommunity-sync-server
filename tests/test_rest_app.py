@@ -5,10 +5,31 @@ import tempfile
 import unittest
 
 import AnkiServer
-from AnkiServer.apps.rest_app import CollectionHandlerGroup, DeckHandlerGroup
+from AnkiServer.collection import CollectionManager
+from AnkiServer.apps.rest_app import RestApp, CollectionHandlerGroup, DeckHandlerGroup
 
 import anki
 import anki.storage
+
+class RestAppTest(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.collection_manager = CollectionManager()
+        self.rest_app = RestApp(self.temp_dir, collection_manager=self.collection_manager)
+
+    def tearDown(self):
+        self.collection_manager.shutdown()
+        self.collection_manager = None
+        self.rest_app = None
+        shutil.rmtree(self.temp_dir)
+
+    def test_parsePath(self):
+        tests = [
+            ('collection/aoeu', ('collection', 'index', ['aoeu'])),
+        ]
+
+        for path, result in tests:
+            self.assertEqual(self.rest_app._parsePath(path), result)
 
 class CollectionTestBase(unittest.TestCase):
     """Parent class for tests that need a collection set up and torn down."""
