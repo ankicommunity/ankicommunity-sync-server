@@ -22,6 +22,10 @@ class CollectionWrapper(object):
         self.setup_new_collection = setup_new_collection
         self.__col = None
 
+    def __del__(self):
+        """Close the collection if the user forgot to do so."""
+        self.close()
+
     def execute(self, func, args=[], kw={}, waitForReturn=True):
         """ Executes the given function with the underlying anki.storage.Collection
         object as the first argument and any additional arguments specified by *args
@@ -55,11 +59,13 @@ class CollectionWrapper(object):
             else:
                 raise
 
-        self.__col = ank.storage.Collection(self.path)
+        col = anki.storage.Collection(self.path)
 
         # Do any special setup
         if self.setup_new_collection is not None:
-            self.setup_new_collection(self.__col)
+            self.setup_new_collection(col)
+
+        return col
 
     def open(self):
         """Open the collection, or create it if it doesn't exist."""
