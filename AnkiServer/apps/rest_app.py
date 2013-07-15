@@ -5,8 +5,10 @@ from webob import Response
 
 try:
     import simplejson as json
+    from simplejson import JSONDecodeError
 except ImportError:
     import json
+    JSONDecodeError = ValueError
 
 import os, logging
 
@@ -109,6 +111,9 @@ class RestApp(object):
 
         Raises an HTTPNotFound exception if the path is invalid."""
 
+        if path in ('', '/'):
+            raise HTTPNotFound()
+
         # split the URL into a list of parts
         if path[0] == '/':
             path = path[1:]
@@ -118,14 +123,19 @@ class RestApp(object):
         type = None
         ids = []
         for type in self.handler_types:
-            if len(parts) == 0 or parts.pop(0) != type:
+            if len(parts) == 0:
                 break
+            if parts[0] != type:
+                break
+
+            parts.pop(0)
             if len(parts) > 0:
                 ids.append(parts.pop(0))
             if len(parts) < 2:
                 break
+
         # sanity check to make sure the URL is valid
-        if type is None or len(parts) > 1 or len(ids) == 0:
+        if len(parts) > 1 or len(ids) == 0:
             raise HTTPNotFound()
 
         # get the handler name
@@ -174,9 +184,10 @@ class RestApp(object):
         
         try:
             data = json.loads(req.body)
-        except ValueError, e:
+        except JSONDecodeError, e:
             logging.error(req.path+': Unable to parse JSON: '+str(e), exc_info=True)
             raise HTTPBadRequest()
+
         # make the keys into non-unicode strings
         data = dict([(str(k), v) for k, v in data.items()])
 

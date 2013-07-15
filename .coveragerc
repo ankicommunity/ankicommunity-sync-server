@@ -1,0 +1,11 @@
+[run]
+branch = True
+include =
+    AnkiServer/*
+
+[report]
+exclude_lines =
+    if __name__ == .__main__.:
+    def server_runner
+    def make_app
+

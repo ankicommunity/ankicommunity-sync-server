@@ -3,10 +3,16 @@ import os
 import shutil
 import tempfile
 import unittest
+import logging
+
+import mock
+from mock import MagicMock
 
 import AnkiServer
 from AnkiServer.collection import CollectionManager
 from AnkiServer.apps.rest_app import RestApp, CollectionHandlerGroup, DeckHandlerGroup
+
+from webob.exc import *
 
 import anki
 import anki.storage
@@ -17,6 +23,9 @@ class RestAppTest(unittest.TestCase):
         self.collection_manager = CollectionManager()
         self.rest_app = RestApp(self.temp_dir, collection_manager=self.collection_manager)
 
+        # disable all but critical errors!
+        logging.disable(logging.CRITICAL)
+
     def tearDown(self):
         self.collection_manager.shutdown()
         self.collection_manager = None
@@ -25,11 +34,79 @@ class RestAppTest(unittest.TestCase):
 
     def test_parsePath(self):
         tests = [
-            ('collection/aoeu', ('collection', 'index', ['aoeu'])),
+            ('collection/user', ('collection', 'index', ['user'])),
+            ('collection/user/handler', ('collection', 'handler', ['user'])),
+            ('collection/user/deck/name', ('deck', 'index', ['user', 'name'])),
+            ('collection/user/deck/name/handler', ('deck', 'handler', ['user', 'name'])),
+            ('collection/user/deck/name/note/123', ('note', 'index', ['user', 'name', '123'])),
+            ('collection/user/deck/name/note/123/handler', ('note', 'handler', ['user', 'name', '123'])),
+            # the leading slash should make no difference!
+            ('/collection/user', ('collection', 'index', ['user'])),
         ]
 
         for path, result in tests:
             self.assertEqual(self.rest_app._parsePath(path), result)
+
+    def test_parsePath_not_found(self):
+        tests = [
+          'bad',
+          'bad/oaeu',
+          'collection',
+          'collection/user/handler/bad',
+          '',
+          '/',
+        ]
+
+        for path in tests:
+            self.assertRaises(HTTPNotFound, self.rest_app._parsePath, path)
+
+    def test_getCollectionPath(self):
+        def fullpath(collection_id):
+            return os.path.normpath(os.path.join(self.temp_dir, collection_id, 'collection.anki2'))
+            
+        # This is simple and straight forward!
+        self.assertEqual(self.rest_app._getCollectionPath('user'), fullpath('user'))
+
+        # These are dangerous - the user is trying to hack us!
+        dangerous = ['../user', '/etc/passwd', '/tmp/aBaBaB', '/root/.ssh/id_rsa']
+        for collection_id in dangerous:
+            self.assertRaises(HTTPBadRequest, self.rest_app._getCollectionPath, collection_id)
+
+    def test_getHandler(self):
+        def handlerOne():
+            pass
+
+        def handlerTwo():
+            pass
+        handlerTwo.hasReturnValue = False
+        
+        self.rest_app.add_handler('collection', 'handlerOne', handlerOne)
+        self.rest_app.add_handler('deck', 'handlerTwo', handlerTwo)
+
+        (handler, hasReturnValue) = self.rest_app._getHandler('collection', 'handlerOne')
+        self.assertEqual(handler, handlerOne)
+        self.assertEqual(hasReturnValue, True)
+
+        (handler, hasReturnValue) = self.rest_app._getHandler('deck', 'handlerTwo')
+        self.assertEqual(handler, handlerTwo)
+        self.assertEqual(hasReturnValue, False)
+
+        # try some bad handler names and types
+        self.assertRaises(HTTPNotFound, self.rest_app._getHandler, 'collection', 'nonExistantHandler')
+        self.assertRaises(HTTPNotFound, self.rest_app._getHandler, 'nonExistantType', 'handlerOne')
+
+    def test_parseRequestBody(self):
+        req = MagicMock()
+        req.body = '{"key":"value"}'
+
+        data = self.rest_app._parseRequestBody(req)
+        self.assertEqual(data, {'key': 'value'})
+        self.assertEqual(data.keys(), ['key'])
+        self.assertEqual(type(data.keys()[0]), str)
+
+        # test some bad data
+        req.body = '{aaaaaaa}'
+        self.assertRaises(HTTPBadRequest, self.rest_app._parseRequestBody, req)
 
 class CollectionTestBase(unittest.TestCase):
     """Parent class for tests that need a collection set up and torn down."""
