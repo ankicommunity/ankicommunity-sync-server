@@ -319,9 +319,8 @@ class CollectionHandler(RestHandlerBase):
     #
 
     @noReturnValue
-    def sched_reset(self, col, data, ids):
+    def reset_scheduler(self, col, data, ids):
         col.sched.reset()
-
 
 class ImportExportHandler(RestHandlerBase):
     """Handler group for the 'collection' type, but it's not added by default."""
@@ -420,6 +419,22 @@ class NoteHandler(RestHandlerBase):
 class DeckHandler(RestHandlerBase):
     """Default handler group for 'deck' type."""
 
+    button_labels = ['Easy', 'Good', 'Hard']
+    
+    # Code stolen from aqt/reviewer.py
+    def _get_answer_buttons(self, col, card):
+        l = []
+
+        # Put the correct number of buttons
+        cnt = col.sched.answerButtons(card)
+        for idx in range(0, cnt - 1):
+            l.append(self.button_labels[idx])
+        l.append('Again')
+        l.reverse()
+
+        # Loop through and add the ease and estimated time (in seconds)
+        return [(ease, label, col.sched.nextIvl(card, ease)) for ease, label in enumerate(l, 1)]
+
     def next_card(self, col, data, ids):
         deck_id = ids[1]
 
@@ -428,7 +443,10 @@ class DeckHandler(RestHandlerBase):
         if card is None:
             return None
 
-        return CardHandler._serialize(card)
+        result = CardHandler._serialize(card)
+        result['answer_buttons'] = self._get_answer_buttons(col, card)
+
+        return result
 
 class CardHandler(RestHandlerBase):
     """Default handler group for 'card' type."""
