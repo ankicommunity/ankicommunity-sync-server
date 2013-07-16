@@ -23,16 +23,11 @@ def noReturnValue(func):
     return func
 
 class RestHandlerBase(object):
-    """Parent class for single handler callbacks."""
-    hasReturnValue = True
-    def __call__(self, collection, data, ids):
-        pass
-
-class RestHandlerGroupBase(object):
     """Parent class for a handler group."""
     hasReturnValue = True
 
 class _RestHandlerWrapper(RestHandlerBase):
+    """Wrapper for functions that we can't modify."""
     def __init__(self, func_name, func, hasReturnValue=True):
         self.func_name = func_name
         self.func = func
@@ -44,7 +39,9 @@ class RestApp(object):
     """A WSGI app that implements RESTful operations on Collections, Decks and Cards."""
 
     # Defines not only the valid handler types, but their position in the URL string
-    handler_types = ['collection', ['deck', 'note'], 'card']
+    # TODO: this broken - it allows a model to contain cards, for example.. We need to
+    #       give a pattern for each handler type.
+    handler_types = ['collection', ['model', 'note', 'deck'], 'card']
 
     def __init__(self, data_root, allowed_hosts='*', use_default_handlers=True, collection_manager=None):
         from AnkiServer.threading import getCollectionManager
@@ -53,9 +50,9 @@ class RestApp(object):
         self.allowed_hosts = allowed_hosts
 
         if collection_manager is not None:
-            self.collection_manager = collection_manager
+            col = collection_manager
         else:
-            self.collection_manager = getCollectionManager()
+            col = getCollectionManager()
 
         self.handlers = {}
         for type_list in self.handler_types:
@@ -65,10 +62,11 @@ class RestApp(object):
                 self.handlers[handler_type] = {}
 
         if use_default_handlers:
-            self.add_handler_group('collection', CollectionHandlerGroup())
-            self.add_handler_group('note', NoteHandlerGroup())
-            self.add_handler_group('deck', DeckHandlerGroup())
-            self.add_handler_group('card', CardHandlerGroup())
+            self.add_handler_group('collection', CollectionHandler())
+            self.add_handler_group('note', NoteHandler())
+            self.add_handler_group('model', ModelHandler())
+            self.add_handler_group('deck', DeckHandler())
+            self.add_handler_group('card', CardHandler())
 
     def add_handler(self, type, name, handler):
         """Adds a callback handler for a type (collection, deck, card) with a unique name.
@@ -77,7 +75,7 @@ class RestApp(object):
 
          - 'name' is a unique name for the handler that gets used in the URL.
 
-         - 'handler' handler can be a Python method or a subclass of the RestHandlerBase class.
+         - 'handler' is a callable that takes (collection, data, ids).
         """
 
         if self.handlers[type].has_key(name):
@@ -85,7 +83,7 @@ class RestApp(object):
         self.handlers[type][name] = handler
 
     def add_handler_group(self, type, group):
-        """Adds several handlers for every public method on an object descended from RestHandlerGroup.
+        """Adds several handlers for every public method on an object descended from RestHandlerBase.
         
         This allows you to create a single class with several methods, so that you can quickly
         create a group of related handlers."""
@@ -241,37 +239,117 @@ class RestApp(object):
         else:
             return Response(json.dumps(output), content_type='application/json')
 
-class CollectionHandlerGroup(RestHandlerGroupBase):
+class CollectionHandler(RestHandlerBase):
     """Default handler group for 'collection' type."""
+    
+    #
+    # MODELS - Store fields definitions and templates for notes
+    #
+
+    def list_models(self, col, data, ids):
+        # This is already a list of dicts, so it doesn't need to be serialized
+        return col.models.all()
+
+    def find_model_by_name(self, col, data, ids):
+        # This is already a list of dicts, so it doesn't need to be serialized
+        return col.models.byName(data['model'])
+
+    #
+    # NOTES - Information (in fields per the model) that can generate a card
+    #         (based on a template from the model).
+    #
+
+    def find_notes(self, col, data, ids):
+        query = data.get('query', '')
+        ids = col.findNotes(query)
+
+        if data.get('preload', False):
+            nodes = [NoteHandler._serialize(col.getNote(id)) for id in ids]
+        else:
+            nodes = [{'id': id} for id in ids]
+
+        return nodes
+
+    def add_note(self, col, data, ids):
+        from anki.notes import Note
+
+        if type(data['model']) in (str, unicode):
+            model = col.models.byName(data['model'])
+        else:
+            model = col.models.get(data['model'])
+
+        note = Note(col, model)
+        for name, value in data['fields'].items():
+            note[name] = value
+
+        if data.has_key('tags'):
+            note.setTagsFromStr(data['tags'])
+
+        col.addNote(note)
+
+    #
+    # DECKS - Groups of cards
+    #
 
     def list_decks(self, col, data, ids):
+        # This is already a list of dicts, so it doesn't need to be serialized
         return col.decks.all()
 
     @noReturnValue
     def select_deck(self, col, data, ids):
         col.decks.select(data['deck_id'])
 
+    #
+    # CARD - A specific card in a deck with a history of review (generated from
+    #        a note based on the template).
+    #
+
+    def find_cards(self, col, data, ids):
+        query = data.get('query', '')
+        ids = col.findCards(query)
+
+        if data.get('preload', False):
+            cards = [CardHandler._serialize(col.getCard(id)) for id in ids]
+        else:
+            cards = [{'id': id} for id in ids]
+
+        return cards
+
+    #
+    # SCHEDULER - Controls card review, ie. intervals, what cards are due, answering a card, etc.
+    #
+
     @noReturnValue
     def sched_reset(self, col, data, ids):
         col.sched.reset()
 
-class NoteHandlerGroup(RestHandlerGroupBase):
+class ModelHandler(RestHandlerBase):
+    """Default handler group for 'model' type."""
+
+    def field_names(self, col, data, ids):
+        model = col.models.get(ids[1])
+        if model is None:
+            raise HTTPNotFound()
+        return col.models.fieldNames(model)
+
+class NoteHandler(RestHandlerBase):
     """Default handler group for 'note' type."""
 
     @staticmethod
-    def _serialize_note(note):
+    def _serialize(note):
         d = {
             'id': note.id,
             'model': note.model()['name'],
+            'tags': ' '.join(note.tags),
         }
         # TODO: do more stuff!
         return d
 
     def index(self, col, data, ids):
         note = col.getNote(ids[1])
-        return self._serialize_note(note)
+        return self._serialize(note)
 
-class DeckHandlerGroup(RestHandlerGroupBase):
+class DeckHandler(RestHandlerBase):
     """Default handler group for 'deck' type."""
 
     def next_card(self, col, data, ids):
@@ -282,13 +360,13 @@ class DeckHandlerGroup(RestHandlerGroupBase):
         if card is None:
             return None
 
-        return CardHandlerGroup._serialize_card(card)
+        return CardHandler._serialize(card)
 
-class CardHandlerGroup(RestHandlerGroupBase):
+class CardHandler(RestHandlerBase):
     """Default handler group for 'card' type."""
 
     @staticmethod
-    def _serialize_card(card):
+    def _serialize(card):
         d = {
             'id': card.id
         }

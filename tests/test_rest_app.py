@@ -11,7 +11,7 @@ from mock import MagicMock
 
 import AnkiServer
 from AnkiServer.collection import CollectionManager
-from AnkiServer.apps.rest_app import RestApp, CollectionHandlerGroup, DeckHandlerGroup
+from AnkiServer.apps.rest_app import RestApp, CollectionHandler, NoteHandler, ModelHandler, DeckHandler, CardHandler
 
 from webob.exc import *
 
@@ -127,14 +127,7 @@ class CollectionTestBase(unittest.TestCase):
     def add_note(self, data):
         from anki.notes import Note
 
-        # TODO: we need to check the input for the correct keys.. Can we automate
-        # this somehow? Maybe using KeyError or wrapper or something?
-
-        #pprint(self.collection.models.all())
-        #pprint(self.collection.models.current())
-
         model = self.collection.models.byName(data['model'])
-        #pprint (self.collection.models.fieldNames(model))
 
         note = Note(self.collection, model)
         for name, value in data['fields'].items():
@@ -143,23 +136,17 @@ class CollectionTestBase(unittest.TestCase):
         if data.has_key('tags'):
             note.setTagsFromStr(data['tags'])
 
-        ret = self.collection.addNote(note)
+        self.collection.addNote(note)
 
-    def find_notes(self, data):
-        query = data.get('query', '')
-        ids = self.collection.getNotes(query)
-
-
-class CollectionHandlerGroupTest(CollectionTestBase):
+class CollectionHandlerTest(CollectionTestBase):
     def setUp(self):
-        super(CollectionHandlerGroupTest, self).setUp()
-        self.handler = CollectionHandlerGroup()
+        super(CollectionHandlerTest, self).setUp()
+        self.handler = CollectionHandler()
 
     def execute(self, name, data):
         ids = ['collection_name']
         func = getattr(self.handler, name)
         return func(self.collection, data, ids)
-
 
     def test_list_decks(self):
         data = {}
@@ -174,10 +161,91 @@ class CollectionHandlerGroupTest(CollectionTestBase):
         ret = self.execute('select_deck', data)
         self.assertEqual(ret, None);
 
-class DeckHandlerGroupTest(CollectionTestBase):
+    def test_list_models(self):
+        data = {}
+        ret = self.execute('list_models', data)
+
+        # get a sorted name list that we can actually check
+        names = [model['name'] for model in ret]
+        names.sort()
+
+        # These are the default models created by Anki in a new collection
+        default_models = [
+            'Basic',
+            'Basic (and reversed card)',
+            'Basic (optional reversed card)',
+            'Cloze'
+        ]
+
+        self.assertEqual(names, default_models)
+
+    def test_find_model_by_name(self):
+        data = {'model': 'Basic'}
+        ret = self.execute('find_model_by_name', data)
+        self.assertEqual(ret['name'], 'Basic')
+
+    def test_find_notes(self):
+        ret = self.execute('find_notes', {})
+        self.assertEqual(ret, [])
+
+        # add a note programatically
+        note = {
+            'model': 'Basic',
+            'fields': {
+                'Front': 'The front',
+                'Back': 'The back',
+            },
+            'tags': "Tag1 Tag2",
+        }
+        self.add_note(note)
+
+        # get the id for the one note on this collection
+        note_id = self.collection.findNotes('')[0]
+
+        ret = self.execute('find_notes', {})
+        self.assertEqual(ret, [{'id': note_id}])
+
+        ret = self.execute('find_notes', {'query': 'tag:Tag1'})
+        self.assertEqual(ret, [{'id': note_id}])
+
+        ret = self.execute('find_notes', {'query': 'tag:TagX'})
+        self.assertEqual(ret, [])
+
+        ret = self.execute('find_notes', {'preload': True})
+        self.assertEqual(len(ret), 1)
+        self.assertEqual(ret[0]['id'], note_id)
+        self.assertEqual(ret[0]['model'], 'Basic')
+
+    def test_add_note(self):
+        # make sure there are no notes (yet)
+        self.assertEqual(self.collection.findNotes(''), [])
+
+        # add a note programatically
+        note = {
+            'model': 'Basic',
+            'fields': {
+                'Front': 'The front',
+                'Back': 'The back',
+            },
+            'tags': "Tag1 Tag2",
+        }
+        self.execute('add_note', note)
+
+        notes = self.collection.findNotes('')
+        self.assertEqual(len(notes), 1)
+
+        note_id = notes[0]
+        note = self.collection.getNote(note_id)
+
+        self.assertEqual(note.model()['name'], 'Basic')
+        self.assertEqual(note['Front'], 'The front')
+        self.assertEqual(note['Back'], 'The back')
+        self.assertEqual(note.tags, ['Tag1', 'Tag2'])
+
+class DeckHandlerTest(CollectionTestBase):
     def setUp(self):
-        super(DeckHandlerGroupTest, self).setUp()
-        self.handler = DeckHandlerGroup()
+        super(DeckHandlerTest, self).setUp()
+        self.handler = DeckHandler()
 
     def execute(self, name, data):
         ids = ['collection_name', '1']
