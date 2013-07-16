@@ -463,16 +463,10 @@ class CardHandler(RestHandlerBase):
 # Our entry point
 def make_app(global_conf, **local_conf):
     # setup the logger
+    from AnkiServer.utils import setup_logging
     logging_config_file = local_conf.get('logging.config_file')
     if logging_config_file:
-        # monkey patch the logging.config.SMTPHandler if necessary
-        import sys
-        if sys.version_info[0] == 2 and sys.version_info[1] == 5:
-            import AnkiServer.logpatch
-
-        # load the config file
-        import logging.config
-        logging.config.fileConfig(logging_config_file)
+        setup_logging(logging_config_file)
 
     return RestApp(
         data_root=local_conf.get('data_root', '.'),
