@@ -39,16 +39,17 @@ class RestApp(object):
     #       give a pattern for each handler type.
     handler_types = ['collection', ['model', 'note', 'deck'], 'card']
 
-    def __init__(self, data_root, allowed_hosts='*', use_default_handlers=True, collection_manager=None):
+    def __init__(self, data_root, allowed_hosts='*', setup_new_collection=None, use_default_handlers=True, collection_manager=None):
         from AnkiServer.threading import getCollectionManager
 
         self.data_root = os.path.abspath(data_root)
         self.allowed_hosts = allowed_hosts
+        self.setup_new_collection = setup_new_collection
 
         if collection_manager is not None:
-            col = collection_manager
+            self.collection_manager = collection_manager
         else:
-            col = getCollectionManager()
+            self.collection_manager = getCollectionManager()
 
         self.handlers = {}
         for type_list in self.handler_types:
@@ -223,7 +224,7 @@ class RestApp(object):
         pprint(data)
 
         # run it!
-        col = self.collection_manager.get_collection(collection_path)
+        col = self.collection_manager.get_collection(collection_path, self.setup_new_collection)
         try:
             output = col.execute(handler, [data, ids], {}, hasReturnValue)
         except Exception, e:
