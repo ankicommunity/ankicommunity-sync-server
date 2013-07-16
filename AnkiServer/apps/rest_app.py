@@ -14,10 +14,6 @@ import os, logging
 
 __all__ = ['RestApp', 'RestHandlerBase', 'hasReturnValue', 'noReturnValue']
 
-def hasReturnValue(func):
-    func.hasReturnValue = True
-    return func
-
 def noReturnValue(func):
     func.hasReturnValue = False
     return func
@@ -270,9 +266,12 @@ class CollectionHandler(RestHandlerBase):
 
         return nodes
 
+    @noReturnValue
     def add_note(self, col, data, ids):
         from anki.notes import Note
 
+        # TODO: I think this would be better with 'model' for the name
+        # and 'mid' for the model id.
         if type(data['model']) in (str, unicode):
             model = col.models.byName(data['model'])
         else:
@@ -322,6 +321,75 @@ class CollectionHandler(RestHandlerBase):
     @noReturnValue
     def sched_reset(self, col, data, ids):
         col.sched.reset()
+
+
+class ImportExportHandler(RestHandlerBase):
+    """Handler group for the 'collection' type, but it's not added by default."""
+
+    def _get_filedata(self, data):
+        import urllib2
+
+        if data.has_key('data'):
+            return data['data']
+
+        fd = None
+        try:
+            fd = urllib2.urlopen(data['url'])
+            filedata = fd.read()
+        finally:
+            if fd is not None:
+                fd.close()
+
+        return filedata
+
+    def _get_importer_class(self, data):
+        filetype = data['filetype']
+
+        # We do this as an if/elif/else guy, because I don't want to even import
+        # the modules until someone actually attempts to import the type
+        if filetype == 'text':
+            from anki.importing.csvfile import TextImporter
+            return TextImporter
+        elif filetype == 'apkg':
+            from anki.importing.apkg import AnkiPackageImporter
+            return AnkiPackageImporter
+        elif filetype == 'anki1':
+            from anki.importing.anki1 import Anki1Importer
+            return Anki1Importer
+        elif filetype == 'supermemo_xml':
+            from anki.importing.supermemo_xml import SupermemoXmlImporter
+            return SupermemoXmlImporter
+        elif filetype == 'mnemosyne':
+            from anki.importing.mnemo import MnemosyneImporter
+            return MnemosyneImporter
+        elif filetype == 'pauker':
+            from anki.importing.pauker import PaukerImporter
+            return PaukerImporter
+        else:
+            raise HTTPBadRequest("Unknown filetype '%s'" % filetype)
+
+    def import_file(self, col, data, ids):
+        import tempfile
+
+        # get the importer class
+        importer_class = self._get_importer_class(data)
+
+        # get the file data
+        filedata = self._get_filedata(data)
+
+        # write the file data to a temporary file
+        try:
+            path = None
+            with tempfile.NamedTemporaryFile('wt', delete=False) as fd:
+                path = fd.name
+                fd.write(filedata)
+
+            importer = importer_class(col, path)
+            importer.open()
+            importer.run()
+        finally:
+            if path is not None:
+                os.unlink(path)
 
 class ModelHandler(RestHandlerBase):
     """Default handler group for 'model' type."""

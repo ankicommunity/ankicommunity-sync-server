@@ -11,7 +11,7 @@ from mock import MagicMock
 
 import AnkiServer
 from AnkiServer.collection import CollectionManager
-from AnkiServer.apps.rest_app import RestApp, CollectionHandler, NoteHandler, ModelHandler, DeckHandler, CardHandler
+from AnkiServer.apps.rest_app import RestApp, CollectionHandler, ImportExportHandler, NoteHandler, ModelHandler, DeckHandler, CardHandler
 
 from webob.exc import *
 
@@ -242,6 +242,62 @@ class CollectionHandlerTest(CollectionTestBase):
         self.assertEqual(note['Back'], 'The back')
         self.assertEqual(note.tags, ['Tag1', 'Tag2'])
 
+class ImportExportHandlerTest(CollectionTestBase):
+    export_rows = [
+        ['Card front 1', 'Card back 1', 'Tag1 Tag2'],
+        ['Card front 2', 'Card back 2', 'Tag1 Tag3'],
+    ]
+
+    def setUp(self):
+        super(ImportExportHandlerTest, self).setUp()
+        self.handler = ImportExportHandler()
+
+    def execute(self, name, data):
+        ids = ['collection_name']
+        func = getattr(self.handler, name)
+        return func(self.collection, data, ids)
+
+    def generate_text_export(self):
+        # Create a simple export file
+        export_data = ''
+        for row in self.export_rows:
+            export_data += '\t'.join(row) + '\n'
+        export_path = os.path.join(self.temp_dir, 'export.txt')
+        with file(export_path, 'wt') as fd:
+            fd.write(export_data)
+
+        return (export_data, export_path)
+
+    def check_import(self):
+        note_ids = self.collection.findNotes('')
+        notes = [self.collection.getNote(note_id) for note_id in note_ids]
+        self.assertEqual(len(notes), len(self.export_rows))
+
+        for index, test_data in enumerate(self.export_rows):
+            self.assertEqual(notes[index]['Front'], test_data[0])
+            self.assertEqual(notes[index]['Back'], test_data[1])
+            self.assertEqual(' '.join(notes[index].tags), test_data[2])
+
+    def test_import_text_data(self):
+        (export_data, export_path) = self.generate_text_export()
+
+        data = {
+            'filetype': 'text',
+            'data': export_data,
+        }
+        ret = self.execute('import_file', data)
+        self.check_import()
+
+    def test_import_text_url(self):
+        (export_data, export_path) = self.generate_text_export()
+
+        data = {
+            'filetype': 'text',
+            'url': 'file://' + os.path.realpath(export_path),
+        }
+        ret = self.execute('import_file', data)
+        self.check_import()
+        
 class DeckHandlerTest(CollectionTestBase):
     def setUp(self):
         super(DeckHandlerTest, self).setUp()
