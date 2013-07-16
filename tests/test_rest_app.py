@@ -4,6 +4,7 @@ import shutil
 import tempfile
 import unittest
 import logging
+from pprint import pprint
 
 import mock
 from mock import MagicMock
@@ -36,10 +37,12 @@ class RestAppTest(unittest.TestCase):
         tests = [
             ('collection/user', ('collection', 'index', ['user'])),
             ('collection/user/handler', ('collection', 'handler', ['user'])),
+            ('collection/user/note/123', ('note', 'index', ['user', '123'])),
+            ('collection/user/note/123/handler', ('note', 'handler', ['user', '123'])),
             ('collection/user/deck/name', ('deck', 'index', ['user', 'name'])),
             ('collection/user/deck/name/handler', ('deck', 'handler', ['user', 'name'])),
-            ('collection/user/deck/name/note/123', ('note', 'index', ['user', 'name', '123'])),
-            ('collection/user/deck/name/note/123/handler', ('note', 'handler', ['user', 'name', '123'])),
+            ('collection/user/deck/name/card/123', ('card', 'index', ['user', 'name', '123'])),
+            ('collection/user/deck/name/card/123/handler', ('card', 'handler', ['user', 'name', '123'])),
             # the leading slash should make no difference!
             ('/collection/user', ('collection', 'index', ['user'])),
         ]
@@ -121,6 +124,32 @@ class CollectionTestBase(unittest.TestCase):
         self.collection = None
         shutil.rmtree(self.temp_dir)
 
+    def add_note(self, data):
+        from anki.notes import Note
+
+        # TODO: we need to check the input for the correct keys.. Can we automate
+        # this somehow? Maybe using KeyError or wrapper or something?
+
+        #pprint(self.collection.models.all())
+        #pprint(self.collection.models.current())
+
+        model = self.collection.models.byName(data['model'])
+        #pprint (self.collection.models.fieldNames(model))
+
+        note = Note(self.collection, model)
+        for name, value in data['fields'].items():
+            note[name] = value
+
+        if data.has_key('tags'):
+            note.setTagsFromStr(data['tags'])
+
+        ret = self.collection.addNote(note)
+
+    def find_notes(self, data):
+        query = data.get('query', '')
+        ids = self.collection.getNotes(query)
+
+
 class CollectionHandlerGroupTest(CollectionTestBase):
     def setUp(self):
         super(CollectionHandlerGroupTest, self).setUp()
@@ -130,6 +159,7 @@ class CollectionHandlerGroupTest(CollectionTestBase):
         ids = ['collection_name']
         func = getattr(self.handler, name)
         return func(self.collection, data, ids)
+
 
     def test_list_decks(self):
         data = {}
@@ -158,9 +188,23 @@ class DeckHandlerGroupTest(CollectionTestBase):
         ret = self.execute('next_card', {})
         self.assertEqual(ret, None)
 
-        # TODO: add a note programatically
+        # add a note programatically
+        note = {
+            'model': 'Basic',
+            'fields': {
+                'Front': 'The front',
+                'Back': 'The back',
+            },
+            'tags': "Tag1 Tag2",
+        }
+        self.add_note(note)
 
+        # get the id for the one card on this collection
+        card_id = self.collection.findCards('')[0]
 
+        self.collection.sched.reset()
+        ret = self.execute('next_card', {})
+        self.assertEqual(ret['id'], card_id)
 
 if __name__ == '__main__':
     unittest.main()

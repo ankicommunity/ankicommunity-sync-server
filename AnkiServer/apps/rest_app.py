@@ -43,7 +43,8 @@ class _RestHandlerWrapper(RestHandlerBase):
 class RestApp(object):
     """A WSGI app that implements RESTful operations on Collections, Decks and Cards."""
 
-    handler_types = ['collection', 'deck', 'note']
+    # Defines not only the valid handler types, but their position in the URL string
+    handler_types = ['collection', ['deck', 'note'], 'card']
 
     def __init__(self, data_root, allowed_hosts='*', use_default_handlers=True, collection_manager=None):
         from AnkiServer.threading import getCollectionManager
@@ -57,13 +58,17 @@ class RestApp(object):
             self.collection_manager = getCollectionManager()
 
         self.handlers = {}
-        for type in self.handler_types:
-            self.handlers[type] = {}
+        for type_list in self.handler_types:
+            if type(type_list) is not list:
+                type_list = [type_list]
+            for handler_type in type_list:
+                self.handlers[handler_type] = {}
 
         if use_default_handlers:
             self.add_handler_group('collection', CollectionHandlerGroup())
-            self.add_handler_group('deck', DeckHandlerGroup())
             self.add_handler_group('note', NoteHandlerGroup())
+            self.add_handler_group('deck', DeckHandlerGroup())
+            self.add_handler_group('card', CardHandlerGroup())
 
     def add_handler(self, type, name, handler):
         """Adds a callback handler for a type (collection, deck, card) with a unique name.
@@ -120,17 +125,25 @@ class RestApp(object):
         parts = path.split('/')
 
         # pull the type and context from the URL parts
-        type = None
+        handler_type = None
         ids = []
-        for type in self.handler_types:
+        for type_list in self.handler_types:
             if len(parts) == 0:
                 break
-            if parts[0] != type:
-                break
 
-            parts.pop(0)
+            # some URL positions can have multiple types
+            if type(type_list) is not list:
+                type_list = [type_list]
+
+            # get the handler_type
+            if parts[0] not in type_list:
+                break
+            handler_type = parts.pop(0)
+
+            # add the id to the id list
             if len(parts) > 0:
                 ids.append(parts.pop(0))
+            # break if we don't have enough parts to make a new type/id pair
             if len(parts) < 2:
                 break
 
@@ -144,7 +157,7 @@ class RestApp(object):
         else:
             name = parts[0]
 
-        return (type, name, ids)
+        return (handler_type, name, ids)
 
     def _getCollectionPath(self, collection_id):
         """Returns the path to the collection based on the collection_id from the request.
@@ -238,6 +251,26 @@ class CollectionHandlerGroup(RestHandlerGroupBase):
     def select_deck(self, col, data, ids):
         col.decks.select(data['deck_id'])
 
+    @noReturnValue
+    def sched_reset(self, col, data, ids):
+        col.sched.reset()
+
+class NoteHandlerGroup(RestHandlerGroupBase):
+    """Default handler group for 'note' type."""
+
+    @staticmethod
+    def _serialize_note(note):
+        d = {
+            'id': note.id,
+            'model': note.model()['name'],
+        }
+        # TODO: do more stuff!
+        return d
+
+    def index(self, col, data, ids):
+        note = col.getNote(ids[1])
+        return self._serialize_note(note)
+
 class DeckHandlerGroup(RestHandlerGroupBase):
     """Default handler group for 'deck' type."""
 
@@ -246,15 +279,21 @@ class DeckHandlerGroup(RestHandlerGroupBase):
 
         col.decks.select(deck_id)
         card = col.sched.getCard()
+        if card is None:
+            return None
 
-        return card
+        return CardHandlerGroup._serialize_card(card)
 
-class NoteHandlerGroup(RestHandlerGroupBase):
-    """Default handler group for 'note' type."""
+class CardHandlerGroup(RestHandlerGroupBase):
+    """Default handler group for 'card' type."""
 
-    def add_new(self, col, data, ids):
-        # col.addNote(...)
-        pass
+    @staticmethod
+    def _serialize_card(card):
+        d = {
+            'id': card.id
+        }
+        # TODO: do more stuff!
+        return d
 
 # Our entry point
 def make_app(global_conf, **local_conf):
