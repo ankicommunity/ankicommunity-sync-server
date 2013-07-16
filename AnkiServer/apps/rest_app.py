@@ -12,7 +12,7 @@ except ImportError:
 
 import os, logging
 
-__all__ = ['RestApp', 'RestHandlerBase', 'hasReturnValue', 'noReturnValue']
+__all__ = ['RestApp', 'RestHandlerBase', 'noReturnValue']
 
 def noReturnValue(func):
     func.hasReturnValue = False
@@ -345,30 +345,15 @@ class ImportExportHandler(RestHandlerBase):
     def _get_importer_class(self, data):
         filetype = data['filetype']
 
-        # We do this as an if/elif/else guy, because I don't want to even import
-        # the modules until someone actually attempts to import the type
-        if filetype == 'text':
-            from anki.importing.csvfile import TextImporter
-            return TextImporter
-        elif filetype == 'apkg':
-            from anki.importing.apkg import AnkiPackageImporter
-            return AnkiPackageImporter
-        elif filetype == 'anki1':
-            from anki.importing.anki1 import Anki1Importer
-            return Anki1Importer
-        elif filetype == 'supermemo_xml':
-            from anki.importing.supermemo_xml import SupermemoXmlImporter
-            return SupermemoXmlImporter
-        elif filetype == 'mnemosyne':
-            from anki.importing.mnemo import MnemosyneImporter
-            return MnemosyneImporter
-        elif filetype == 'pauker':
-            from anki.importing.pauker import PaukerImporter
-            return PaukerImporter
-        else:
+        from AnkiServer.importer import get_importer_class
+        importer_class = get_importer_class(filetype)
+        if importer_class is None:
             raise HTTPBadRequest("Unknown filetype '%s'" % filetype)
 
+        return importer_class
+
     def import_file(self, col, data, ids):
+        import AnkiServer.importer
         import tempfile
 
         # get the importer class
@@ -384,9 +369,7 @@ class ImportExportHandler(RestHandlerBase):
                 path = fd.name
                 fd.write(filedata)
 
-            importer = importer_class(col, path)
-            importer.open()
-            importer.run()
+            AnkiServer.importer.import_file(importer_class, col, path)
         finally:
             if path is not None:
                 os.unlink(path)
