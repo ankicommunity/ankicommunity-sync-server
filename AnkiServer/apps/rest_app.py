@@ -3,6 +3,8 @@ from webob.dec import wsgify
 from webob.exc import *
 from webob import Response
 
+#from pprint import pprint
+
 try:
     import simplejson as json
     from simplejson import JSONDecodeError
@@ -404,6 +406,18 @@ class DeckHandler(RestHandlerBase):
     """Default handler group for 'deck' type."""
 
     button_labels = ['Easy', 'Good', 'Hard']
+
+    def _get_deck(self, col, ids):
+        try:
+            did = long(ids[1])
+            deck = col.decks.get(did, False)
+        except ValueError:
+            deck = col.decks.byName(ids[1])
+
+        if deck is None:
+            raise HTTPNotFound('No deck with id or name: ' + str(ids[1]))
+
+        return deck
     
     # Code stolen from aqt/reviewer.py
     def _get_answer_buttons(self, col, card):
@@ -420,9 +434,9 @@ class DeckHandler(RestHandlerBase):
         return [(ease, label, col.sched.nextIvl(card, ease)) for ease, label in enumerate(l, 1)]
 
     def next_card(self, col, data, ids):
-        deck_id = ids[1]
+        deck = self._get_deck(col, ids)
 
-        col.decks.select(deck_id)
+        col.decks.select(deck['id'])
         card = col.sched.getCard()
         if card is None:
             return None
@@ -438,9 +452,26 @@ class CardHandler(RestHandlerBase):
     @staticmethod
     def _serialize(card):
         d = {
-            'id': card.id
+            'id': card.id,
+            'isEmpty': card.isEmpty(),
+            'question': card.q(),
+            'answer': card.a(),
+            'did': card.did,
+            'due': card.due,
+            'factor': card.factor,
+            'ivl': card.ivl,
+            'lapses': card.lapses,
+            'left': card.left,
+            'mod': card.mod,
+            'nid': card.nid,
+            'odid': card.odid,
+            'odue': card.odue,
+            'ord': card.ord,
+            'queue': card.queue,
+            'reps': card.reps,
+            'type': card.type,
+            'usn': card.usn,
         }
-        # TODO: do more stuff!
         return d
 
 # Our entry point
