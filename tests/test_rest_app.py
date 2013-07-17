@@ -333,6 +333,7 @@ class DeckHandlerTest(CollectionTestBase):
         self.assertEqual(ret['nid'], note_id)
         self.assertEqual(ret['question'], '<style>.card {\n font-family: arial;\n font-size: 20px;\n text-align: center;\n color: black;\n background-color: white;\n}\n</style>The front')
         self.assertEqual(ret['answer'], '<style>.card {\n font-family: arial;\n font-size: 20px;\n text-align: center;\n color: black;\n background-color: white;\n}\n</style>The front\n\n<hr id=answer>\n\nThe back')
+        self.assertEqual(ret['answer_buttons'], [(1, 'Again', 60), (2, 'Good', 600), (3, 'Easy', 345600)])
 
 if __name__ == '__main__':
     unittest.main()
