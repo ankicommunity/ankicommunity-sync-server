@@ -138,6 +138,18 @@ class CollectionTestBase(unittest.TestCase):
 
         self.collection.addNote(note)
 
+    def add_default_note(self, count=1):
+        data = {
+            'model': 'Basic',
+            'fields': {
+                'Front': 'The front',
+                'Back': 'The back',
+            },
+            'tags': "Tag1 Tag2",
+        }
+        for idx in range(0, count):
+            self.add_note(data)
+
 class CollectionHandlerTest(CollectionTestBase):
     def setUp(self):
         super(CollectionHandlerTest, self).setUp()
@@ -189,15 +201,7 @@ class CollectionHandlerTest(CollectionTestBase):
         self.assertEqual(ret, [])
 
         # add a note programatically
-        note = {
-            'model': 'Basic',
-            'fields': {
-                'Front': 'The front',
-                'Back': 'The back',
-            },
-            'tags': "Tag1 Tag2",
-        }
-        self.add_note(note)
+        self.add_default_note()
 
         # get the id for the one note on this collection
         note_id = self.collection.findNotes('')[0]
@@ -313,15 +317,7 @@ class DeckHandlerTest(CollectionTestBase):
         self.assertEqual(ret, None)
 
         # add a note programatically
-        note = {
-            'model': 'Basic',
-            'fields': {
-                'Front': 'The front',
-                'Back': 'The back',
-            },
-            'tags': "Tag1 Tag2",
-        }
-        self.add_note(note)
+        self.add_default_note()
 
         # get the id for the one card and note on this collection
         note_id = self.collection.findNotes('')[0]
@@ -334,6 +330,12 @@ class DeckHandlerTest(CollectionTestBase):
         self.assertEqual(ret['question'], '<style>.card {\n font-family: arial;\n font-size: 20px;\n text-align: center;\n color: black;\n background-color: white;\n}\n</style>The front')
         self.assertEqual(ret['answer'], '<style>.card {\n font-family: arial;\n font-size: 20px;\n text-align: center;\n color: black;\n background-color: white;\n}\n</style>The front\n\n<hr id=answer>\n\nThe back')
         self.assertEqual(ret['answer_buttons'], [(1, 'Again', 60), (2, 'Good', 600), (3, 'Easy', 345600)])
+
+    def test_next_card_five_times(self):
+        self.add_default_note(5)
+        for idx in range(0, 5):
+            ret = self.execute('next_card', {})
+            self.assertTrue(ret is not None)
 
 if __name__ == '__main__':
     unittest.main()
