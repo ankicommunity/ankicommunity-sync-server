@@ -1,3 +1,12 @@
+Anki Sync Server
+================
+
+A personal Anki sync server (so you can sync against your own server rather than AnkiWeb).
+
+It also includes a RESTful API, so that you could implement your own AnkiWeb if wanted.
+
+Installing
+----------
 
 Instructions for installing and running AnkiServer:
 
