@@ -478,9 +478,7 @@ class CardHandler(RestHandlerBase):
 def make_app(global_conf, **local_conf):
     # setup the logger
     from AnkiServer.utils import setup_logging
-    logging_config_file = local_conf.get('logging.config_file')
-    if logging_config_file:
-        setup_logging(logging_config_file)
+    setup_logging(local_conf.get('logging.config_file'))
 
     return RestApp(
         data_root=local_conf.get('data_root', '.'),

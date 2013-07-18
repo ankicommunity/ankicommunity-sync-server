@@ -114,11 +114,21 @@ class ThreadingCollectionWrapper(object):
         if self._thread is not None:
             self._thread.join()
 
+    #
     # Mimic the CollectionWrapper interface
+    #
+
     def open(self):
+        """Non-op. The collection will be opened on demand."""
         pass
+
     def close(self):
-        self.stop()
+        """Closes the underlying collection without stopping the thread."""
+
+        def _close(col):
+            self.wrapper.close()
+        self.execute(_close, waitForReturn=False)
+
     def opened(self):
         return self.wrapper.opened()
 
@@ -152,15 +162,18 @@ class ThreadingCollectionManager(CollectionManager):
             for path, thread in self.collections.items():
                 if thread.running and thread.wrapper.opened() and thread.qempty() and cur - thread.last_timestamp >= self.monitor_inactivity:
                     logging.info('Monitor is closing collection on inactive CollectionThread[%s]', thread.path)
-                    def closeCollection(wrapper):
-                        wrapper.close()
-                    thread.execute(closeCollection, waitForReturn=False)
+                    thread.close()
             time.sleep(self.monitor_frequency)
 
     def shutdown(self):
         # TODO: stop the monitor thread!
 
-        # This will stop all the collection threads
+        # stop all the threads
+        for path, col in self.collections.items():
+            del self.collections[path]
+            col.stop()
+
+        # let the parent do whatever else it might want to do...
         super(ThreadingCollectionManager, self).shutdown()
 
 #
