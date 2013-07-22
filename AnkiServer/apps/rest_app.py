@@ -14,6 +14,9 @@ except ImportError:
 
 import os, logging
 
+import anki.lang
+from anki.lang import _ as t
+
 __all__ = ['RestApp', 'RestHandlerBase', 'noReturnValue']
 
 def noReturnValue(func):
@@ -32,6 +35,12 @@ class _RestHandlerWrapper(RestHandlerBase):
         self.hasReturnValue = hasReturnValue
     def __call__(self, *args, **kw):
         return self.func(*args, **kw)
+
+class RestHandlerRequest(object):
+    def __init__(self, data, ids, session):
+        self.data = data
+        self.ids = ids
+        self.session = session
 
 class RestApp(object):
     """A WSGI app that implements RESTful operations on Collections, Decks and Cards."""
@@ -66,6 +75,9 @@ class RestApp(object):
             self.add_handler_group('model', ModelHandler())
             self.add_handler_group('deck', DeckHandler())
             self.add_handler_group('card', CardHandler())
+
+        # hold per collection session data
+        self.sessions = {}
 
     def add_handler(self, type, name, handler):
         """Adds a callback handler for a type (collection, deck, card) with a unique name.
@@ -221,14 +233,21 @@ class RestApp(object):
         # parse the request body
         data = self._parseRequestBody(req)
 
+        # get the users session
+        try:
+            session = self.sessions[ids[0]]
+        except KeyError:
+            session = self.sessions[ids[0]] = {}
+
         # debug
         from pprint import pprint
         pprint(data)
 
         # run it!
         col = self.collection_manager.get_collection(collection_path, self.setup_new_collection)
+        handler_request = RestHandlerRequest(data, ids, session)
         try:
-            output = col.execute(handler, [data, ids], {}, hasReturnValue)
+            output = col.execute(handler, [handler_request], {}, hasReturnValue)
         except Exception, e:
             logging.error(e)
             return HTTPInternalServerError()
@@ -245,24 +264,24 @@ class CollectionHandler(RestHandlerBase):
     # MODELS - Store fields definitions and templates for notes
     #
 
-    def list_models(self, col, data, ids):
+    def list_models(self, col, req):
         # This is already a list of dicts, so it doesn't need to be serialized
         return col.models.all()
 
-    def find_model_by_name(self, col, data, ids):
+    def find_model_by_name(self, col, req):
         # This is already a list of dicts, so it doesn't need to be serialized
-        return col.models.byName(data['model'])
+        return col.models.byName(req.data['model'])
 
     #
     # NOTES - Information (in fields per the model) that can generate a card
     #         (based on a template from the model).
     #
 
-    def find_notes(self, col, data, ids):
-        query = data.get('query', '')
+    def find_notes(self, col, req):
+        query = req.data.get('query', '')
         ids = col.findNotes(query)
 
-        if data.get('preload', False):
+        if req.data.get('preload', False):
             nodes = [NoteHandler._serialize(col.getNote(id)) for id in ids]
         else:
             nodes = [{'id': id} for id in ids]
@@ -270,22 +289,22 @@ class CollectionHandler(RestHandlerBase):
         return nodes
 
     @noReturnValue
-    def add_note(self, col, data, ids):
+    def add_note(self, col, req):
         from anki.notes import Note
 
         # TODO: I think this would be better with 'model' for the name
         # and 'mid' for the model id.
-        if type(data['model']) in (str, unicode):
-            model = col.models.byName(data['model'])
+        if type(req.data['model']) in (str, unicode):
+            model = col.models.byName(req.data['model'])
         else:
-            model = col.models.get(data['model'])
+            model = col.models.get(req.data['model'])
 
         note = Note(col, model)
-        for name, value in data['fields'].items():
+        for name, value in req.data['fields'].items():
             note[name] = value
 
-        if data.has_key('tags'):
-            note.setTagsFromStr(data['tags'])
+        if req.data.has_key('tags'):
+            note.setTagsFromStr(req.data['tags'])
 
         col.addNote(note)
 
@@ -293,27 +312,27 @@ class CollectionHandler(RestHandlerBase):
     # DECKS - Groups of cards
     #
 
-    def list_decks(self, col, data, ids):
+    def list_decks(self, col, req):
         # This is already a list of dicts, so it doesn't need to be serialized
         return col.decks.all()
 
     @noReturnValue
-    def select_deck(self, col, data, ids):
-        col.decks.select(data['deck_id'])
+    def select_deck(self, col, req):
+        col.decks.select(req.data['deck_id'])
 
     #
     # CARD - A specific card in a deck with a history of review (generated from
     #        a note based on the template).
     #
 
-    def find_cards(self, col, data, ids):
-        query = data.get('query', '')
+    def find_cards(self, col, req):
+        query = req.data.get('query', '')
         ids = col.findCards(query)
 
-        if data.get('preload', False):
-            cards = [CardHandler._serialize(col.getCard(id)) for id in ids]
+        if req.data.get('preload', False):
+            cards = [CardHandler._serialize(col.getCard(id)) for id in req.ids]
         else:
-            cards = [{'id': id} for id in ids]
+            cards = [{'id': id} for id in req.ids]
 
         return cards
 
@@ -322,8 +341,28 @@ class CollectionHandler(RestHandlerBase):
     #
 
     @noReturnValue
-    def reset_scheduler(self, col, data, ids):
+    def reset_scheduler(self, col, req):
         col.sched.reset()
+
+    def answer_card(self, col, req):
+        import time
+
+        card_id = long(req.data['id'])
+        ease = int(req.data['ease'])
+
+        card = col.getCard(card_id)
+        if card.timerStarted is None:
+            card.timerStarted = float(req.data.get('timeStarted', time.time()))
+
+        col.sched.answerCard(card, ease)
+
+    #
+    # GLOBAL / MISC
+    #
+
+    @noReturnValue
+    def set_language(self, col, req):
+        anki.lang.setLang(req.data['code'])
 
 class ImportExportHandler(RestHandlerBase):
     """Handler group for the 'collection' type, but it's not added by default."""
@@ -354,15 +393,15 @@ class ImportExportHandler(RestHandlerBase):
 
         return importer_class
 
-    def import_file(self, col, data, ids):
+    def import_file(self, col, req):
         import AnkiServer.importer
         import tempfile
 
         # get the importer class
-        importer_class = self._get_importer_class(data)
+        importer_class = self._get_importer_class(req.data)
 
         # get the file data
-        filedata = self._get_filedata(data)
+        filedata = self._get_filedata(req.data)
 
         # write the file data to a temporary file
         try:
@@ -379,8 +418,8 @@ class ImportExportHandler(RestHandlerBase):
 class ModelHandler(RestHandlerBase):
     """Default handler group for 'model' type."""
 
-    def field_names(self, col, data, ids):
-        model = col.models.get(ids[1])
+    def field_names(self, col, req):
+        model = col.models.get(req.ids[1])
         if model is None:
             raise HTTPNotFound()
         return col.models.fieldNames(model)
@@ -398,8 +437,8 @@ class NoteHandler(RestHandlerBase):
         # TODO: do more stuff!
         return d
 
-    def index(self, col, data, ids):
-        note = col.getNote(ids[1])
+    def index(self, col, req):
+        note = col.getNote(req.ids[1])
         return self._serialize(note)
 
 class DeckHandler(RestHandlerBase):
@@ -431,15 +470,30 @@ class DeckHandler(RestHandlerBase):
         l.reverse()
 
         # Loop through and add the ease and estimated time (in seconds)
-        return [(ease, label, col.sched.nextIvl(card, ease)) for ease, label in enumerate(l, 1)]
+        return [{
+          'ease': ease,
+          'label': label,
+          'string_label': t(label),
+          'interval': col.sched.nextIvl(card, ease),
+          'string_interval': col.sched.nextIvlStr(card, ease),
+        } for ease, label in enumerate(l, 1)]
 
-    def next_card(self, col, data, ids):
-        deck = self._get_deck(col, ids)
+    def next_card(self, col, req):
+        deck = self._get_deck(col, req.ids)
+
+        # TODO: maybe this should use col.renderQA()?
 
         col.decks.select(deck['id'])
         card = col.sched.getCard()
         if card is None:
             return None
+
+        # put it into the card cache to be removed when we answer it
+        #if not req.session.has_key('cards'):
+        #    req.session['cards'] = {}
+        #req.session['cards'][long(card.id)] = card
+
+        card.startTimer()
 
         result = CardHandler._serialize(card)
         result['answer_buttons'] = self._get_answer_buttons(col, card)
@@ -471,11 +525,14 @@ class CardHandler(RestHandlerBase):
             'reps': card.reps,
             'type': card.type,
             'usn': card.usn,
+            'timerStarted': card.timerStarted,
         }
         return d
 
 # Our entry point
 def make_app(global_conf, **local_conf):
+    # TODO: we should setup the default language from conf!
+
     # setup the logger
     from AnkiServer.utils import setup_logging
     setup_logging(local_conf.get('logging.config_file'))

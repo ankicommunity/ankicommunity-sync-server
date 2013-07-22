@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 import os
 import shutil
@@ -11,7 +12,7 @@ from mock import MagicMock
 
 import AnkiServer
 from AnkiServer.collection import CollectionManager
-from AnkiServer.apps.rest_app import RestApp, CollectionHandler, ImportExportHandler, NoteHandler, ModelHandler, DeckHandler, CardHandler
+from AnkiServer.apps.rest_app import RestApp, RestHandlerRequest, CollectionHandler, ImportExportHandler, NoteHandler, ModelHandler, DeckHandler, CardHandler
 
 from webob.exc import *
 
@@ -158,7 +159,8 @@ class CollectionHandlerTest(CollectionTestBase):
     def execute(self, name, data):
         ids = ['collection_name']
         func = getattr(self.handler, name)
-        return func(self.collection, data, ids)
+        req = RestHandlerRequest(data, ids, {})
+        return func(self.collection, req)
 
     def test_list_decks(self):
         data = {}
@@ -246,6 +248,38 @@ class CollectionHandlerTest(CollectionTestBase):
         self.assertEqual(note['Back'], 'The back')
         self.assertEqual(note.tags, ['Tag1', 'Tag2'])
 
+    def test_set_language(self):
+        import anki.lang
+
+        self.assertEqual(anki.lang._('Again'), 'Again')
+
+        try:
+            data = {'code': 'pl'}
+            self.execute('set_language', data)
+            self.assertEqual(anki.lang._('Again'), u'Znowu')
+        finally:
+            # return everything to normal!
+            anki.lang.setLang('en')
+
+    def test_answer_card(self):
+        import time
+
+        self.add_default_note()
+
+        # instantiate a deck handler to get the card
+        deck_handler = DeckHandler()
+        deck_request = RestHandlerRequest({}, ['c', '1'], {})
+        card = deck_handler.next_card(self.collection, deck_request)
+        self.assertEqual(card['reps'], 0)
+
+
+        self.execute('answer_card', {'id': card['id'], 'ease': 2, 'timerStarted': time.time()})
+
+        # reset the scheduler and try to get the next card again - there should be none!
+        self.collection.sched.reset()
+        card = deck_handler.next_card(self.collection, deck_request)
+        self.assertEqual(card['reps'], 1)
+
 class ImportExportHandlerTest(CollectionTestBase):
     export_rows = [
         ['Card front 1', 'Card back 1', 'Tag1 Tag2'],
@@ -259,7 +293,8 @@ class ImportExportHandlerTest(CollectionTestBase):
     def execute(self, name, data):
         ids = ['collection_name']
         func = getattr(self.handler, name)
-        return func(self.collection, data, ids)
+        req = RestHandlerRequest(data, ids, {})
+        return func(self.collection, req)
 
     def generate_text_export(self):
         # Create a simple export file
@@ -310,7 +345,8 @@ class DeckHandlerTest(CollectionTestBase):
     def execute(self, name, data):
         ids = ['collection_name', '1']
         func = getattr(self.handler, name)
-        return func(self.collection, data, ids)
+        req = RestHandlerRequest(data, ids, {})
+        return func(self.collection, req)
 
     def test_next_card(self):
         ret = self.execute('next_card', {})
@@ -324,12 +360,34 @@ class DeckHandlerTest(CollectionTestBase):
         card_id = self.collection.findCards('')[0]
 
         self.collection.sched.reset()
-        ret = self.execute('next_card', {})
+
+        # get the card in Polish so we can test translation too
+        anki.lang.setLang('pl')
+        try:
+            ret = self.execute('next_card', {})
+        finally:
+            anki.lang.setLang('en')
+
         self.assertEqual(ret['id'], card_id)
         self.assertEqual(ret['nid'], note_id)
         self.assertEqual(ret['question'], '<style>.card {\n font-family: arial;\n font-size: 20px;\n text-align: center;\n color: black;\n background-color: white;\n}\n</style>The front')
         self.assertEqual(ret['answer'], '<style>.card {\n font-family: arial;\n font-size: 20px;\n text-align: center;\n color: black;\n background-color: white;\n}\n</style>The front\n\n<hr id=answer>\n\nThe back')
-        self.assertEqual(ret['answer_buttons'], [(1, 'Again', 60), (2, 'Good', 600), (3, 'Easy', 345600)])
+        self.assertEqual(ret['answer_buttons'], [
+          {'ease': 1,
+           'label': 'Again',
+           'string_label': u'Znowu',
+           'interval': 60,
+           'string_interval': '<1 minuta'},
+          {'ease': 2,
+           'label': 'Good',
+           'string_label': u'Dobra',
+           'interval': 600,
+           'string_interval': '<10 minut'},
+          {'ease': 3,
+           'label': 'Easy',
+           'string_label': u'Łatwa',
+           'interval': 345600,
+           'string_interval': '4 dni'}])
 
     def test_next_card_five_times(self):
         self.add_default_note(5)
