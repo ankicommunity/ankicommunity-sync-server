@@ -406,6 +406,31 @@ class ImportExportHandlerTest(CollectionTestBase):
         ret = self.execute('import_file', data)
         self.check_import()
         
+class NoteHandlerTest(CollectionTestBase):
+    def setUp(self):
+        super(NoteHandlerTest, self).setUp()
+        self.handler = NoteHandler()
+
+    def execute(self, name, data, note_id):
+        ids = ['collection_name', note_id]
+        func = getattr(self.handler, name)
+        req = RestHandlerRequest(self.mock_app, data, ids, {})
+        return func(self.collection, req)
+
+    def test_index(self):
+        self.add_default_note()
+
+        note_id = self.collection.findNotes('')[0]
+
+        ret = self.execute('index', {}, note_id)
+        self.assertEqual(ret['id'], note_id)
+        self.assertEqual(len(ret['fields']), 2)
+        self.assertEqual(ret['flags'], 0)
+        self.assertEqual(ret['model']['name'], 'Basic')
+        self.assertEqual(ret['tags'], ['Tag1', 'Tag2'])
+        self.assertEqual(ret['string_tags'], 'Tag1 Tag2')
+        self.assertEqual(ret['usn'], -1)
+
 class DeckHandlerTest(CollectionTestBase):
     def setUp(self):
         super(DeckHandlerTest, self).setUp()

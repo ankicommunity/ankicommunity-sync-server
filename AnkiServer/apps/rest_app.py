@@ -487,10 +487,21 @@ class NoteHandler(RestHandlerBase):
     def _serialize(note):
         d = {
             'id': note.id,
+            'guid': note.guid,
             'model': note.model(),
-            'tags': ' '.join(note.tags),
+            'mid': note.mid,
+            'mod': note.mod,
+            'scm': note.scm,
+            'tags': note.tags,
+            'string_tags': ' '.join(note.tags),
+            'fields': {},
+            'flags': note.flags,
+            'usn': note.usn,
         }
-        # TODO: do more stuff!
+
+        # add all the fields
+        for name, value in note.items():
+            d['fields'][name] = value
 
         return d
 
