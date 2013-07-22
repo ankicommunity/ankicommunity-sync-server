@@ -412,6 +412,16 @@ class CollectionHandler(RestHandlerBase):
 
         col.sched.answerCard(card, ease)
 
+    @noReturnValue
+    def suspend_cards(self, col, req):
+        card_ids = req.data['ids']
+        col.sched.suspendCards(card_ids)
+
+    @noReturnValue
+    def unsuspend_cards(self, col, req):
+        card_ids = req.data['ids']
+        col.sched.unsuspendCards(card_ids)
+
     #
     # GLOBAL / MISC
     #
@@ -509,6 +519,20 @@ class NoteHandler(RestHandlerBase):
         note = col.getNote(req.ids[1])
         return self._serialize(note)
 
+    @noReturnValue
+    def add_tags(self, col, req):
+        note = col.getNote(req.ids[1])
+        for tag in req.data['tags']:
+            note.addTag(tag)
+        note.flush()
+
+    @noReturnValue
+    def remove_tags(self, col, req):
+        note = col.getNote(req.ids[1])
+        for tag in req.data['tags']:
+            note.delTag(tag)
+        note.flush()
+
 class DeckHandler(RestHandlerBase):
     """Default handler group for 'deck' type."""
 
@@ -572,6 +596,22 @@ class CardHandler(RestHandlerBase):
     def index(self, col, req):
         card = col.getCard(req.ids[1])
         return self._serialize(card, req.data)
+
+    def _forward_to_note(self, card_id, name):
+        card = col.getCard(card_id)
+
+        req_copy = req.copy()
+        req_copy.ids[1] = card.nid
+
+        return self.app.execute_handler('note', name, col, req)
+
+    @noReturnValue
+    def add_tags(self, col, req):
+        self._forward_to_note(req.ids[1], 'add_tags')
+
+    @noReturnValue
+    def remove_tags(self, col, req):
+        self._forward_to_note(req.ids[1], 'remove_tags')
 
 # Our entry point
 def make_app(global_conf, **local_conf):

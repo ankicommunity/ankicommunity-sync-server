@@ -349,6 +349,28 @@ class CollectionHandlerTest(CollectionTestBase):
         card = self.execute('next_card', {})
         self.assertEqual(card['reps'], 1)
 
+    def test_suspend_cards(self):
+        # add a note programatically
+        self.add_default_note()
+
+        # get the id for the one card on this collection
+        card_id = self.collection.findCards('')[0]
+
+        # suspend it
+        self.execute('suspend_cards', {'ids': [card_id]})
+
+        # test that getting the next card will be None
+        card = self.collection.sched.getCard()
+        self.assertEqual(card, None)
+
+        # unsuspend it
+        self.execute('unsuspend_cards', {'ids': [card_id]})
+
+        # test that now we're getting the next card!
+        self.collection.sched.reset()
+        card = self.collection.sched.getCard()
+        self.assertEqual(card.id, card_id)
+
 class ImportExportHandlerTest(CollectionTestBase):
     export_rows = [
         ['Card front 1', 'Card back 1', 'Tag1 Tag2'],
@@ -430,6 +452,30 @@ class NoteHandlerTest(CollectionTestBase):
         self.assertEqual(ret['tags'], ['Tag1', 'Tag2'])
         self.assertEqual(ret['string_tags'], 'Tag1 Tag2')
         self.assertEqual(ret['usn'], -1)
+
+    def test_add_tags(self):
+        self.add_default_note()
+        note_id = self.collection.findNotes('')[0]
+        note = self.collection.getNote(note_id)
+        self.assertFalse('NT1' in note.tags)
+        self.assertFalse('NT2' in note.tags)
+
+        self.execute('add_tags', {'tags': ['NT1', 'NT2']}, note_id)
+        note = self.collection.getNote(note_id)
+        self.assertTrue('NT1' in note.tags)
+        self.assertTrue('NT2' in note.tags)
+
+    def test_remove_tags(self):
+        self.add_default_note()
+        note_id = self.collection.findNotes('')[0]
+        note = self.collection.getNote(note_id)
+        self.assertTrue('Tag1' in note.tags)
+        self.assertTrue('Tag2' in note.tags)
+
+        self.execute('remove_tags', {'tags': ['Tag1', 'Tag2']}, note_id)
+        note = self.collection.getNote(note_id)
+        self.assertFalse('Tag1' in note.tags)
+        self.assertFalse('Tag2' in note.tags)
 
 class DeckHandlerTest(CollectionTestBase):
     def setUp(self):
