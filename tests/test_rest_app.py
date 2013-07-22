@@ -42,8 +42,10 @@ class RestAppTest(unittest.TestCase):
             ('collection/user/note/123/handler', ('note', 'handler', ['user', '123'])),
             ('collection/user/deck/name', ('deck', 'index', ['user', 'name'])),
             ('collection/user/deck/name/handler', ('deck', 'handler', ['user', 'name'])),
-            ('collection/user/deck/name/card/123', ('card', 'index', ['user', 'name', '123'])),
-            ('collection/user/deck/name/card/123/handler', ('card', 'handler', ['user', 'name', '123'])),
+            #('collection/user/deck/name/card/123', ('card', 'index', ['user', 'name', '123'])),
+            #('collection/user/deck/name/card/123/handler', ('card', 'handler', ['user', 'name', '123'])),
+            ('collection/user/card/123', ('card', 'index', ['user', '123'])),
+            ('collection/user/card/123/handler', ('card', 'handler', ['user', '123'])),
             # the leading slash should make no difference!
             ('/collection/user', ('collection', 'index', ['user'])),
         ]
@@ -222,7 +224,7 @@ class CollectionHandlerTest(CollectionTestBase):
         ret = self.execute('find_notes', {'preload': True})
         self.assertEqual(len(ret), 1)
         self.assertEqual(ret[0]['id'], note_id)
-        self.assertEqual(ret[0]['model'], 'Basic')
+        self.assertEqual(ret[0]['model']['name'], 'Basic')
 
     def test_add_note(self):
         # make sure there are no notes (yet)
@@ -421,6 +423,44 @@ class DeckHandlerTest(CollectionTestBase):
         ret = self.execute('next_card', {})
         self.assertEqual(ret, None)
         self.mock_app.execute_handler.assert_called_with('collection', 'next_card', self.collection, RestHandlerRequest(self.mock_app, {'deck': '1'}, ['collection_name'], {}))
+
+class CardHandlerTest(CollectionTestBase):
+    def setUp(self):
+        super(CardHandlerTest, self).setUp()
+        self.handler = CardHandler()
+
+    def execute(self, name, data, card_id):
+        ids = ['collection_name', card_id]
+        func = getattr(self.handler, name)
+        req = RestHandlerRequest(self.mock_app, data, ids, {})
+        return func(self.collection, req)
+
+    def test_index_simple(self):
+        self.add_default_note()
+
+        note_id = self.collection.findNotes('')[0]
+        card_id = self.collection.findCards('')[0]
+
+        ret = self.execute('index', {}, card_id)
+        self.assertEqual(ret['id'], card_id)
+        self.assertEqual(ret['nid'], note_id)
+        self.assertEqual(ret['did'], 1)
+        self.assertFalse(ret.has_key('note'))
+        self.assertFalse(ret.has_key('deck'))
+
+    def test_index_load(self):
+        self.add_default_note()
+
+        note_id = self.collection.findNotes('')[0]
+        card_id = self.collection.findCards('')[0]
+
+        ret = self.execute('index', {'load_note': 1, 'load_deck': 1}, card_id)
+        self.assertEqual(ret['id'], card_id)
+        self.assertEqual(ret['nid'], note_id)
+        self.assertEqual(ret['did'], 1)
+        self.assertEqual(ret['note']['id'], note_id)
+        self.assertEqual(ret['note']['model']['name'], 'Basic')
+        self.assertEqual(ret['deck']['name'], 'Default')
 
 if __name__ == '__main__':
     unittest.main()

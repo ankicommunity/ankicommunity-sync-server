@@ -53,9 +53,7 @@ class RestApp(object):
     """A WSGI app that implements RESTful operations on Collections, Decks and Cards."""
 
     # Defines not only the valid handler types, but their position in the URL string
-    # TODO: this broken - it allows a model to contain cards, for example.. We need to
-    #       give a pattern for each handler type.
-    handler_types = ['collection', ['model', 'note', 'deck'], 'card']
+    handler_types = ['collection', ['model', 'note', 'deck', 'card']]
 
     def __init__(self, data_root, allowed_hosts='*', setup_new_collection=None, use_default_handlers=True, collection_manager=None):
         from AnkiServer.threading import getCollectionManager
@@ -345,7 +343,7 @@ class CollectionHandler(RestHandlerBase):
         ids = col.findCards(query)
 
         if req.data.get('preload', False):
-            cards = [CardHandler._serialize(col.getCard(id)) for id in req.ids]
+            cards = [CardHandler._serialize(col.getCard(id), req.data) for id in req.ids]
         else:
             cards = [{'id': id} for id in req.ids]
 
@@ -396,7 +394,7 @@ class CollectionHandler(RestHandlerBase):
 
         card.startTimer()
 
-        result = CardHandler._serialize(card)
+        result = CardHandler._serialize(card, req.data)
         result['answer_buttons'] = self._get_answer_buttons(col, card)
 
         return result
@@ -489,10 +487,11 @@ class NoteHandler(RestHandlerBase):
     def _serialize(note):
         d = {
             'id': note.id,
-            'model': note.model()['name'],
+            'model': note.model(),
             'tags': ' '.join(note.tags),
         }
         # TODO: do more stuff!
+
         return d
 
     def index(self, col, req):
@@ -527,7 +526,7 @@ class CardHandler(RestHandlerBase):
     """Default handler group for 'card' type."""
 
     @staticmethod
-    def _serialize(card):
+    def _serialize(card, opts):
         d = {
             'id': card.id,
             'isEmpty': card.isEmpty(),
@@ -550,7 +549,18 @@ class CardHandler(RestHandlerBase):
             'usn': card.usn,
             'timerStarted': card.timerStarted,
         }
+
+        if opts.get('load_note', False):
+            d['note'] = NoteHandler._serialize(card.col.getNote(card.nid))
+
+        if opts.get('load_deck', False):
+            d['deck'] = card.col.decks.get(card.did)
+
         return d
+
+    def index(self, col, req):
+        card = col.getCard(req.ids[1])
+        return self._serialize(card, req.data)
 
 # Our entry point
 def make_app(global_conf, **local_conf):
