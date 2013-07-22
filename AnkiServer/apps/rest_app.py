@@ -37,10 +37,17 @@ class _RestHandlerWrapper(RestHandlerBase):
         return self.func(*args, **kw)
 
 class RestHandlerRequest(object):
-    def __init__(self, data, ids, session):
+    def __init__(self, app, data, ids, session):
+        self.app = app
         self.data = data
         self.ids = ids
         self.session = session
+
+    def copy(self):
+        return RestHandlerRequest(self.app, self.data.copy(), self.ids[:], self.session)
+
+    def __eq__(self, other):
+        return self.app == other.app and self.data == other.data and self.ids == other.ids and self.session == other.session
 
 class RestApp(object):
     """A WSGI app that implements RESTful operations on Collections, Decks and Cards."""
@@ -105,6 +112,14 @@ class RestApp(object):
                 if hasattr(group, 'hasReturnValue') and not hasattr(method, 'hasReturnValue'):
                     method = _RestHandlerWrapper(group.__class__.__name__ + '.' + name, method, group.hasReturnValue)
                 self.add_handler(type, name, method)
+
+    def execute_handler(self, type, name, col, req):
+        """Executes the handler with the given type and name, passing in the col and req as arguments."""
+
+        handler, hasReturnValue = self._getHandler(type, name)
+        ret = handler(col, req)
+        if hasReturnValue:
+            return ret
 
     def _checkRequest(self, req):
         """Raises an exception if the request isn't allowed or valid for some reason."""
@@ -245,7 +260,7 @@ class RestApp(object):
 
         # run it!
         col = self.collection_manager.get_collection(collection_path, self.setup_new_collection)
-        handler_request = RestHandlerRequest(data, ids, session)
+        handler_request = RestHandlerRequest(self, data, ids, session)
         try:
             output = col.execute(handler, [handler_request], {}, hasReturnValue)
         except Exception, e:
@@ -344,6 +359,49 @@ class CollectionHandler(RestHandlerBase):
     def reset_scheduler(self, col, req):
         col.sched.reset()
 
+    button_labels = ['Easy', 'Good', 'Hard']
+
+    def _get_answer_buttons(self, col, card):
+        l = []
+
+        # Put the correct number of buttons
+        cnt = col.sched.answerButtons(card)
+        for idx in range(0, cnt - 1):
+            l.append(self.button_labels[idx])
+        l.append('Again')
+        l.reverse()
+
+        # Loop through and add the ease, estimated time (in seconds) and other info
+        return [{
+          'ease': ease,
+          'label': label,
+          'string_label': t(label),
+          'interval': col.sched.nextIvl(card, ease),
+          'string_interval': col.sched.nextIvlStr(card, ease),
+        } for ease, label in enumerate(l, 1)]
+
+    def next_card(self, col, req):
+        if req.data.has_key('deck'):
+            deck = DeckHandler._get_deck(col, req.data['deck'])
+            col.decks.select(deck['id'])
+
+        card = col.sched.getCard()
+        if card is None:
+            return None
+
+        # put it into the card cache to be removed when we answer it
+        #if not req.session.has_key('cards'):
+        #    req.session['cards'] = {}
+        #req.session['cards'][long(card.id)] = card
+
+        card.startTimer()
+
+        result = CardHandler._serialize(card)
+        result['answer_buttons'] = self._get_answer_buttons(col, card)
+
+        return result
+
+    @noReturnValue
     def answer_card(self, col, req):
         import time
 
@@ -444,61 +502,26 @@ class NoteHandler(RestHandlerBase):
 class DeckHandler(RestHandlerBase):
     """Default handler group for 'deck' type."""
 
-    button_labels = ['Easy', 'Good', 'Hard']
-
-    def _get_deck(self, col, ids):
+    @staticmethod
+    def _get_deck(col, val):
         try:
-            did = long(ids[1])
+            did = long(val)
             deck = col.decks.get(did, False)
         except ValueError:
-            deck = col.decks.byName(ids[1])
+            deck = col.decks.byName(val)
 
         if deck is None:
-            raise HTTPNotFound('No deck with id or name: ' + str(ids[1]))
+            raise HTTPNotFound('No deck with id or name: ' + str(val))
 
         return deck
     
-    # Code stolen from aqt/reviewer.py
-    def _get_answer_buttons(self, col, card):
-        l = []
-
-        # Put the correct number of buttons
-        cnt = col.sched.answerButtons(card)
-        for idx in range(0, cnt - 1):
-            l.append(self.button_labels[idx])
-        l.append('Again')
-        l.reverse()
-
-        # Loop through and add the ease and estimated time (in seconds)
-        return [{
-          'ease': ease,
-          'label': label,
-          'string_label': t(label),
-          'interval': col.sched.nextIvl(card, ease),
-          'string_interval': col.sched.nextIvlStr(card, ease),
-        } for ease, label in enumerate(l, 1)]
-
     def next_card(self, col, req):
-        deck = self._get_deck(col, req.ids)
+        req_copy = req.copy()
+        req_copy.data['deck'] = req.ids[1]
+        del req_copy.ids[1]
 
-        # TODO: maybe this should use col.renderQA()?
-
-        col.decks.select(deck['id'])
-        card = col.sched.getCard()
-        if card is None:
-            return None
-
-        # put it into the card cache to be removed when we answer it
-        #if not req.session.has_key('cards'):
-        #    req.session['cards'] = {}
-        #req.session['cards'][long(card.id)] = card
-
-        card.startTimer()
-
-        result = CardHandler._serialize(card)
-        result['answer_buttons'] = self._get_answer_buttons(col, card)
-
-        return result
+        # forward this to the CollectionHandler
+        return req.app.execute_handler('collection', 'next_card', col, req_copy)
 
 class CardHandler(RestHandlerBase):
     """Default handler group for 'card' type."""

@@ -119,11 +119,13 @@ class CollectionTestBase(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
         self.collection_path = os.path.join(self.temp_dir, 'collection.anki2');
         self.collection = anki.storage.Collection(self.collection_path)
+        self.mock_app = MagicMock()
 
     def tearDown(self):
         self.collection.close()
         self.collection = None
         shutil.rmtree(self.temp_dir)
+        self.mock_app.reset_mock()
 
     def add_note(self, data):
         from anki.notes import Note
@@ -159,7 +161,7 @@ class CollectionHandlerTest(CollectionTestBase):
     def execute(self, name, data):
         ids = ['collection_name']
         func = getattr(self.handler, name)
-        req = RestHandlerRequest(data, ids, {})
+        req = RestHandlerRequest(self.mock_app, data, ids, {})
         return func(self.collection, req)
 
     def test_list_decks(self):
@@ -261,23 +263,88 @@ class CollectionHandlerTest(CollectionTestBase):
             # return everything to normal!
             anki.lang.setLang('en')
 
+    def test_next_card(self):
+        ret = self.execute('next_card', {})
+        self.assertEqual(ret, None)
+
+        # add a note programatically
+        self.add_default_note()
+
+        # get the id for the one card and note on this collection
+        note_id = self.collection.findNotes('')[0]
+        card_id = self.collection.findCards('')[0]
+
+        self.collection.sched.reset()
+        ret = self.execute('next_card', {})
+        self.assertEqual(ret['id'], card_id)
+        self.assertEqual(ret['nid'], note_id)
+        self.assertEqual(ret['question'], '<style>.card {\n font-family: arial;\n font-size: 20px;\n text-align: center;\n color: black;\n background-color: white;\n}\n</style>The front')
+        self.assertEqual(ret['answer'], '<style>.card {\n font-family: arial;\n font-size: 20px;\n text-align: center;\n color: black;\n background-color: white;\n}\n</style>The front\n\n<hr id=answer>\n\nThe back')
+        self.assertEqual(ret['answer_buttons'], [
+          {'ease': 1,
+           'label': 'Again',
+           'string_label': 'Again',
+           'interval': 60,
+           'string_interval': '<1 minute'},
+          {'ease': 2,
+           'label': 'Good',
+           'string_label': 'Good',
+           'interval': 600,
+           'string_interval': '<10 minutes'},
+          {'ease': 3,
+           'label': 'Easy',
+           'string_label': 'Easy',
+           'interval': 345600,
+           'string_interval': '4 days'}])
+
+    def test_next_card_translation(self):
+        # add a note programatically
+        self.add_default_note()
+
+        # get the card in Polish so we can test translation too
+        anki.lang.setLang('pl')
+        try:
+            ret = self.execute('next_card', {})
+        finally:
+            anki.lang.setLang('en')
+
+        self.assertEqual(ret['answer_buttons'], [
+          {'ease': 1,
+           'label': 'Again',
+           'string_label': u'Znowu',
+           'interval': 60,
+           'string_interval': '<1 minuta'},
+          {'ease': 2,
+           'label': 'Good',
+           'string_label': u'Dobra',
+           'interval': 600,
+           'string_interval': '<10 minut'},
+          {'ease': 3,
+           'label': 'Easy',
+           'string_label': u'Łatwa',
+           'interval': 345600,
+           'string_interval': '4 dni'}])
+
+    def test_next_card_five_times(self):
+        self.add_default_note(5)
+        for idx in range(0, 5):
+            ret = self.execute('next_card', {})
+            self.assertTrue(ret is not None)
+
     def test_answer_card(self):
         import time
 
         self.add_default_note()
 
         # instantiate a deck handler to get the card
-        deck_handler = DeckHandler()
-        deck_request = RestHandlerRequest({}, ['c', '1'], {})
-        card = deck_handler.next_card(self.collection, deck_request)
+        card = self.execute('next_card', {})
         self.assertEqual(card['reps'], 0)
-
 
         self.execute('answer_card', {'id': card['id'], 'ease': 2, 'timerStarted': time.time()})
 
         # reset the scheduler and try to get the next card again - there should be none!
         self.collection.sched.reset()
-        card = deck_handler.next_card(self.collection, deck_request)
+        card = self.execute('next_card', {})
         self.assertEqual(card['reps'], 1)
 
 class ImportExportHandlerTest(CollectionTestBase):
@@ -293,7 +360,7 @@ class ImportExportHandlerTest(CollectionTestBase):
     def execute(self, name, data):
         ids = ['collection_name']
         func = getattr(self.handler, name)
-        req = RestHandlerRequest(data, ids, {})
+        req = RestHandlerRequest(self.mock_app, data, ids, {})
         return func(self.collection, req)
 
     def generate_text_export(self):
@@ -345,55 +412,15 @@ class DeckHandlerTest(CollectionTestBase):
     def execute(self, name, data):
         ids = ['collection_name', '1']
         func = getattr(self.handler, name)
-        req = RestHandlerRequest(data, ids, {})
+        req = RestHandlerRequest(self.mock_app, data, ids, {})
         return func(self.collection, req)
 
     def test_next_card(self):
+        self.mock_app.execute_handler.return_value = None
+
         ret = self.execute('next_card', {})
         self.assertEqual(ret, None)
-
-        # add a note programatically
-        self.add_default_note()
-
-        # get the id for the one card and note on this collection
-        note_id = self.collection.findNotes('')[0]
-        card_id = self.collection.findCards('')[0]
-
-        self.collection.sched.reset()
-
-        # get the card in Polish so we can test translation too
-        anki.lang.setLang('pl')
-        try:
-            ret = self.execute('next_card', {})
-        finally:
-            anki.lang.setLang('en')
-
-        self.assertEqual(ret['id'], card_id)
-        self.assertEqual(ret['nid'], note_id)
-        self.assertEqual(ret['question'], '<style>.card {\n font-family: arial;\n font-size: 20px;\n text-align: center;\n color: black;\n background-color: white;\n}\n</style>The front')
-        self.assertEqual(ret['answer'], '<style>.card {\n font-family: arial;\n font-size: 20px;\n text-align: center;\n color: black;\n background-color: white;\n}\n</style>The front\n\n<hr id=answer>\n\nThe back')
-        self.assertEqual(ret['answer_buttons'], [
-          {'ease': 1,
-           'label': 'Again',
-           'string_label': u'Znowu',
-           'interval': 60,
-           'string_interval': '<1 minuta'},
-          {'ease': 2,
-           'label': 'Good',
-           'string_label': u'Dobra',
-           'interval': 600,
-           'string_interval': '<10 minut'},
-          {'ease': 3,
-           'label': 'Easy',
-           'string_label': u'Łatwa',
-           'interval': 345600,
-           'string_interval': '4 dni'}])
-
-    def test_next_card_five_times(self):
-        self.add_default_note(5)
-        for idx in range(0, 5):
-            ret = self.execute('next_card', {})
-            self.assertTrue(ret is not None)
+        self.mock_app.execute_handler.assert_called_with('collection', 'next_card', self.collection, RestHandlerRequest(self.mock_app, {'deck': '1'}, ['collection_name'], {}))
 
 if __name__ == '__main__':
     unittest.main()
