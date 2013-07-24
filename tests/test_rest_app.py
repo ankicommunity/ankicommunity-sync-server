@@ -265,6 +265,16 @@ class CollectionHandlerTest(CollectionTestBase):
             # return everything to normal!
             anki.lang.setLang('en')
 
+    def test_reset_scheduler(self):
+        self.add_default_note(3)
+
+        ret = self.execute('reset_scheduler', {'deck': 'Default'})
+        self.assertEqual(ret, {
+            'new_cards': 3,
+            'learning_cards': 0,
+            'review_cards': 0,
+        })
+
     def test_next_card(self):
         ret = self.execute('next_card', {})
         self.assertEqual(ret, None)
@@ -488,12 +498,26 @@ class DeckHandlerTest(CollectionTestBase):
         req = RestHandlerRequest(self.mock_app, data, ids, {})
         return func(self.collection, req)
 
+    def test_index(self):
+        ret = self.execute('index', {})
+        #pprint(ret)
+        self.assertEqual(ret['name'], 'Default')
+        self.assertEqual(ret['id'], 1)
+        self.assertEqual(ret['dyn'], False)
+
     def test_next_card(self):
         self.mock_app.execute_handler.return_value = None
 
         ret = self.execute('next_card', {})
         self.assertEqual(ret, None)
         self.mock_app.execute_handler.assert_called_with('collection', 'next_card', self.collection, RestHandlerRequest(self.mock_app, {'deck': '1'}, ['collection_name'], {}))
+
+    def test_get_conf(self):
+        ret = self.execute('get_conf', {})
+        #pprint(ret)
+        self.assertEqual(ret['name'], 'Default')
+        self.assertEqual(ret['id'], 1)
+        self.assertEqual(ret['dyn'], False)
 
 class CardHandlerTest(CollectionTestBase):
     def setUp(self):

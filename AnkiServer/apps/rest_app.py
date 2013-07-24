@@ -353,9 +353,23 @@ class CollectionHandler(RestHandlerBase):
     # SCHEDULER - Controls card review, ie. intervals, what cards are due, answering a card, etc.
     #
 
-    @noReturnValue
     def reset_scheduler(self, col, req):
+        if req.data.has_key('deck'):
+            deck = DeckHandler._get_deck(col, req.data['deck'])
+            col.decks.select(deck['id'])
+
         col.sched.reset()
+        counts = col.sched.counts()
+        return {
+            'new_cards': counts[0],
+            'learning_cards': counts[1],
+            'review_cards': counts[1],
+        }
+
+    def extend_scheduler_limits(self, col, req):
+        new_cards = int(req.data.get('new_cards', 0))
+        review_cards = int(req.data.get('review_cards', 0))
+        col.sched.extendLimits(new_cards, review_cards)
 
     button_labels = ['Easy', 'Good', 'Hard']
 
@@ -548,6 +562,9 @@ class DeckHandler(RestHandlerBase):
             raise HTTPNotFound('No deck with id or name: ' + str(val))
 
         return deck
+
+    def index(self, col, req):
+        return self._get_deck(col, req.ids[1])
     
     def next_card(self, col, req):
         req_copy = req.copy()
@@ -556,6 +573,21 @@ class DeckHandler(RestHandlerBase):
 
         # forward this to the CollectionHandler
         return req.app.execute_handler('collection', 'next_card', col, req_copy)
+
+    def get_conf(self, col, req):
+        # TODO: should probably live in a ConfHandler
+        return col.decks.confForDid(req.ids[1])
+
+    @noReturnValue
+    def set_update_conf(self, col, req):
+        data = req.data.copy()
+        del data['id']
+
+        conf = col.decks.confForDid(req.ids[1])
+        conf = conf.copy()
+        conf.update(data)
+
+        col.decks.updateConf(conf)
 
 class CardHandler(RestHandlerBase):
     """Default handler group for 'card' type."""
