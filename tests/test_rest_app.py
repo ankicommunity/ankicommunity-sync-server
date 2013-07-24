@@ -252,6 +252,16 @@ class CollectionHandlerTest(CollectionTestBase):
         self.assertEqual(note['Back'], 'The back')
         self.assertEqual(note.tags, ['Tag1', 'Tag2'])
 
+    def test_list_tags(self):
+        ret = self.execute('list_tags', {})
+        self.assertEqual(ret, [])
+
+        self.add_default_note()
+
+        ret = self.execute('list_tags', {})
+        ret.sort()
+        self.assertEqual(ret, ['Tag1', 'Tag2'])
+
     def test_set_language(self):
         import anki.lang
 

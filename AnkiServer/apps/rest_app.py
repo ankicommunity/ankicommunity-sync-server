@@ -321,6 +321,9 @@ class CollectionHandler(RestHandlerBase):
 
         col.addNote(note)
 
+    def list_tags(self, col, req):
+        return col.tags.all()
+
     #
     # DECKS - Groups of cards
     #
