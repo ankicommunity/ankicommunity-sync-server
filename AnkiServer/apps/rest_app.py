@@ -14,6 +14,7 @@ except ImportError:
 
 import os, logging
 
+import anki.consts
 import anki.lang
 from anki.lang import _ as t
 
@@ -335,6 +336,48 @@ class CollectionHandler(RestHandlerBase):
     @noReturnValue
     def select_deck(self, col, req):
         col.decks.select(req.data['deck_id'])
+
+    dyn_modes = {
+        'random': anki.consts.DYN_RANDOM,
+        'added': anki.consts.DYN_ADDED,
+        'due': anki.consts.DYN_DUE,
+    }
+
+    def create_dynamic_deck(self, col, req):
+        name = req.data.get('name', t('Custom Study Session'))
+        deck = col.decks.byName(name)
+        if deck:
+            if not deck['dyn']:
+                raise HTTPBadRequest("There is an existing non-dynamic deck with the name %s" % name)
+            
+            # safe to empty it because it's a dynamic deck
+            # TODO: maybe this should be an option?
+            col.sched.emptyDyn(deck['id'])
+        else:
+            deck = col.decks.get(col.decks.newDyn(name))
+
+        query = req.data.get('query', '')
+        count = req.data.get('count', 100)
+        mode = req.data.get('mode', 'random') 
+
+        try:
+            mode = self.dyn_modes[mode]
+        except KeyError:
+            raise HTTPBadRequest("Unknown mode: %s" % mode)
+
+        deck['terms'][0] = [query, count, mode]
+
+        if mode != anki.consts.DYN_RANDOM:
+            deck['resched'] = True
+        else:
+            deck['resched'] = False
+
+        if not col.sched.rebuildDyn(deck['id']):
+            raise HTTPBadRequest("No cards matched the criteria you provided")
+
+        col.decks.save(deck)
+
+        return deck
 
     #
     # CARD - A specific card in a deck with a history of review (generated from

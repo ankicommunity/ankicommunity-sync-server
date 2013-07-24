@@ -179,6 +179,22 @@ class CollectionHandlerTest(CollectionTestBase):
         ret = self.execute('select_deck', data)
         self.assertEqual(ret, None);
 
+    def test_create_dynamic_deck_simple(self):
+        self.add_default_note(5)
+
+        data = {
+            'name': 'Dyn deck',
+            'mode': 'random',
+            'count': 2,
+            'query': "deck:\"Default\" (tag:'Tag1' or tag:'Tag2') (-tag:'Tag3')",
+        }
+        ret = self.execute('create_dynamic_deck', data)
+        self.assertEqual(ret['name'], 'Dyn deck')
+        self.assertEqual(ret['dyn'], True)
+
+        cards = self.collection.findCards('deck:"Dyn deck"')
+        self.assertEqual(len(cards), 2)
+
     def test_list_models(self):
         data = {}
         ret = self.execute('list_models', data)
