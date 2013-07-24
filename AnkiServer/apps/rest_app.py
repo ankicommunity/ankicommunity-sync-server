@@ -357,7 +357,7 @@ class CollectionHandler(RestHandlerBase):
             deck = col.decks.get(col.decks.newDyn(name))
 
         query = req.data.get('query', '')
-        count = req.data.get('count', 100)
+        count = int(req.data.get('count', 100))
         mode = req.data.get('mode', 'random') 
 
         try:
@@ -376,6 +376,7 @@ class CollectionHandler(RestHandlerBase):
             raise HTTPBadRequest("No cards matched the criteria you provided")
 
         col.decks.save(deck)
+        col.sched.reset()
 
         return deck
 
