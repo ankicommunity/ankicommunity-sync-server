@@ -370,6 +370,7 @@ class CollectionHandler(RestHandlerBase):
         new_cards = int(req.data.get('new_cards', 0))
         review_cards = int(req.data.get('review_cards', 0))
         col.sched.extendLimits(new_cards, review_cards)
+        col.sched.reset()
 
     button_labels = ['Easy', 'Good', 'Hard']
 
