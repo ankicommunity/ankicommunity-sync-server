@@ -695,6 +695,10 @@ class CardHandler(RestHandlerBase):
     def remove_tags(self, col, req):
         self._forward_to_note(col, req, 'remove_tags')
 
+    def stats_report(self, col, req):
+        card = col.getCard(req.ids[1])
+        return col.cardStats(card)
+
 # Our entry point
 def make_app(global_conf, **local_conf):
     # TODO: we should setup the default language from conf!
