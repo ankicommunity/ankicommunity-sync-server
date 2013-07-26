@@ -387,7 +387,8 @@ class CollectionHandler(RestHandlerBase):
 
     def find_cards(self, col, req):
         query = req.data.get('query', '')
-        ids = col.findCards(query)
+        order = req.data.get('order', False)
+        ids = anki.find.Finder(col).findCards(query, order)
 
         if req.data.get('preload', False):
             cards = [CardHandler._serialize(col.getCard(id), req.data) for id in ids]
