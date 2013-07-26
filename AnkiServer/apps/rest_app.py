@@ -499,8 +499,11 @@ class CollectionHandler(RestHandlerBase):
 
     def stats_report(self, col, req):
         import anki.stats
+        import re
 
         stats = anki.stats.CollectionStats(col)
+        stats.width = int(req.data.get('width', 600))
+        stats.height = int(req.data.get('height', 200))
         reports = req.data.get('reports', self.stats_reports_order)
         include_css = req.data.get('include_css', False)
         include_jquery = req.data.get('include_jquery', False)
@@ -508,7 +511,7 @@ class CollectionHandler(RestHandlerBase):
 
         if include_css:
             from anki.statsbg import bg
-            html = stats.css() % bg
+            html = stats.css % bg
         else:
             html = ''
 
@@ -516,11 +519,14 @@ class CollectionHandler(RestHandlerBase):
             if not self.stats_reports.has_key(name):
                 raise HTTPBadRequest("Unknown report name: %s" % name)
             func = getattr(stats, self.stats_reports[name])
-            html = html + func()
+
+            html += '<div class="anki-graph anki-graph-%s">' % name
+            html += func()
+            html += '</div>'
 
         # fix an error in some inline styles
         # TODO: submit a patch to Anki!
-        html = html.replace('width:600; height:200;', 'width:600px; height:200px')
+        html = re.sub(r'style="width:([0-9\.]+); height:([0-9\.]+);"', r'style="width:\1px; height: \2px;"', html)
 
         scripts = []
         if include_jquery or include_flot:
