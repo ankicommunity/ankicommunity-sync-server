@@ -390,9 +390,9 @@ class CollectionHandler(RestHandlerBase):
         ids = col.findCards(query)
 
         if req.data.get('preload', False):
-            cards = [CardHandler._serialize(col.getCard(id), req.data) for id in req.ids]
+            cards = [CardHandler._serialize(col.getCard(id), req.data) for id in ids]
         else:
-            cards = [{'id': id} for id in req.ids]
+            cards = [{'id': id} for id in ids]
 
         return cards
 
@@ -645,8 +645,9 @@ class CardHandler(RestHandlerBase):
         d = {
             'id': card.id,
             'isEmpty': card.isEmpty(),
-            'question': card.q(),
-            'answer': card.a(),
+            'css': card.css(),
+            'question': card._getQA()['q'],
+            'answer': card._getQA()['a'],
             'did': card.did,
             'due': card.due,
             'factor': card.factor,
