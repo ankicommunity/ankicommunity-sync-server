@@ -677,21 +677,21 @@ class CardHandler(RestHandlerBase):
         card = col.getCard(req.ids[1])
         return self._serialize(card, req.data)
 
-    def _forward_to_note(self, card_id, name):
-        card = col.getCard(card_id)
+    def _forward_to_note(self, col, req, name):
+        card = col.getCard(req.ids[1])
 
         req_copy = req.copy()
         req_copy.ids[1] = card.nid
 
-        return self.app.execute_handler('note', name, col, req)
+        return req.app.execute_handler('note', name, col, req)
 
     @noReturnValue
     def add_tags(self, col, req):
-        self._forward_to_note(req.ids[1], 'add_tags')
+        self._forward_to_note(col, req, 'add_tags')
 
     @noReturnValue
     def remove_tags(self, col, req):
-        self._forward_to_note(req.ids[1], 'remove_tags')
+        self._forward_to_note(col, req, 'remove_tags')
 
 # Our entry point
 def make_app(global_conf, **local_conf):
