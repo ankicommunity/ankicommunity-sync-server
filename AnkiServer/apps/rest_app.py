@@ -485,6 +485,55 @@ class CollectionHandler(RestHandlerBase):
         card_ids = req.data['ids']
         col.sched.unsuspendCards(card_ids)
 
+    stats_reports = {
+      'today': 'todayStats',
+      'due': 'dueGraph',
+      'reps': 'repsGraph',
+      'interval': 'ivlGraph',
+      'hourly': 'hourGraph',
+      'ease': 'easeGraph',
+      'card': 'cardGraph',
+      'footer': 'footer',
+    }
+    stats_reports_order = ['today', 'due', 'reps', 'interval', 'hourly', 'ease', 'card', 'footer']
+
+    def stats_report(self, col, req):
+        import anki.stats
+
+        stats = anki.stats.CollectionStats(col)
+        reports = req.data.get('reports', self.stats_reports_order)
+        include_css = req.data.get('include_css', False)
+        include_jquery = req.data.get('include_jquery', False)
+        include_flot = req.data.get('include_flot', False)
+
+        if include_css:
+            from anki.statsbg import bg
+            html = stats.css() % bg
+        else:
+            html = ''
+
+        for name in reports:
+            if not self.stats_reports.has_key(name):
+                raise HTTPBadRequest("Unknown report name: %s" % name)
+            func = getattr(stats, self.stats_reports[name])
+            html = html + func()
+
+        # fix an error in some inline styles
+        # TODO: submit a patch to Anki!
+        html = html.replace('width:600; height:200;', 'width:600px; height:200px')
+
+        scripts = []
+        if include_jquery or include_flot:
+            import anki.js
+            if include_jquery:
+                scripts.append(anki.js.jquery)
+            if include_flot:
+                scripts.append(anki.js.plot)
+        if len(scripts) > 0:
+            html = "<script>%s\n</script>" % ''.join(scripts) + html
+
+        return html
+
     #
     # GLOBAL / MISC
     #
