@@ -527,6 +527,7 @@ class CollectionHandler(RestHandlerBase):
         # fix an error in some inline styles
         # TODO: submit a patch to Anki!
         html = re.sub(r'style="width:([0-9\.]+); height:([0-9\.]+);"', r'style="width:\1px; height: \2px;"', html)
+        html = re.sub(r'-webkit-transform: ([^;]+);', r'-webkit-transform: \1; -moz-transform: \1; -ms-transform: \1; -o-transform: \1; transform: \1;', html)
 
         scripts = []
         if include_jquery or include_flot:
