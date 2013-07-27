@@ -485,6 +485,23 @@ class CollectionHandler(RestHandlerBase):
         card_ids = req.data['ids']
         col.sched.unsuspendCards(card_ids)
 
+    def cards_recent_ease(self, col, req):
+        """Returns the most recent ease for each card."""
+
+        # TODO: Use sqlalchemy to build this query!
+        sql = "SELECT r.cid, r.ease, r.id FROM revlog AS r INNER JOIN (SELECT cid, MAX(id) AS id FROM revlog GROUP BY cid) AS q ON r.cid = q.cid AND r.id = q.id"
+        where = []
+        if req.data.has_key('ids'):
+            where.append('ids IN (' + (','.join(["'%s'" % x for x in req.data['ids']])) + ')')
+        if len(where) > 0:
+            sql += ' WHERE ' + ' AND '.join(where)
+
+        result = []
+        for r in col.db.all(sql):
+            result.append({'id': r[0], 'ease': r[1], 'timestamp': int(r[2] / 1000)})
+
+        return result
+
     stats_reports = {
       'today': 'todayStats',
       'due': 'dueGraph',

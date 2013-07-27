@@ -408,6 +408,24 @@ class CollectionHandlerTest(CollectionTestBase):
         card = self.collection.sched.getCard()
         self.assertEqual(card.id, card_id)
 
+    def test_cards_recent_ease(self):
+        self.add_default_note()
+        card_id = self.collection.findCards('')[0]
+
+        # answer the card
+        self.collection.reset()
+        card = self.collection.sched.getCard()
+        card.startTimer()
+        # answer multiple times to see that we only get the latest!
+        self.collection.sched.answerCard(card, 1)
+        self.collection.sched.answerCard(card, 3)
+        self.collection.sched.answerCard(card, 2)
+
+        # pull the latest revision
+        ret = self.execute('cards_recent_ease', {})
+        self.assertEqual(ret[0]['id'], card_id)
+        self.assertEqual(ret[0]['ease'], 2)
+
 class ImportExportHandlerTest(CollectionTestBase):
     export_rows = [
         ['Card front 1', 'Card back 1', 'Tag1 Tag2'],
