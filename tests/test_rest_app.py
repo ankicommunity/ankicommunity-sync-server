@@ -129,6 +129,7 @@ class CollectionTestBase(unittest.TestCase):
         shutil.rmtree(self.temp_dir)
         self.mock_app.reset_mock()
 
+    # TODO: refactor into some kind of utility
     def add_note(self, data):
         from anki.notes import Note
 
@@ -143,6 +144,7 @@ class CollectionTestBase(unittest.TestCase):
 
         self.collection.addNote(note)
 
+    # TODO: refactor into a parent class
     def add_default_note(self, count=1):
         data = {
             'model': 'Basic',
