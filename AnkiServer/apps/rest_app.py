@@ -303,11 +303,29 @@ class CollectionHandler(RestHandlerBase):
         ids = col.findNotes(query)
 
         if req.data.get('preload', False):
-            nodes = [NoteHandler._serialize(col.getNote(id)) for id in ids]
+            notes = [NoteHandler._serialize(col.getNote(id)) for id in ids]
         else:
-            nodes = [{'id': id} for id in ids]
+            notes = [{'id': id} for id in ids]
 
-        return nodes
+        return notes
+
+    def latest_notes(self, col, req):
+        # TODO: use SQLAlchemy objects to do this
+        sql = "SELECT n.id FROM notes AS n";
+        args = []
+        if req.data.has_key('updated_since'):
+            sql += ' WHERE n.mod > ?'
+            args.append(req.data['updated_since'])
+        sql += ' ORDER BY n.mod DESC'
+        sql += ' LIMIT ' + str(req.data.get('limit', 10))
+        ids = col.db.list(sql, *args)
+
+        if req.data.get('preload', False):
+            notes = [NoteHandler._serialize(col.getNote(id)) for id in ids]
+        else:
+            notes = [{'id': id} for id in ids]
+
+        return notes
 
     @noReturnValue
     def add_note(self, col, req):
