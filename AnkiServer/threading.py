@@ -79,7 +79,7 @@ class ThreadingCollectionWrapper(object):
                     ret = self.wrapper.execute(func, args, kw, return_queue)
                 except Exception, e:
                     logging.error('CollectionThread[%s]: Unable to %s(*%s, **%s): %s',
-                        self.path, func.func_name, repr(args), repr(kw), e, exc_info=True)
+                        self.path, func_name, repr(args), repr(kw), e, exc_info=True)
                     # we return the Exception which will be raise'd on the other end
                     ret = e
 
