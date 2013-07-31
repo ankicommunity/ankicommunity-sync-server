@@ -422,6 +422,24 @@ class CollectionHandler(RestHandlerBase):
 
         return cards
 
+    def latest_cards(self, col, req):
+        # TODO: use SQLAlchemy objects to do this
+        sql = "SELECT c.id FROM notes AS n INNER JOIN cards AS c ON c.nid = n.id";
+        args = []
+        if req.data.has_key('updated_since'):
+            sql += ' WHERE n.mod > ?'
+            args.append(req.data['updated_since'])
+        sql += ' ORDER BY n.mod DESC'
+        sql += ' LIMIT ' + str(req.data.get('limit', 10))
+        ids = col.db.list(sql, *args)
+
+        if req.data.get('preload', False):
+            cards = [CardHandler._serialize(col.getCard(id)) for id in ids]
+        else:
+            cards = [{'id': id} for id in ids]
+
+        return cards
+
     #
     # SCHEDULER - Controls card review, ie. intervals, what cards are due, answering a card, etc.
     #
