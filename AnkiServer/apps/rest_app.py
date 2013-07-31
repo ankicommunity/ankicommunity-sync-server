@@ -753,7 +753,16 @@ class CardHandler(RestHandlerBase):
         if opts.get('load_deck', False):
             d['deck'] = card.col.decks.get(card.did)
 
+        if opts.get('load_latest_revlog', False):
+            d['latest_revlog'] = CardHandler._latest_revlog(card.col, card.id)
+
         return d
+
+    @staticmethod
+    def _latest_revlog(col, card_id):
+        r = col.db.first("SELECT r.id, r.ease FROM revlog AS r WHERE r.cid = ? ORDER BY id DESC LIMIT 1", card_id)
+        if r:
+            return {'id': r[0], 'ease': r[1], 'timestamp': int(r[0] / 1000)}
 
     def index(self, col, req):
         card = col.getCard(req.ids[1])
@@ -778,6 +787,9 @@ class CardHandler(RestHandlerBase):
     def stats_report(self, col, req):
         card = col.getCard(req.ids[1])
         return col.cardStats(card)
+
+    def latest_revlog(self, col, req):
+        return self._latest_revlog(col, req.ids[1])
 
 # Our entry point
 def make_app(global_conf, **local_conf):
