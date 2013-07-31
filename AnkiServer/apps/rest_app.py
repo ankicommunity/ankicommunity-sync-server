@@ -434,7 +434,7 @@ class CollectionHandler(RestHandlerBase):
         ids = col.db.list(sql, *args)
 
         if req.data.get('preload', False):
-            cards = [CardHandler._serialize(col.getCard(id)) for id in ids]
+            cards = [CardHandler._serialize(col.getCard(id), req.data) for id in ids]
         else:
             cards = [{'id': id} for id in ids]
 
