@@ -33,6 +33,15 @@ class RestAppTest(unittest.TestCase):
         self.collection_manager = None
         self.rest_app = None
         shutil.rmtree(self.temp_dir)
+    
+    def test_list_collections(self):
+        os.mkdir(os.path.join(self.temp_dir, 'test1'))
+        os.mkdir(os.path.join(self.temp_dir, 'test2'))
+
+        with open(os.path.join(self.temp_dir, 'test1', 'collection.anki2'), 'wt') as fd:
+            fd.write('Testing!')
+
+        self.assertEqual(self.rest_app.list_collections(), ['test1'])
 
     def test_parsePath(self):
         tests = [

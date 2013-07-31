@@ -120,6 +120,10 @@ class RestApp(object):
         if hasReturnValue:
             return ret
 
+    def list_collections(self):
+        """Returns an array of valid collection names in our self.data_path."""
+        return [x for x in os.listdir(self.data_root) if os.path.exists(os.path.join(self.data_root, x, 'collection.anki2'))]
+
     def _checkRequest(self, req):
         """Raises an exception if the request isn't allowed or valid for some reason."""
         if self.allowed_hosts != '*':
@@ -233,6 +237,9 @@ class RestApp(object):
     def __call__(self, req):
         # make sure the request is valid
         self._checkRequest(req)
+
+        if req.path == '/list_collections':
+            return Response(json.dumps(self.list_collections()), content_type='application/json')
 
         # parse the path
         type, name, ids = self._parsePath(req.path)
