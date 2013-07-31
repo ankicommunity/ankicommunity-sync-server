@@ -72,16 +72,16 @@ def _importNotes(self):
             # note we have the added the guid
             self._notes[note[GUID]] = (note[0], note[3], note[MID])
         else:
+            dupes += 1
+
             # update existing note
             newer = note[3] > mod
             if self.allowUpdate and self._mid(mid) == mid and newer:
-                localNid = self._notes[guid][0]
+                localNid = self._notes[note[GUID]][0]
                 note[0] = localNid
                 note[4] = usn
                 add.append(note)
                 dirty.append(note[0])
-            else:
-                dupes += 1
 
     if dupes:
         self.log.append(_("Already in collection: %s.") % (ngettext(
