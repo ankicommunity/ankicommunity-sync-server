@@ -3,6 +3,9 @@ from webob.dec import wsgify
 from webob.exc import *
 from webob import Response
 
+import sqlite3
+import hashlib
+
 import AnkiServer
 
 import anki
@@ -74,7 +77,7 @@ class SyncUserSession(object):
 
     def get_collection_path(self):
         return os.path.realpath(os.path.join(self.path, 'collection.anki2'))
-    
+
     def get_thread(self):
         return self.collection_manager.get_collection(self.get_collection_path())
 
@@ -116,8 +119,24 @@ class SyncApp(object):
         Override this to change how users are authenticated.
         """
 
-        # TODO: This should have the exact opposite default ;-)
-        return True
+        conn = sqlite3.connect("auth.db")
+        cursor = conn.cursor()
+        param = (username,)
+
+        cursor.execute("SELECT hash FROM auth WHERE user=?", param)
+
+        db_ret = cursor.fetchone()
+
+        if db_ret != None:
+            db_hash = str(db_ret[0])
+
+            salt = db_hash[-16:]
+
+            hashobj = hashlib.sha256()
+
+            hashobj.update(username+password+salt)
+
+        return (db_ret != None and hashobj.hexdigest()+salt == db_hash)
 
     def username2dirname(self, username):
         """
@@ -127,7 +146,7 @@ class SyncApp(object):
         """
 
         return username
-    
+
     def generateHostKey(self, username):
         """Generates a new host key to be used by the given username to identify their session.
         This values is random."""
@@ -209,7 +228,7 @@ class SyncApp(object):
                 # Bad JSON
                 raise HTTPBadRequest()
             print 'data:', data
-            
+
             if url == 'hostKey':
                 try:
                     u = data['u']
@@ -268,7 +287,7 @@ class SyncApp(object):
 
                 if url == 'finish':
                     self.delete_session(hkey)
-        
+
                 return Response(
                     status='200 OK',
                     content_type='application/json',
