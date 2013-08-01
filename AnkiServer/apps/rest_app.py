@@ -228,6 +228,10 @@ class RestApp(object):
             logging.error(req.path+': Unable to parse JSON: '+str(e), exc_info=True)
             raise HTTPBadRequest()
 
+        # fix for a JSON encoding 'quirk' in PHP
+        if type(data) == list and len(data) == 0:
+            data = {}
+
         # make the keys into non-unicode strings
         data = dict([(str(k), v) for k, v in data.items()])
 
@@ -553,7 +557,7 @@ class CollectionHandler(RestHandlerBase):
         args = []
         if req.data.has_key('updated_since'):
             sql += ' WHERE r.id > ?'
-            args.append(req.data['updated_since'] * 1000)
+            args.append(long(req.data['updated_since']) * 1000)
         sql += ' ORDER BY r.id DESC'
         sql += ' LIMIT ' + str(req.data.get('limit', 100))
 
