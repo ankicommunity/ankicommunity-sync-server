@@ -517,8 +517,10 @@ class CollectionHandler(RestHandlerBase):
         ease = int(req.data['ease'])
 
         card = col.getCard(card_id)
-        if card.timerStarted is None:
-            card.timerStarted = float(req.data.get('timeStarted', time.time()))
+        if req.data.has_key('timerStarted'):
+            card.timerStarted = float(req.data['timerStarted'])
+        else:
+            card.timerStarted = time.time()
 
         col.sched.answerCard(card, ease)
 
