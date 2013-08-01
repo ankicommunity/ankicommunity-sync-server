@@ -545,6 +545,32 @@ class CollectionHandler(RestHandlerBase):
 
         return result
 
+    def latest_revlog(self, col, req):
+        """Returns recent entries from the revlog."""
+
+        # TODO: Use sqlalchemy to build this query!
+        sql = "SELECT r.id, r.ease, r.cid, r.usn, r.ivl, r.lastIvl, r.factor, r.time, r.type FROM revlog AS r"
+        args = []
+        if req.data.has_key('updated_since'):
+            sql += ' WHERE r.id > ?'
+            args.append(req.data['updated_since'] * 1000)
+        sql += ' ORDER BY r.id DESC'
+        sql += ' LIMIT ' + str(req.data.get('limit', 100))
+
+        revlog = col.db.all(sql, *args)
+        return [{
+            'id': r[0],
+            'ease': r[1],
+            'timestamp': int(r[0] / 1000),
+            'card_id': r[2],
+            'usn': r[3],
+            'interval': r[4],
+            'last_interval': r[5],
+            'factor': r[6],
+            'time': r[7],
+            'type': r[8],
+        } for r in revlog]
+
     stats_reports = {
       'today': 'todayStats',
       'due': 'dueGraph',
