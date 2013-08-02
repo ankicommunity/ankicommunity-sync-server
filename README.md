@@ -21,6 +21,7 @@ Instructions for installing and running AnkiServer:
     the dependencies we need there:
 
       $ virtualenv AnkiServer.env
+
       $ AnkiServer.env/bin/easy_install webob PasteDeploy PasteScript sqlalchemy simplejson
 
  3. Download and install libanki.  You can find the latest release of Anki here:
@@ -46,7 +47,7 @@ Instructions for installing and running AnkiServer:
 
  6. Create authentication database:
 
-      $ sqlite3 auth.db 'create table auth (user varchar primary key, hash varchar)'
+      $ sqlite3 auth.db 'CREATE TABLE auth (user VARCHAR PRIMARY KEY, hash VARCHAR)'
 
  7. Create user:
 
@@ -56,11 +57,11 @@ Instructions for installing and running AnkiServer:
 
       $ SALT=$(openssl rand -hex 8)
 
-      $ HASH=$(echo -n $USER$PASS$SALT | sha256sum | sed 's/[ ]*-$//')$SALT
+      $ HASH=$(echo -n "$USER$PASS$SALT" | sha256sum | sed 's/[ ]*-$//')$SALT
 
       $ sqlite3 test.db "INSERT INTO auth VALUES ('$USER', '$HASH')"
 
-      $ mkdir -p collections/$USER
+      $ mkdir -p "collections/$USER"
 
       $ unset USER PASS SALT HASH
 
