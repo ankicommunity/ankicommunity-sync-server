@@ -120,24 +120,7 @@ class SyncApp(object):
         Override this to change how users are authenticated.
         """
 
-        conn = sqlite3.connect(self.auth_db_path)
-        cursor = conn.cursor()
-        param = (username,)
-
-        cursor.execute("SELECT hash FROM auth WHERE user=?", param)
-
-        db_ret = cursor.fetchone()
-
-        if db_ret != None:
-            db_hash = str(db_ret[0])
-
-            salt = db_hash[-16:]
-
-            hashobj = hashlib.sha256()
-
-            hashobj.update(username+password+salt)
-
-        return (db_ret != None and hashobj.hexdigest()+salt == db_hash)
+        return False
 
     def username2dirname(self, username):
         """
@@ -313,9 +296,30 @@ class SyncApp(object):
 
         return Response(status='200 OK', content_type='text/plain', body='Anki Sync Server')
 
+class DatabaseAuthSyncApp(SyncApp):
+    def authenticate(self, username, password):
+        """Returns True if this username is allowed to connect with this password. False otherwise."""
+
+        conn = sqlite3.connect(self.auth_db_path)
+        cursor = conn.cursor()
+        param = (username,)
+
+        cursor.execute("SELECT hash FROM auth WHERE user=?", param)
+
+        db_ret = cursor.fetchone()
+
+        if db_ret != None:
+            db_hash = str(db_ret[0])
+            salt = db_hash[-16:]
+            hashobj = hashlib.sha256()
+
+            hashobj.update(username+password+salt)
+
+        return (db_ret != None and hashobj.hexdigest()+salt == db_hash)
+
 # Our entry point
 def make_app(global_conf, **local_conf):
-    return SyncApp(**local_conf)
+    return DatabaseAuthSyncApp(**local_conf)
 
 def main():
     from wsgiref.simple_server import make_server
