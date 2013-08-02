@@ -186,7 +186,7 @@ class CollectionHandlerTest(CollectionTestBase):
         self.assertEqual(ret[0]['name'], 'Default')
 
     def test_select_deck(self):
-        data = {'deck_id': '1'}
+        data = {'deck': 1}
         ret = self.execute('select_deck', data)
         self.assertEqual(ret, None);
 

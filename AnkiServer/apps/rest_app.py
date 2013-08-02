@@ -364,7 +364,8 @@ class CollectionHandler(RestHandlerBase):
 
     @noReturnValue
     def select_deck(self, col, req):
-        col.decks.select(req.data['deck_id'])
+        deck = DeckHandler._get_deck(col, req.data['deck'])
+        col.decks.select(deck['id'])
 
     dyn_modes = {
         'random': anki.consts.DYN_RANDOM,
@@ -408,6 +409,18 @@ class CollectionHandler(RestHandlerBase):
         col.sched.reset()
 
         return deck
+
+    def empty_dynamic_deck(self, col, req):
+        name = req.data.get('name', t('Custom Study Session'))
+        deck = col.decks.byName(name)
+
+        if not deck:
+            raise HTTPBadRequest("Cannot find a deck with the given name: %s" % name)
+
+        if not deck['dyn']:
+            raise HTTPBadRequest("The given deck is not dynamic: %s" % name)
+            
+        col.sched.emptyDyn(deck['id'])
 
     #
     # CARD - A specific card in a deck with a history of review (generated from
