@@ -99,7 +99,7 @@ class SyncApp(object):
 
         self.data_root = os.path.abspath(kw.get('data_root', '.'))
         self.base_url  = kw.get('base_url', '/')
-	self.auth_db_path = os.path.abspath(kw.get('auth_db_path', '.'))
+        self.auth_db_path = os.path.abspath(kw.get('auth_db_path', '.'))
         self.sessions = {}
 
         try:
