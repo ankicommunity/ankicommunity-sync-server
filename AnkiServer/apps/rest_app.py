@@ -17,6 +17,7 @@ import os, logging
 import anki.consts
 import anki.lang
 from anki.lang import _ as t
+from anki.utils import intTime
 
 __all__ = ['RestApp', 'RestHandlerBase', 'noReturnValue']
 
@@ -746,16 +747,36 @@ class NoteHandler(RestHandlerBase):
     @noReturnValue
     def add_tags(self, col, req):
         note = col.getNote(req.ids[1])
+
+        # optionally, we can prevent note.mod from getting updated -
+        # this is useful when adding the 'marked' tag or other changes
+        # we don't want to really "count"
+        if req.data.get('update_mod', True):
+            mod = intTime()
+        else:
+            mod = note.mod
+
         for tag in req.data['tags']:
             note.addTag(tag)
-        note.flush()
+
+        note.flush(mod)
 
     @noReturnValue
     def remove_tags(self, col, req):
         note = col.getNote(req.ids[1])
+
+        # optionally, we can prevent note.mod from getting updated -
+        # this is useful when adding the 'marked' tag or other changes
+        # we don't want to really "count"
+        if req.data.get('update_mod', True):
+            mod = intTime()
+        else:
+            mod = note.mod
+
         for tag in req.data['tags']:
             note.delTag(tag)
-        note.flush()
+
+        note.flush(mod)
 
 class DeckHandler(RestHandlerBase):
     """Default handler group for 'deck' type."""

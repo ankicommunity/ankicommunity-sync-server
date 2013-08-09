@@ -5,6 +5,7 @@ import shutil
 import tempfile
 import unittest
 import logging
+import time
 from pprint import pprint
 
 import mock
@@ -523,25 +524,61 @@ class NoteHandlerTest(CollectionTestBase):
         self.add_default_note()
         note_id = self.collection.findNotes('')[0]
         note = self.collection.getNote(note_id)
+        old_mod = note.mod
         self.assertFalse('NT1' in note.tags)
         self.assertFalse('NT2' in note.tags)
 
+        time.sleep(1)
         self.execute('add_tags', {'tags': ['NT1', 'NT2']}, note_id)
         note = self.collection.getNote(note_id)
         self.assertTrue('NT1' in note.tags)
         self.assertTrue('NT2' in note.tags)
+        self.assertTrue(note.mod > old_mod)
+
+    def test_add_tags_no_mod_update(self):
+        self.add_default_note()
+        note_id = self.collection.findNotes('')[0]
+        note = self.collection.getNote(note_id)
+        old_mod = note.mod
+        self.assertFalse('NT1' in note.tags)
+        self.assertFalse('NT2' in note.tags)
+
+        time.sleep(1)
+        self.execute('add_tags', {'tags': ['NT1', 'NT2'], 'update_mod': False}, note_id)
+        note = self.collection.getNote(note_id)
+        self.assertTrue('NT1' in note.tags)
+        self.assertTrue('NT2' in note.tags)
+        self.assertEqual(note.mod, old_mod)
 
     def test_remove_tags(self):
         self.add_default_note()
         note_id = self.collection.findNotes('')[0]
         note = self.collection.getNote(note_id)
+        old_mod = note.mod
         self.assertTrue('Tag1' in note.tags)
         self.assertTrue('Tag2' in note.tags)
 
+        time.sleep(1)
         self.execute('remove_tags', {'tags': ['Tag1', 'Tag2']}, note_id)
         note = self.collection.getNote(note_id)
         self.assertFalse('Tag1' in note.tags)
         self.assertFalse('Tag2' in note.tags)
+        self.assertTrue(note.mod > old_mod)
+
+    def test_remove_tags_no_mod_update(self):
+        self.add_default_note()
+        note_id = self.collection.findNotes('')[0]
+        note = self.collection.getNote(note_id)
+        old_mod = note.mod
+        self.assertTrue('Tag1' in note.tags)
+        self.assertTrue('Tag2' in note.tags)
+
+        time.sleep(1)
+        self.execute('remove_tags', {'tags': ['Tag1', 'Tag2'], 'update_mod': False}, note_id)
+        note = self.collection.getNote(note_id)
+        self.assertFalse('Tag1' in note.tags)
+        self.assertFalse('Tag2' in note.tags)
+        self.assertEqual(note.mod, old_mod)
 
 class DeckHandlerTest(CollectionTestBase):
     def setUp(self):
