@@ -59,7 +59,7 @@ Instructions for installing and running AnkiServer:
 
       $ HASH=$(echo -n "$USER$PASS$SALT" | sha256sum | sed 's/[ ]*-$//')$SALT
 
-      $ sqlite3 test.db "INSERT INTO auth VALUES ('$USER', '$HASH')"
+      $ sqlite3 auth.db "INSERT INTO auth VALUES ('$USER', '$HASH')"
 
       $ mkdir -p "collections/$USER"
 
