@@ -1,3 +1,4 @@
+from ConfigParser import SafeConfigParser
 
 from webob.dec import wsgify
 from webob.exc import *
@@ -94,18 +95,14 @@ class SyncUserSession(object):
 class SyncApp(object):
     valid_urls = SyncCollectionHandler.operations + SyncMediaHandler.operations + ['hostKey', 'upload', 'download', 'getDecks']
 
-    def __init__(self, **kw):
-        from AnkiServer.threading import getCollectionManager
+    def __init__(self, config):
+        from AnkiServer.thread import getCollectionManager
 
-        self.data_root = os.path.abspath(kw.get('data_root', '.'))
-        self.base_url  = kw.get('base_url', '/')
-        self.auth_db_path = os.path.abspath(kw.get('auth_db_path', '.'))
+        self.data_root = os.path.abspath(config.get("sync_app", "data_root"))
+        self.base_url  = config.get("sync_app", "base_url")
         self.sessions = {}
 
-        try:
-            self.collection_manager = kw['collection_manager']
-        except KeyError:
-            self.collection_manager = getCollectionManager()
+        self.collection_manager = getCollectionManager()
 
         # make sure the base_url has a trailing slash
         if len(self.base_url) == 0:
@@ -297,6 +294,11 @@ class SyncApp(object):
         return Response(status='200 OK', content_type='text/plain', body='Anki Sync Server')
 
 class DatabaseAuthSyncApp(SyncApp):
+    def __init__(self, config):
+        SyncApp.__init__(self, config)
+
+        self.auth_db_path = os.path.abspath(config.get("sync_app", "auth_db_path"))
+
     def authenticate(self, username, password):
         """Returns True if this username is allowed to connect with this password. False otherwise."""
 
@@ -308,6 +310,8 @@ class DatabaseAuthSyncApp(SyncApp):
 
         db_ret = cursor.fetchone()
 
+        conn.close()
+
         if db_ret != None:
             db_hash = str(db_ret[0])
             salt = db_hash[-16:]
@@ -317,16 +321,16 @@ class DatabaseAuthSyncApp(SyncApp):
 
         return (db_ret != None and hashobj.hexdigest()+salt == db_hash)
 
-# Our entry point
-def make_app(global_conf, **local_conf):
-    return DatabaseAuthSyncApp(**local_conf)
-
 def main():
     from wsgiref.simple_server import make_server
-    from AnkiServer.threading import shutdown
+    from AnkiServer.thread import shutdown
 
-    ankiserver = SyncApp()
-    httpd = make_server('', 8001, ankiserver)
+    config = SafeConfigParser()
+    config.read("production.ini")
+
+    ankiserver = DatabaseAuthSyncApp(config)
+    httpd = make_server('', config.getint("sync_app", "port"), ankiserver)
+
     try:
         print "Starting..."
         httpd.serve_forever()
