@@ -3,8 +3,6 @@ Anki Sync Server
 
 A personal Anki sync server (so you can sync against your own server rather than AnkiWeb).
 
-It also includes a RESTful API, so that you could implement your own AnkiWeb if wanted.
-
 Installing
 ----------
 
@@ -22,7 +20,7 @@ Instructions for installing and running AnkiServer:
 
       $ virtualenv AnkiServer.env
 
-      $ AnkiServer.env/bin/easy_install webob PasteDeploy PasteScript sqlalchemy simplejson
+      $ AnkiServer.env/bin/easy_install webob simplejson
 
  3. Download and install libanki.  You can find the latest release of Anki here:
 
@@ -39,17 +37,13 @@ Instructions for installing and running AnkiServer:
 
       b. Copy the entire directory to /usr/share/anki
 
- 4. Make the egg info files (so paster can see our app):
+ 4. Copy the example.ini to production.ini and edit for your needs.
 
-      $ AnkiServer.env/bin/python setup.py egg_info
-
- 5. Copy the example.ini to production.ini and edit for your needs.
-
- 6. Create authentication database:
+ 5. Create authentication database:
 
       $ sqlite3 auth.db 'CREATE TABLE auth (user VARCHAR PRIMARY KEY, hash VARCHAR)'
 
- 7. Create user:
+ 6. Create user:
 
       Enter username and password when prompted.
 
@@ -59,13 +53,13 @@ Instructions for installing and running AnkiServer:
 
       $ HASH=$(echo -n "$USER$PASS$SALT" | sha256sum | sed 's/[ ]*-$//')$SALT
 
-      $ sqlite3 test.db "INSERT INTO auth VALUES ('$USER', '$HASH')"
+      $ sqlite3 auth.db "INSERT INTO auth VALUES ('$USER', '$HASH')"
 
       $ mkdir -p "collections/$USER"
 
       $ unset USER PASS SALT HASH
 
- 8. Then we can run AnkiServer like so:
+ 7. Then we can run AnkiServer like so:
 
-      $ AnkiServer.env/bin/paster serve production.ini
+      $ AnkiServer.env/bin/python AnkiServer/sync_app.py
 
