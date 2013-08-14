@@ -319,6 +319,8 @@ class DatabaseAuthSyncApp(SyncApp):
 
             hashobj.update(username+password+salt)
 
+        conn.close()
+
         return (db_ret != None and hashobj.hexdigest()+salt == db_hash)
 
 def main():
