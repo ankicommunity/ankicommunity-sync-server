@@ -21,17 +21,18 @@ Instructions for installing and running AnkiServer:
     the dependencies we need there:
 
       $ virtualenv AnkiServer.env
+
       $ AnkiServer.env/bin/easy_install webob PasteDeploy PasteScript sqlalchemy simplejson
 
  3. Download and install libanki.  You can find the latest release of Anki here:
 
-    http://code.google.com/p/anki/downloads/list 
+    http://code.google.com/p/anki/downloads/list
 
     Look for a *.tgz file with a Summary of "Anki Source".  At the time of this writing
     that is anki-2.0.11.tgz.
 
     Download this file and extract.
-    
+
     Then either:
 
       a. Run the 'make install', or
@@ -44,7 +45,27 @@ Instructions for installing and running AnkiServer:
 
  5. Copy the example.ini to production.ini and edit for your needs.
 
- 6. Then we can run AnkiServer like so:
+ 6. Create authentication database:
+
+      $ sqlite3 auth.db 'CREATE TABLE auth (user VARCHAR PRIMARY KEY, hash VARCHAR)'
+
+ 7. Create user:
+
+      Enter username and password when prompted.
+
+      $ read -p "Username: " USER && read -sp "Password: " PASS
+
+      $ SALT=$(openssl rand -hex 8)
+
+      $ HASH=$(echo -n "$USER$PASS$SALT" | sha256sum | sed 's/[ ]*-$//')$SALT
+
+      $ sqlite3 auth.db "INSERT INTO auth VALUES ('$USER', '$HASH')"
+
+      $ mkdir -p "collections/$USER"
+
+      $ unset USER PASS SALT HASH
+
+ 8. Then we can run AnkiServer like so:
 
       $ AnkiServer.env/bin/paster serve production.ini
 
