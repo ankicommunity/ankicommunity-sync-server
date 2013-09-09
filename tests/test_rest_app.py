@@ -520,6 +520,34 @@ class NoteHandlerTest(CollectionTestBase):
         self.assertEqual(ret['string_tags'], 'Tag1 Tag2')
         self.assertEqual(ret['usn'], -1)
 
+    def test_update(self):
+        self.add_default_note()
+
+        note_id = self.collection.findNotes('')[0]
+
+        data = self.execute('index', {}, note_id)
+        data['fields']['Front'] = 'The new front'
+        data['fields']['Back'] = 'The new back'
+        data['tags'] = ['new1', 'new2']
+        self.execute('update', data, note_id)
+
+        note = self.collection.getNote(note_id)
+        self.assertEqual(note['Front'], data['fields']['Front'])
+        self.assertEqual(note['Back'], data['fields']['Back'])
+        self.assertEqual(note.tags, data['tags'])
+
+    def test_delete(self):
+        self.add_default_note()
+
+        note_id = self.collection.findNotes('')[0]
+        res = self.collection.findNotes('nid:%s' % note_id)
+        self.assertNotEqual(res, [])
+
+        self.execute('delete', {}, note_id)
+
+        res = self.collection.findNotes('nid:%s' % note_id)
+        self.assertEqual(res, [])
+
     def test_add_tags(self):
         self.add_default_note()
         note_id = self.collection.findNotes('')[0]

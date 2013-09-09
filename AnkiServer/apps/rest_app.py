@@ -744,6 +744,29 @@ class NoteHandler(RestHandlerBase):
         note = col.getNote(req.ids[1])
         return self._serialize(note)
 
+    def update(self, col, req):
+        note = col.getNote(req.ids[1])
+        if note:
+            # update fields
+            for name in note.keys():
+                note[name] = req.data['fields'].get(name, '')
+
+            # update tags
+            note.tags = req.data['tags']
+
+            # optionally, we can prevent note.mod from getting updated -
+            # this is useful when adding the 'marked' tag or other changes
+            # we don't want to really "count"
+            if req.data.get('update_mod', True):
+                mod = intTime()
+            else:
+                mod = note.mod
+
+            note.flush(mod)
+
+    def delete(self, col, req):
+        col.remNotes([req.ids[1]])
+
     @noReturnValue
     def add_tags(self, col, req):
         note = col.getNote(req.ids[1])
