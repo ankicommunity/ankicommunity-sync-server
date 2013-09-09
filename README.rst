@@ -10,14 +10,12 @@ own AnkiWeb if you wanted.
 Installing the easy way!
 ------------------------
 
-**TODO: We're not on PyPI yet!**
-
 If you have ``easy_install`` or ``pip`` on your system, you can
-simply run:
+simply run::
 
-   $ easy\_install AnkiSyncServer
+   $ easy_install AnkiSyncServer
 
-Or using ``pip``:
+Or using ``pip``::
 
    $ pip install AnkiSyncServer
 
@@ -49,23 +47,23 @@ than globally on your system:
 Here are step-by-step instruction for setting up your virtualenv:
 
 1. First, you need to install "virtualenv". If your system has
-   ``easy_install`` or ``pip``, this is just a matter of:
+   ``easy_install`` or ``pip``, this is just a matter of::
 
-   $ easy\_install virtualenv
+     $ easy_install virtualenv
 
-   Or using pip:
+   Or using pip::
 
-   $ pip install virtualenv
+     $ pip install virtualenv
 
    Or you can use your the package manager provided by your OS.
 
-2. Next, create your a Python environment for running AnkiServer:
+2. Next, create your a Python environment for running AnkiServer::
 
-   $ virtualenv AnkiServer.env
+     $ virtualenv AnkiServer.env
 
-3. (Optional) Enter the virtualenv to save you on typing:
+3. (Optional) Enter the virtualenv to save you on typing::
 
-   $ . AnkiServer.env/bin/activate
+     $ . AnkiServer.env/bin/activate
 
 
 If you skip step 3, you'll have to type
@@ -82,13 +80,13 @@ Installing your Anki Server from source
 
 
 1. Install all the dependencies we need using ``easy_install`` or
-   ``pip``:
+   ``pip``::
 
-   $ easy\_install webob PasteDeploy PasteScript sqlalchemy simplejson
+     $ easy_install webob PasteDeploy PasteScript sqlalchemy simplejson
 
-   Or using pip:
+   Or using pip::
 
-   $ pip install webob PasteDeploy PasteScript sqlalchemy simplejson
+     $ pip install webob PasteDeploy PasteScript sqlalchemy simplejson
 
    Or you can use your the package manager provided by your OS.
 
@@ -108,35 +106,35 @@ Installing your Anki Server from source
 
    b. Copy the entire directory to /usr/share/anki
 
-3. Make the egg info files (so paster can see our app):
+3. Make the egg info files (so paster can see our app)::
 
-   $ python setup.py egg\_info
+     $ python setup.py egg_info
 
 4. Copy the example.ini to production.ini and edit for your needs.
 
-5. Create authentication database:
+5. Create authentication database::
 
-   $ sqlite3 auth.db 'CREATE TABLE auth (user VARCHAR PRIMARY KEY, hash VARCHAR)'
+     $ sqlite3 auth.db 'CREATE TABLE auth (user VARCHAR PRIMARY KEY, hash VARCHAR)'
 
-6. Create user:
+6. Create user::
 
-   Enter username and password when prompted.
+     # Enter username and password when prompted.
+      
+     $ read -p "Username: " USER && read -sp "Password: " PASS
+      
+     $ SALT=$(openssl rand -hex 8)
+      
+     $ HASH=$(echo -n "$USER$PASS$SALT" | sha256sum | sed 's/[ ]*-$//')$SALT
+      
+     $ sqlite3 auth.db "INSERT INTO auth VALUES ('$USER', '$HASH')"
+      
+     $ mkdir -p "collections/$USER"
+      
+     $ unset USER PASS SALT HASH
 
-   $ read -p "Username: " USER && read -sp "Password: " PASS
+7. Then we can run AnkiServer like so::
 
-   $ SALT=$(openssl rand -hex 8)
-
-   $ HASH=:math:`$(echo -n "$`USER:math:`$PASS$`SALT" \| sha256sum \| sed 's/[ ]\*-:math:`$//')$`SALT
-
-   $ sqlite3 auth.db "INSERT INTO auth VALUES (':math:`$USER', '$`HASH')"
-
-   $ mkdir -p "collections/$USER"
-
-   $ unset USER PASS SALT HASH
-
-7. Then we can run AnkiServer like so:
-
-   $ paster serve production.ini
+     $ paster serve production.ini
 
 Running with Supervisor
 -----------------------
@@ -148,42 +146,39 @@ when your server boots, restart it if it crashes and easily access
 it's logs.
 
 1. Install Supervisor on your system. If it's Debian or Ubuntu this
-   will work:
+   will work::
 
-   $ sudo apt-get install supervisor
+     $ sudo apt-get install supervisor
 
    If you're using a different OS, please try
    `these instructions <http://supervisord.org/installing.html>`_.
 
-2. Copy ``supervisor-anki-server.conf`` to
-   ``/etc/supervisor/conf.d/anki-server.conf``:
+2. Copy ``supervisor-anki-server.conf`` to ``/etc/supervisor/conf.d/anki-server.conf``::
 
-   $ sudo cp supervisor-anki-server.conf
-   /etc/supervisor/conf.d/anki-server.conf
+     $ sudo cp supervisor-anki-server.conf /etc/supervisor/conf.d/anki-server.conf
 
 3. Modify ``/etc/supervisor/conf.d/anki-server.conf`` to match your
    system and how you setup your Anki Server in the section above.
 
-4. Reload Supervisor's configuration:
+4. Reload Supervisor's configuration::
 
-   $ sudo supervisorctl reload
+     $ sudo supervisorctl reload
 
 5. Check the logs from the Anki Server to make sure everything is
-   fine:
+   fine::
 
-   $ sudo supervisorctl tail anki-server
+     $ sudo supervisorctl tail anki-server
 
    If it's empty - then everything's fine! Otherwise, you'll see an
    error message.
 
-
 Later if you manually want to stop, start or restart it, you can
-use:
+use::
 
    $ sudo supervisorctl stop anki-server
-
+   
    $ sudo supervisorctl start anki-server
-
+   
    $ sudo supervisorctl restart anki-server
 
 See the `Supervisor documentation <http://supervisord.org>`_ for
