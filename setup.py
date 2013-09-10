@@ -6,7 +6,7 @@ except ImportError:
 
 setup(
     name="AnkiServer",
-    version="2.0.0a3",
+    version="2.0.0a4",
     description="A personal Anki sync server (so you can sync against your own server rather than AnkiWeb)",
     long_description=open('README.rst').read(),
     license='LICENSE.txt',
