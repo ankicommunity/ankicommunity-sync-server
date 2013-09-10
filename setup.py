@@ -17,6 +17,7 @@ setup(
     # TODO: should these really be in install_requires?
     requires=["webob(>=0.9.7)"],
     test_suite='nose.collector',
+    packages=['AnkiServer'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
