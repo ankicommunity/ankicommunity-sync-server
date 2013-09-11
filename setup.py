@@ -32,7 +32,14 @@ setup(
         'nose>=1.3.0',
         'mock>=1.0.0',
     ],
-    data_files=get_anki_bundled_files(),
+    data_files=get_anki_bundled_files()+[
+        ('examples', [
+            'example.ini',
+            'logging.conf',
+            'supervisor-anki-server.conf',
+        ]),
+    ],
+    zip_safe=False,
     test_suite='nose.collector',
     packages=['AnkiServer'],
     classifiers=[
