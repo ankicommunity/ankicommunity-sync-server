@@ -1,8 +1,17 @@
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup
+
+#try:
+#    from setuptools import setup
+#except ImportError:
+#    from distutils.core import setup
+
+def get_anki_bundled_files():
+    import os
+    data_files = []
+    for root, dirs, files in os.walk('anki-bundled'):
+        data_files.append((root, [os.path.join(root, f) for f in files]))
+    return data_files
 
 setup(
     name="AnkiServer",
@@ -13,18 +22,17 @@ setup(
     author="David Snopek",
     author_email="dsnopek@gmail.com",
     url="https://github.com/dsnopek/anki-sync-server",
-    requires=[
-        "PasteDeploy (>=1.3.2)",
-        "PasteScript (>=1.7.3)",
-        "WebOb (>=0.9.7)",
-        "SQLAlchemy (>=0.6.3)",
-    ],
     install_requires=[
         "PasteDeploy>=1.3.2",
         "PasteScript>=1.7.3",
         "WebOb>=0.9.7",
         "SQLAlchemy>=0.6.3",
     ],
+    tests_require=[
+        'nose>=1.3.0',
+        'mock>=1.0.0',
+    ],
+    data_files=get_anki_bundled_files(),
     test_suite='nose.collector',
     packages=['AnkiServer'],
     classifiers=[

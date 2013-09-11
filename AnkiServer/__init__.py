@@ -15,8 +15,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
+import sys, os.path
+# We put the system installed Anki first!
 sys.path.insert(0, "/usr/share/anki")
+# We'll put our bundled Anki after it
+sys.path.insert(1, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'anki-bundled'))
 
 __author__ = "David Snopek <dsnopek@gmail.com>"
 __copyright__ = "Copyright (C) 2013 David Snopek"
