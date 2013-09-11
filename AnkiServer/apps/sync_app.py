@@ -25,7 +25,7 @@ import hashlib
 import AnkiServer
 
 import anki
-from anki.sync import LocalServer, MediaSyncer
+from anki.sync import Syncer, MediaSyncer
 
 try:
     import simplejson as json
@@ -34,27 +34,12 @@ except ImportError:
 
 import os
 
-class SyncCollectionHandler(LocalServer):
+class SyncCollectionHandler(Syncer):
     operations = ['meta', 'applyChanges', 'start', 'chunk', 'applyChunk', 'sanityCheck2', 'finish']
 
     def __init__(self, col):
-        LocalServer.__init__(self, col)
-
-
-    def applyChanges(self, changes):
-        #self.lmod, lscm, self.maxUsn, lts, dummy = self.meta()
-        # TODO: how should we set this value?
-        #self.lnewer = 1
-
-        result = LocalServer.applyChanges(self, changes)
-
-        #self.prepareToChunk()
-
-        return result
-
-    #def chunk(self, ):
-    #    self.prepareToChunk()
-    #    return LocalServer.chunk()
+        # So that 'server' (the 3rd argument) can't get set
+        Syncer.__init__(self, col)
 
 class SyncMediaHandler(MediaSyncer):
     operations = ['remove', 'files', 'addFiles', 'mediaSanity', 'mediaList']
@@ -62,18 +47,22 @@ class SyncMediaHandler(MediaSyncer):
     def __init__(self, col):
         MediaSyncer.__init__(self, col)
 
+    # TODO: This function is mostly just a placeholder that doesn't crash... Make it actually work!
     def files(self, minUsn=0, need=[], fnames=[]):
+        """Gets files from the media database and returns them as ZIP file data."""
+
         import zipfile, StringIO
 
-        # TODO: do something with minUsn, need and fnames!
-
-        zipdata, fnames = MediaSyncer.files(self)
+        # TODO: Do something with minUsn, need and fnames!
+        # TODO: I think we're going to have to reimplement this function with changes for
+        #       the minUsn, need and fnames...
+        zipdata, fnames = self.col.media.zipAdded()
 
         # add a _usn element to the zipdata
         fd = StringIO.StringIO(zipdata)
         zfd = zipfile.ZipFile(fd, "a", compression=zipfile.ZIP_DEFLATED)
+        # TODO: what does this value represent? How can we get it?
         zfd.writestr("_usn", str(minUsn + len(fnames)))
-        # TODO: we should be writing "_meta", which is meant to be JSON
         zfd.close()
 
         return fd.getvalue()
