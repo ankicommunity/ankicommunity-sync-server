@@ -1,11 +1,23 @@
 Anki Server
 ===========
 
-A personal Anki Server (so you can sync against your own server
-rather than AnkiWeb).
+`Anki <http://ankisrs.net>`_ is a powerful Open Source flashcard
+application, which helps you quickly and easily memorize facts over
+the long term utilizing a spaced repetition algorithm.
+
+Anki's main form is a desktop application (for Windows, Linux and
+MacOS) which can sync to a web version (AnkiWeb) and mobile versions
+for Android and iOS.
+
+This is a personal Anki Server, which you can sync against instead of
+AnkiWeb.
 
 It also includes a RESTful API, so that you could implement your
-own AnkiWeb if you wanted.
+own AnkiWeb-like site if you wanted.
+
+It was originally developed to support the flashcard functionality on
+`Bibliobird <http://en.bibliobird.com>`_, a web application for
+language learning.
 
 Installing the easy way!
 ------------------------
