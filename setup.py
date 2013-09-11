@@ -13,9 +13,18 @@ setup(
     author="David Snopek",
     author_email="dsnopek@gmail.com",
     url="https://github.com/dsnopek/anki-sync-server",
-    install_requires=["PasteDeploy>=1.3.2"],
-    # TODO: should these really be in install_requires?
-    requires=["webob(>=0.9.7)"],
+    requires=[
+        "PasteDeploy (>=1.3.2)",
+        "PasteScript (>=1.7.3)",
+        "WebOb (>=0.9.7)",
+        "SQLAlchemy (>=0.6.3)",
+    ],
+    install_requires=[
+        "PasteDeploy>=1.3.2",
+        "PasteScript>=1.7.3",
+        "WebOb>=0.9.7",
+        "SQLAlchemy>=0.6.3",
+    ],
     test_suite='nose.collector',
     packages=['AnkiServer'],
     classifiers=[
