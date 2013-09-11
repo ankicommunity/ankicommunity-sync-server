@@ -57,13 +57,15 @@ class SyncCollectionHandler(LocalServer):
     #    return LocalServer.chunk()
 
 class SyncMediaHandler(MediaSyncer):
-    operations = ['remove', 'files', 'addFiles', 'mediaSanity']
+    operations = ['remove', 'files', 'addFiles', 'mediaSanity', 'mediaList']
 
     def __init__(self, col):
         MediaSyncer.__init__(self, col)
 
-    def files(self, minUsn=0):
+    def files(self, minUsn=0, need=[], fnames=[]):
         import zipfile, StringIO
+
+        # TODO: do something with minUsn, need and fnames!
 
         zipdata, fnames = MediaSyncer.files(self)
 
@@ -71,9 +73,17 @@ class SyncMediaHandler(MediaSyncer):
         fd = StringIO.StringIO(zipdata)
         zfd = zipfile.ZipFile(fd, "a", compression=zipfile.ZIP_DEFLATED)
         zfd.writestr("_usn", str(minUsn + len(fnames)))
+        # TODO: we should be writing "_meta", which is meant to be JSON
         zfd.close()
 
         return fd.getvalue()
+
+    def mediaList(self):
+        """Returns a list of all the fnames in this collections media database."""
+        fnames = []
+        for fname in self.col.media.db.execute("select fname from media"):
+            fnames.append(fname)
+        return fnames
 
 class SyncUserSession(object):
     def __init__(self, name, path, collection_manager):
@@ -201,6 +211,8 @@ class SyncApp(object):
                 fd.write(data)
         finally:
             col.reopen()
+        
+        return True
 
     def operation_download(self, col, session):
         col.close()
@@ -296,8 +308,11 @@ class SyncApp(object):
                 if type(result) not in (str, unicode):
                     result = json.dumps(result)
 
-                if url == 'finish':
-                    self.delete_session(hkey)
+                # TODO: Apparently 'finish' isn't when we're done because 'mediaList' comes after it...
+                #       When can we possibly delete the session?
+
+                #if url == 'finish':
+                #    self.delete_session(hkey)
 
                 return Response(
                     status='200 OK',
@@ -306,11 +321,11 @@ class SyncApp(object):
 
             elif url == 'upload':
                 thread = session.get_thread()
-                thread.execute(self.operation_upload, [data['data'], session])
+                result = thread.execute(self.operation_upload, [data['data'], session])
                 return Response(
                     status='200 OK',
                     content_type='text/plain',
-                    body='OK')
+                    body='OK' if result else 'Error')
 
             elif url == 'download':
                 thread = session.get_thread()
