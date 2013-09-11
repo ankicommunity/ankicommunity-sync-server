@@ -188,14 +188,25 @@ class SyncApp(object):
         return data
 
     def operation_upload(self, col, data, session):
-        # TODO: deal with thread pool
+        col.close()
+        # TODO: we should verify the database integrity before perminantly overwriting
+        # (ie. use a temporary file) and declaring this a success!
+        #
+        # d = DB(path)
+        # assert d.scalar("pragma integrity_check") == "ok"
+        # d.close()
+        #
+        try:
+            with open(session.get_collection_path(), 'wb') as fd:
+                fd.write(data)
+        finally:
+            col.reopen()
 
-        fd = open(session.get_collection_path(), 'wb')
-        fd.write(data)
-        fd.close()
-
-    def operation_download(self, col, data, session):
-        pass
+    def operation_download(self, col, session):
+        col.close()
+        data = open(session.get_collection_path(), 'rb').read()
+        col.reopen()
+        return data
 
     @wsgify
     def __call__(self, req):
@@ -293,19 +304,21 @@ class SyncApp(object):
                     content_type='application/json',
                     body=result)
 
-            elif url in ('upload', 'download'):
-                if url == 'upload':
-                    func = self.operation_upload
-                else:
-                    func = self.operation_download
-
+            elif url == 'upload':
                 thread = session.get_thread()
                 thread.execute(self.operation_upload, [data['data'], session])
-
                 return Response(
                     status='200 OK',
                     content_type='text/plain',
                     body='OK')
+
+            elif url == 'download':
+                thread = session.get_thread()
+                result = thread.execute(self.operation_download, [session])
+                return Response(
+                    status='200 OK',
+                    content_type='text/plain',
+                    body=result)
 
             # This was one of our operations but it didn't get handled... Oops!
             raise HTTPInternalServerError()
