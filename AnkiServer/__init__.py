@@ -24,7 +24,7 @@ sys.path.insert(1, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'ank
 __author__ = "David Snopek <dsnopek@gmail.com>"
 __copyright__ = "Copyright (C) 2013 David Snopek"
 __license__ = "GNU Affero General Public License v3 or later (AGPLv3+)"
-__version__ = "2.0.0a6"
+__version__ = "2.0.0a7"
 
 __all__ = []
 
