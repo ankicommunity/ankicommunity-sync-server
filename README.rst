@@ -136,7 +136,7 @@ Configuring and running your Anki Server
       all the ``X`` with the correct versions). For example, it could
       be::
 
-        /usr/lib/python2.7/site-packages/AnkiServer-2.0.0a6-py2.7.egg/example/example.ini
+        /usr/lib/python2.7/site-packages/AnkiServer-2.0.0a6-py2.7.egg/examples/example.ini
 
 2. Create authentication database::
 
