@@ -90,7 +90,6 @@ environment if you enter that terminal and come back later.
 Installing your Anki Server from source
 ---------------------------------------
 
-
 1. Install all the dependencies we need using ``easy_install`` or
    ``pip``::
 
@@ -122,13 +121,28 @@ Installing your Anki Server from source
 
      $ python setup.py egg_info
 
-4. Copy the example.ini to production.ini and edit for your needs.
+Configuring and running your Anki Server
+----------------------------------------
 
-5. Create authentication database::
+1. Copy the example.ini to production.ini in your current directory
+   and edit for your needs.
+
+   a. If you installed from source, it'll be at the top-level.
+
+   b. If you installed via 'easy_install' or 'pip', you'll find all
+      the example configuration at
+      ``python_prefix/lib/python2.X/site-packages/AnkiServer-2.X.X-py2.X.egg/examples``
+      (replacing ``python_prefix`` with the root of your Python and
+      all the ``X`` with the correct versions). For example, it could
+      be::
+
+        /usr/lib/python2.7/site-packages/AnkiServer-2.0.0a6-py2.7.egg/example/example.ini
+
+2. Create authentication database::
 
      $ sqlite3 auth.db 'CREATE TABLE auth (user VARCHAR PRIMARY KEY, hash VARCHAR)'
 
-6. Create user::
+3. Create user::
 
      # Enter username and password when prompted.
       
@@ -144,9 +158,27 @@ Installing your Anki Server from source
       
      $ unset USER PASS SALT HASH
 
-7. Then we can run AnkiServer like so::
+4. Then we can run AnkiServer like so::
 
      $ paster serve production.ini
+
+Point the Anki desktop program at it
+------------------------------------
+
+Unfortunately, there isn't currently any user interface in the Anki
+destop program to point it at your personal sync server instead of
+AnkiWeb, so you'll have to write a short 'addon'.
+
+Create a file like this in your Anki/addons folder called
+"mysyncserver.py"::
+
+  import anki.sync
+  anki.sync.SYNC_URL = 'http://127.0.0.1:27701/sync'
+
+Be sure to change the SYNC_URL to point at your sync server. The
+address ``127.0.0.1`` refers to the local computer.
+
+Restart Anki for your plugin to take effect.
 
 Running with Supervisor
 -----------------------
