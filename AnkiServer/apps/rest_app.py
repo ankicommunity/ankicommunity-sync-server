@@ -290,6 +290,9 @@ class RestApp(object):
         handler_request = RestHandlerRequest(self, data, ids, session)
         try:
             output = col.execute(handler, [handler_request], {}, hasReturnValue)
+        except HTTPError, e:
+            # we pass these on through!
+            raise
         except Exception, e:
             logging.error(e)
             return HTTPInternalServerError()

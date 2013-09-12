@@ -25,62 +25,167 @@ import hashlib
 import AnkiServer
 
 import anki
-from anki.sync import LocalServer, MediaSyncer
+from anki.sync import Syncer, MediaSyncer
+from anki.utils import intTime, checksum
+from anki.consts import SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
 
 try:
     import simplejson as json
 except ImportError:
     import json
 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
 import os
 
-class SyncCollectionHandler(LocalServer):
+class SyncCollectionHandler(Syncer):
     operations = ['meta', 'applyChanges', 'start', 'chunk', 'applyChunk', 'sanityCheck2', 'finish']
 
     def __init__(self, col):
-        LocalServer.__init__(self, col)
+        # So that 'server' (the 3rd argument) can't get set
+        Syncer.__init__(self, col)
 
+    def meta(self):
+        # Make sure the media database is open!
+        if self.col.media.db is None:
+            self.col.media.connect()
 
-    def applyChanges(self, changes):
-        #self.lmod, lscm, self.maxUsn, lts, dummy = self.meta()
-        # TODO: how should we set this value?
-        #self.lnewer = 1
-
-        result = LocalServer.applyChanges(self, changes)
-
-        #self.prepareToChunk()
-
-        return result
-
-    #def chunk(self, ):
-    #    self.prepareToChunk()
-    #    return LocalServer.chunk()
+        # We override to return the real 'mediaUsn' at the end
+        return (self.col.mod, self.col.scm, self.col._usn, intTime(), self.col.media.usn())
 
 class SyncMediaHandler(MediaSyncer):
-    operations = ['remove', 'files', 'addFiles', 'mediaSanity']
+    operations = ['remove', 'files', 'addFiles', 'mediaSanity', 'mediaList']
 
     def __init__(self, col):
         MediaSyncer.__init__(self, col)
 
-    def files(self, minUsn=0):
-        import zipfile, StringIO
+    def remove(self, fnames, minUsn):
+        rrem = MediaSyncer.remove(self, fnames, minUsn)
+        # increment the USN for each file removed
+        #self.col.media.setUsn(self.col.media.usn() + len(rrem))
+        return rrem
 
-        zipdata, fnames = MediaSyncer.files(self)
+    def files(self, minUsn, need):
+        """Gets files from the media database and returns them as ZIP file data."""
 
-        # add a _usn element to the zipdata
-        fd = StringIO.StringIO(zipdata)
-        zfd = zipfile.ZipFile(fd, "a", compression=zipfile.ZIP_DEFLATED)
-        zfd.writestr("_usn", str(minUsn + len(fnames)))
-        zfd.close()
+        import zipfile
 
-        return fd.getvalue()
+        # The client can pass None - I'm not sure what the correct action is in that case,
+        # for now, we're going to resync everything.
+        if need is None:
+            need = self.mediaList()
+
+        # Comparing minUsn to need, we attempt to determine which files have already
+        # been sent, and we remove them from the front of the list.
+        need = need[len(need) - (self.col.media.usn() - minUsn):]
+
+        # Copied and modified from anki.media.MediaManager.zipAdded(). Instead of going
+        # over the log, we loop over the files needed and increment the USN along the
+        # way. The zip also has an additional '_usn' member, which the client uses to
+        # update the usn on their end.
+
+        f = StringIO()
+        z = zipfile.ZipFile(f, "w", compression=zipfile.ZIP_DEFLATED)
+        sz = 0
+        cnt = 0
+        files = {}
+        while 1:
+            if len(need) == 0:
+                # add a flag so the server knows it can clean up
+                z.writestr("_finished", "")
+                break
+            fname = need.pop()
+            minUsn += 1
+            z.write(os.path.join(self.col.media.dir(), fname), str(cnt))
+            files[str(cnt)] = fname
+            sz += os.path.getsize(fname)
+            if sz > SYNC_ZIP_SIZE or cnt > SYNC_ZIP_COUNT:
+                break
+            cnt += 1
+        z.writestr("_meta", json.dumps(files))
+        z.writestr("_usn", str(minUsn))
+        z.close()
+
+        return f.getvalue()
+
+    def addFiles(self, data):
+        """Adds files based from ZIP file data and returns the usn."""
+
+        import zipfile
+
+        # The argument name is 'zip' on MediaSyncer, but we always use 'data' when
+        # we receive non-JSON data. We have to override to receive the right argument!
+        #MediaSyncer.addFiles(self, zip=fd.getvalue())
+
+        usn = self.col.media.usn()
+
+        # Copied from anki.media.MediaManager.syncAdd(). Modified to not need the
+        # _usn file and, instead, to increment the server usn with each file added.
+
+        f = StringIO(data)
+        z = zipfile.ZipFile(f, "r")
+        finished = False
+        meta = None
+        media = []
+        sizecnt = 0
+        # get meta info first
+        assert z.getinfo("_meta").file_size < 100000
+        meta = json.loads(z.read("_meta"))
+        # then loop through all files
+        for i in z.infolist():
+            # check for zip bombs
+            sizecnt += i.file_size
+            assert sizecnt < 100*1024*1024
+            if i.filename == "_meta" or i.filename == "_usn":
+                # ignore previously-retrieved meta
+                continue
+            elif i.filename == "_finished":
+                # last zip in set
+                finished = True
+            else:
+                data = z.read(i)
+                csum = checksum(data)
+                name = meta[i.filename]
+                # can we store the file on this system?
+                if self.col.media.illegal(name):
+                    continue
+                # save file
+                open(os.path.join(self.col.media.dir(), name), "wb").write(data)
+                # update db
+                media.append((name, csum, self.col.media._mtime(name)))
+                # remove entries from local log
+                self.col.media.db.execute("delete from log where fname = ?", name)
+                usn += 1
+        # update media db and note new starting usn
+        if media:
+            self.col.media.db.executemany(
+                "insert or replace into media values (?,?,?)", media)
+        self.col.media.setUsn(usn) # commits
+        # if we have finished adding, we need to record the new folder mtime
+        # so that we don't trigger a needless scan
+        if finished:
+            self.col.media.syncMod()
+
+        return usn
+
+    def mediaList(self):
+        """Returns a list of all the fnames in this collections media database."""
+        fnames = []
+        for fname, in self.col.media.db.execute("select fname from media"):
+            fnames.append(fname)
+        fnames.sort()
+        return fnames
 
 class SyncUserSession(object):
-    def __init__(self, name, path, collection_manager):
+    def __init__(self, name, path, collection_manager, setup_new_collection=None):
         import time
         self.name = name
         self.path = path
         self.collection_manager = collection_manager
+        self.setup_new_collection = setup_new_collection
         self.version = 0
         self.created = time.time()
 
@@ -95,7 +200,7 @@ class SyncUserSession(object):
         return os.path.realpath(os.path.join(self.path, 'collection.anki2'))
 
     def get_thread(self):
-        return self.collection_manager.get_collection(self.get_collection_path())
+        return self.collection_manager.get_collection(self.get_collection_path(), self.setup_new_collection)
 
     def get_handler_for_operation(self, operation, col):
         if operation in SyncCollectionHandler.operations:
@@ -116,6 +221,7 @@ class SyncApp(object):
         self.data_root = os.path.abspath(kw.get('data_root', '.'))
         self.base_url  = kw.get('base_url', '/')
         self.auth_db_path = os.path.abspath(kw.get('auth_db_path', '.'))
+        self.setup_new_collection = kw.get('setup_new_collection', None)
         self.sessions = {}
 
         try:
@@ -159,7 +265,7 @@ class SyncApp(object):
     def create_session(self, hkey, username, user_path):
         """Creates, stores and returns a new session for the given hkey and username."""
 
-        session = self.sessions[hkey] = SyncUserSession(username, user_path, self.collection_manager)
+        session = self.sessions[hkey] = SyncUserSession(username, user_path, self.collection_manager, self.setup_new_collection)
         return session
 
     def load_session(self, hkey):
@@ -172,10 +278,10 @@ class SyncApp(object):
         del self.sessions[hkey]
 
     def _decode_data(self, data, compression=0):
-        import gzip, StringIO
+        import gzip
 
         if compression:
-            buf = gzip.GzipFile(mode="rb", fileobj=StringIO.StringIO(data))
+            buf = gzip.GzipFile(mode="rb", fileobj=StringIO(data))
             data = buf.read()
             buf.close()
 
@@ -188,14 +294,27 @@ class SyncApp(object):
         return data
 
     def operation_upload(self, col, data, session):
-        # TODO: deal with thread pool
+        col.close()
+        # TODO: we should verify the database integrity before perminantly overwriting
+        # (ie. use a temporary file) and declaring this a success!
+        #
+        # d = DB(path)
+        # assert d.scalar("pragma integrity_check") == "ok"
+        # d.close()
+        #
+        try:
+            with open(session.get_collection_path(), 'wb') as fd:
+                fd.write(data)
+        finally:
+            col.reopen()
+        
+        return True
 
-        fd = open(session.get_collection_path(), 'wb')
-        fd.write(data)
-        fd.close()
-
-    def operation_download(self, col, data, session):
-        pass
+    def operation_download(self, col, session):
+        col.close()
+        data = open(session.get_collection_path(), 'rb').read()
+        col.reopen()
+        return data
 
     @wsgify
     def __call__(self, req):
@@ -215,7 +334,7 @@ class SyncApp(object):
                         body=zlib.compress(json.dumps({'status': 'oldVersion'})))
 
             try:
-                compression = req.POST['c']
+                compression = int(req.POST['c'])
             except KeyError:
                 compression = 0
 
@@ -273,7 +392,7 @@ class SyncApp(object):
                     handler = session.get_handler_for_operation(url, col)
                     func = getattr(handler, url)
                     result = func(**data)
-                    handler.col.save()
+                    col.save()
                     return result
                 runFunc.func_name = url
 
@@ -285,27 +404,32 @@ class SyncApp(object):
                 if type(result) not in (str, unicode):
                     result = json.dumps(result)
 
-                if url == 'finish':
-                    self.delete_session(hkey)
+                # TODO: Apparently 'finish' isn't when we're done because 'mediaList' comes after it...
+                #       When can we possibly delete the session?
+
+                #if url == 'finish':
+                #    self.delete_session(hkey)
 
                 return Response(
                     status='200 OK',
                     content_type='application/json',
                     body=result)
 
-            elif url in ('upload', 'download'):
-                if url == 'upload':
-                    func = self.operation_upload
-                else:
-                    func = self.operation_download
-
+            elif url == 'upload':
                 thread = session.get_thread()
-                thread.execute(self.operation_upload, [data['data'], session])
-
+                result = thread.execute(self.operation_upload, [data['data'], session])
                 return Response(
                     status='200 OK',
                     content_type='text/plain',
-                    body='OK')
+                    body='OK' if result else 'Error')
+
+            elif url == 'download':
+                thread = session.get_thread()
+                result = thread.execute(self.operation_download, [session])
+                return Response(
+                    status='200 OK',
+                    content_type='text/plain',
+                    body=result)
 
             # This was one of our operations but it didn't get handled... Oops!
             raise HTTPInternalServerError()
