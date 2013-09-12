@@ -99,7 +99,7 @@ class SyncMediaHandler(MediaSyncer):
                 break
             fname = need.pop()
             minUsn += 1
-            z.write(fname, str(cnt))
+            z.write(os.path.join(self.col.media.dir(), fname), str(cnt))
             files[str(cnt)] = fname
             sz += os.path.getsize(fname)
             if sz > SYNC_ZIP_SIZE or cnt > SYNC_ZIP_COUNT:
@@ -153,7 +153,7 @@ class SyncMediaHandler(MediaSyncer):
                 if self.col.media.illegal(name):
                     continue
                 # save file
-                open(name, "wb").write(data)
+                open(os.path.join(self.col.media.dir(), name), "wb").write(data)
                 # update db
                 media.append((name, csum, self.col.media._mtime(name)))
                 # remove entries from local log
