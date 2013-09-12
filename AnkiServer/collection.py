@@ -91,6 +91,12 @@ class CollectionWrapper(object):
             else:
                 self.__col = self.__create_collection()
 
+        # If for some reason the underlying Collection is closed, then
+        # we attempt to re-open it! (this probably shouldn't happen, but
+        # I'm seeing it in production...)
+        if not self.__col.db:
+            self.__col.reopen()
+
     def close(self):
         """Close the collection if opened."""
         if not self.opened():
