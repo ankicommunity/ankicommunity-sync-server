@@ -19,7 +19,7 @@ from webob.dec import wsgify
 from webob.exc import *
 from webob import Response
 
-import sqlite3
+import os
 import hashlib
 
 import AnkiServer
@@ -39,7 +39,10 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-import os
+try:
+    from pysqlite2 import dbapi2 as sqlite
+except ImportError:
+    from sqlite3 import dbapi2 as sqlite
 
 class SyncCollectionHandler(Syncer):
     operations = ['meta', 'applyChanges', 'start', 'chunk', 'applyChunk', 'sanityCheck2', 'finish']
@@ -212,6 +215,42 @@ class SyncUserSession(object):
             setattr(self, cache_name, handler_class(col))
         return getattr(self, cache_name)
 
+class SimpleSessionManager(object):
+    """A simple session manager that keeps the sessions in memory."""
+
+    def __init__(self):
+        self.sessions = {}
+
+    def load(self, hkey):
+        return self.sessions.get(hkey)
+
+    def save(self, hkey, session):
+        self.sessions[hkey] = session
+
+    def delete(self, hkey):
+        del self.sessions[hkey]
+
+class SimpleUserManager(object):
+    """A simple user manager that always allows any user."""
+
+    def authenticate(self, username, password):
+        """
+        Returns True if this username is allowed to connect with this password. False otherwise.
+
+        Override this to change how users are authenticated.
+        """
+
+        return True
+
+    def username2dirname(self, username):
+        """
+        Returns the directory name for the given user. By default, this is just the username.
+
+        Override this to adjust the mapping between users and their directory.
+        """
+
+        return username
+
 class SyncApp(object):
     valid_urls = SyncCollectionHandler.operations + SyncMediaHandler.operations + ['hostKey', 'upload', 'download', 'getDecks']
 
@@ -220,9 +259,17 @@ class SyncApp(object):
 
         self.data_root = os.path.abspath(kw.get('data_root', '.'))
         self.base_url  = kw.get('base_url', '/')
-        self.auth_db_path = os.path.abspath(kw.get('auth_db_path', '.'))
         self.setup_new_collection = kw.get('setup_new_collection', None)
-        self.sessions = {}
+
+        try:
+            self.session_manager = kw['session_manager']
+        except KeyError:
+            self.session_manager = SimpleSessionManager()
+
+        try:
+            self.user_manager = kw['user_manager']
+        except KeyError:
+            self.user_manager = SimpleUserManager()
 
         try:
             self.collection_manager = kw['collection_manager']
@@ -235,24 +282,6 @@ class SyncApp(object):
         elif self.base_url[-1] != '/':
             self.base_url = base_url + '/'
 
-    def authenticate(self, username, password):
-        """
-        Returns True if this username is allowed to connect with this password. False otherwise.
-
-        Override this to change how users are authenticated.
-        """
-
-        return False
-
-    def username2dirname(self, username):
-        """
-        Returns the directory name for the given user. By default, this is just the username.
-
-        Override this to adjust the mapping between users and their directory.
-        """
-
-        return username
-
     def generateHostKey(self, username):
         """Generates a new host key to be used by the given username to identify their session.
         This values is random."""
@@ -261,21 +290,12 @@ class SyncApp(object):
         chars = string.ascii_letters + string.digits
         val = ':'.join([username, str(int(time.time())), ''.join(random.choice(chars) for x in range(8))])
         return hashlib.md5(val).hexdigest()
-
-    def create_session(self, hkey, username, user_path):
+    
+    def _create_session(self, hkey, username, user_path):
         """Creates, stores and returns a new session for the given hkey and username."""
-
-        session = self.sessions[hkey] = SyncUserSession(username, user_path, self.collection_manager, self.setup_new_collection)
+        session = SyncUserSession(username, user_path, self.collection_manager, self.setup_new_collection)
+        self.session_manager.save(hkey, session)
         return session
-
-    def load_session(self, hkey):
-        return self.sessions.get(hkey)
-
-    def save_session(self, hkey, session):
-        pass
-
-    def delete_session(self, hkey):
-        del self.sessions[hkey]
 
     def _decode_data(self, data, compression=0):
         import gzip
@@ -354,14 +374,14 @@ class SyncApp(object):
                     p = data['p']
                 except KeyError:
                     raise HTTPForbidden('Must pass username and password')
-                if self.authenticate(u, p):
-                    dirname = self.username2dirname(u)
+                if self.user_manager.authenticate(u, p):
+                    dirname = self.user_manager.username2dirname(u)
                     if dirname is None:
                         raise HTTPForbidden()
 
                     hkey = self.generateHostKey(u)
                     user_path = os.path.join(self.data_root, dirname)
-                    session = self.create_session(hkey, u, user_path)
+                    session = self._create_session(hkey, u, user_path)
 
                     result = {'key': hkey}
                     return Response(
@@ -377,7 +397,7 @@ class SyncApp(object):
                 hkey = req.POST['k']
             except KeyError:
                 raise HTTPForbidden()
-            session = self.load_session(hkey)
+            session = self.session_manager.load(hkey)
             if session is None:
                 raise HTTPForbidden()
 
@@ -408,7 +428,7 @@ class SyncApp(object):
                 #       When can we possibly delete the session?
 
                 #if url == 'finish':
-                #    self.delete_session(hkey)
+                #    self.session_manager.delete(hkey)
 
                 return Response(
                     status='200 OK',
@@ -436,11 +456,16 @@ class SyncApp(object):
 
         return Response(status='200 OK', content_type='text/plain', body='Anki Sync Server')
 
-class DatabaseAuthSyncApp(SyncApp):
+class SqliteUserManager(SimpleUserManager):
+    """Authenticates users against a SQLite database."""
+
+    def __init__(self, auth_db_path):
+        self.auth_db_path = os.path.abspath(auth_db_path)
+
     def authenticate(self, username, password):
         """Returns True if this username is allowed to connect with this password. False otherwise."""
 
-        conn = sqlite3.connect(self.auth_db_path)
+        conn = sqlite.connect(self.auth_db_path)
         cursor = conn.cursor()
         param = (username,)
 
@@ -454,12 +479,16 @@ class DatabaseAuthSyncApp(SyncApp):
             hashobj = hashlib.sha256()
 
             hashobj.update(username+password+salt)
+	
+	conn.close()
 
         return (db_ret != None and hashobj.hexdigest()+salt == db_hash)
 
 # Our entry point
 def make_app(global_conf, **local_conf):
-    return DatabaseAuthSyncApp(**local_conf)
+    if local_conf.has_key('auth_db_path'):
+        local_conf['user_manager'] = SqliteUserManager(local_conf['auth_db_path'])
+    return SyncApp(**local_conf)
 
 def main():
     from wsgiref.simple_server import make_server
