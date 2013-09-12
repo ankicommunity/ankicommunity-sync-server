@@ -392,7 +392,7 @@ class SyncApp(object):
                     handler = session.get_handler_for_operation(url, col)
                     func = getattr(handler, url)
                     result = func(**data)
-                    handler.col.save()
+                    col.save()
                     return result
                 runFunc.func_name = url
 
