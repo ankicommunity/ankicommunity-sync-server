@@ -329,8 +329,10 @@ class SyncApp(object):
 
     def operation_download(self, col, session):
         col.close()
-        data = open(session.get_collection_path(), 'rb').read()
-        col.reopen()
+        try:
+            data = open(session.get_collection_path(), 'rb').read()
+        finally:
+            col.reopen()
         return data
 
     @wsgify
