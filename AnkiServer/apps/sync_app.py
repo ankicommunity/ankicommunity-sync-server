@@ -221,7 +221,7 @@ class SimpleSessionManager(object):
     def __init__(self):
         self.sessions = {}
 
-    def load(self, hkey):
+    def load(self, hkey, session_factory=None):
         return self.sessions.get(hkey)
 
     def save(self, hkey, session):
@@ -291,11 +291,8 @@ class SyncApp(object):
         val = ':'.join([username, str(int(time.time())), ''.join(random.choice(chars) for x in range(8))])
         return hashlib.md5(val).hexdigest()
     
-    def _create_session(self, hkey, username, user_path):
-        """Creates, stores and returns a new session for the given hkey and username."""
-        session = SyncUserSession(username, user_path, self.collection_manager, self.setup_new_collection)
-        self.session_manager.save(hkey, session)
-        return session
+    def create_session(self, username, user_path):
+        return SyncUserSession(username, user_path, self.collection_manager, self.setup_new_collection)
 
     def _decode_data(self, data, compression=0):
         import gzip
@@ -381,7 +378,8 @@ class SyncApp(object):
 
                     hkey = self.generateHostKey(u)
                     user_path = os.path.join(self.data_root, dirname)
-                    session = self._create_session(hkey, u, user_path)
+                    session = self.create_session(u, user_path)
+                    self.session_manager.save(hkey, session)
 
                     result = {'key': hkey}
                     return Response(
@@ -397,7 +395,7 @@ class SyncApp(object):
                 hkey = req.POST['k']
             except KeyError:
                 raise HTTPForbidden()
-            session = self.session_manager.load(hkey)
+            session = self.session_manager.load(hkey, self.create_session)
             if session is None:
                 raise HTTPForbidden()
 
@@ -456,6 +454,57 @@ class SyncApp(object):
 
         return Response(status='200 OK', content_type='text/plain', body='Anki Sync Server')
 
+class SqliteSessionManager(SimpleSessionManager):
+    """Stores sessions in a SQLite database to prevent the user from being logged out
+    everytime the SyncApp is restarted."""
+
+    def __init__(self, session_db_path):
+        SimpleSessionManager.__init__(self)
+
+        self.session_db_path = os.path.abspath(session_db_path)
+
+    def _conn(self):
+        new = not os.path.exists(self.session_db_path)
+        conn = sqlite.connect(self.session_db_path)
+        if new:
+            cursor = conn.cursor()
+            cursor.execute("CREATE TABLE session (hkey VARCHAR PRIMARY KEY, user VARCHAR, path VARCHAR)")
+        return conn
+    
+    def load(self, hkey, session_factory=None):
+        session = SimpleSessionManager.load(self, hkey)
+        if session is not None:
+            return session
+
+        conn = self._conn()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT user, path FROM session WHERE hkey=?", (hkey,)) 
+        res = cursor.fetchone()
+
+        if res is not None:
+            session = self.sessions[hkey] = session_factory(res[0], res[1])
+            return session
+
+    def save(self, hkey, session):
+        SimpleSessionManager.save(self, hkey, session)
+
+        conn = self._conn()
+        cursor = conn.cursor()
+
+        cursor.execute("INSERT OR REPLACE INTO session (hkey, user, path) VALUES (?, ?, ?)",
+            (hkey, session.name, session.path))
+        conn.commit()
+
+    def delete(self, hkey):
+        SimpleSessionManager.delete(self, hkey)
+
+        conn = self._conn()
+        cursor = conn.cursor()
+
+        cursor.execute("DELETE FROM session WHERE hkey=?", (hkey,))
+        conn.commit()
+
 class SqliteUserManager(SimpleUserManager):
     """Authenticates users against a SQLite database."""
 
@@ -479,13 +528,15 @@ class SqliteUserManager(SimpleUserManager):
             hashobj = hashlib.sha256()
 
             hashobj.update(username+password+salt)
-	
-	conn.close()
+    
+        conn.close()
 
         return (db_ret != None and hashobj.hexdigest()+salt == db_hash)
 
 # Our entry point
 def make_app(global_conf, **local_conf):
+    if local_conf.has_key('session_db_path'):
+        local_conf['session_manager'] = SqliteSessionManager(local_conf['session_db_path'])
     if local_conf.has_key('auth_db_path'):
         local_conf['user_manager'] = SqliteUserManager(local_conf['auth_db_path'])
     return SyncApp(**local_conf)

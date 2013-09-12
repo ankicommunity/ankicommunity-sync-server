@@ -5,6 +5,7 @@
 /development.ini
 /server.log
 /collections
+/session.db
 /auth.db
 /dist
 /build
