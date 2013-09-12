@@ -26,11 +26,18 @@ import AnkiServer
 
 import anki
 from anki.sync import Syncer, MediaSyncer
+from anki.utils import intTime, checksum
+from anki.consts import SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
 
 try:
     import simplejson as json
 except ImportError:
     import json
+
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 import os
 
@@ -41,37 +48,135 @@ class SyncCollectionHandler(Syncer):
         # So that 'server' (the 3rd argument) can't get set
         Syncer.__init__(self, col)
 
+    def meta(self):
+        # Make sure the media database is open!
+        if self.col.media.db is None:
+            self.col.media.db.connect()
+
+        # We override to return the real 'mediaUsn' at the end
+        return (self.col.mod, self.col.scm, self.col._usn, intTime(), self.col.media.usn())
+
 class SyncMediaHandler(MediaSyncer):
     operations = ['remove', 'files', 'addFiles', 'mediaSanity', 'mediaList']
 
     def __init__(self, col):
         MediaSyncer.__init__(self, col)
 
-    # TODO: This function is mostly just a placeholder that doesn't crash... Make it actually work!
-    def files(self, minUsn=0, need=[], fnames=[]):
+    def remove(self, fnames, minUsn):
+        rrem = MediaSyncer.remove(self, fnames, minUsn)
+        # increment the USN for each file removed
+        #self.col.media.setUsn(self.col.media.usn() + len(rrem))
+        return rrem
+
+    def files(self, minUsn, need):
         """Gets files from the media database and returns them as ZIP file data."""
 
-        import zipfile, StringIO
+        import zipfile
 
-        # TODO: Do something with minUsn, need and fnames!
-        # TODO: I think we're going to have to reimplement this function with changes for
-        #       the minUsn, need and fnames...
-        zipdata, fnames = self.col.media.zipAdded()
+        # The client can pass None - I'm not sure what the correct action is in that case,
+        # for now, we're going to resync everything.
+        if need is None:
+            need = self.mediaList()
 
-        # add a _usn element to the zipdata
-        fd = StringIO.StringIO(zipdata)
-        zfd = zipfile.ZipFile(fd, "a", compression=zipfile.ZIP_DEFLATED)
-        # TODO: what does this value represent? How can we get it?
-        zfd.writestr("_usn", str(minUsn + len(fnames)))
-        zfd.close()
+        # Comparing minUsn to need, we attempt to determine which files have already
+        # been sent, and we remove them from the front of the list.
+        need = need[len(need) - (self.col.media.usn() - minUsn):]
 
-        return fd.getvalue()
+        # Copied and modified from anki.media.MediaManager.zipAdded(). Instead of going
+        # over the log, we loop over the files needed and increment the USN along the
+        # way. The zip also has an additional '_usn' member, which the client uses to
+        # update the usn on their end.
+
+        f = StringIO()
+        z = zipfile.ZipFile(f, "w", compression=zipfile.ZIP_DEFLATED)
+        sz = 0
+        cnt = 0
+        files = {}
+        while 1:
+            if len(need) == 0:
+                # add a flag so the server knows it can clean up
+                z.writestr("_finished", "")
+                break
+            fname = need.pop()
+            minUsn += 1
+            z.write(fname, str(cnt))
+            files[str(cnt)] = fname
+            sz += os.path.getsize(fname)
+            if sz > SYNC_ZIP_SIZE or cnt > SYNC_ZIP_COUNT:
+                break
+            cnt += 1
+        z.writestr("_meta", json.dumps(files))
+        z.writestr("_usn", str(minUsn))
+        z.close()
+
+        return f.getvalue()
+
+    def addFiles(self, data):
+        """Adds files based from ZIP file data and returns the usn."""
+
+        import zipfile
+
+        # The argument name is 'zip' on MediaSyncer, but we always use 'data' when
+        # we receive non-JSON data. We have to override to receive the right argument!
+        #MediaSyncer.addFiles(self, zip=fd.getvalue())
+
+        usn = self.col.media.usn()
+
+        # Copied from anki.media.MediaManager.syncAdd(). Modified to not need the
+        # _usn file and, instead, to increment the server usn with each file added.
+
+        f = StringIO(data)
+        z = zipfile.ZipFile(f, "r")
+        finished = False
+        meta = None
+        media = []
+        sizecnt = 0
+        # get meta info first
+        assert z.getinfo("_meta").file_size < 100000
+        meta = json.loads(z.read("_meta"))
+        # then loop through all files
+        for i in z.infolist():
+            # check for zip bombs
+            sizecnt += i.file_size
+            assert sizecnt < 100*1024*1024
+            if i.filename == "_meta" or i.filename == "_usn":
+                # ignore previously-retrieved meta
+                continue
+            elif i.filename == "_finished":
+                # last zip in set
+                finished = True
+            else:
+                data = z.read(i)
+                csum = checksum(data)
+                name = meta[i.filename]
+                # can we store the file on this system?
+                if self.col.media.illegal(name):
+                    continue
+                # save file
+                open(name, "wb").write(data)
+                # update db
+                media.append((name, csum, self.col.media._mtime(name)))
+                # remove entries from local log
+                self.col.media.db.execute("delete from log where fname = ?", name)
+                usn += 1
+        # update media db and note new starting usn
+        if media:
+            self.col.media.db.executemany(
+                "insert or replace into media values (?,?,?)", media)
+        self.col.media.setUsn(usn) # commits
+        # if we have finished adding, we need to record the new folder mtime
+        # so that we don't trigger a needless scan
+        if finished:
+            self.col.media.syncMod()
+
+        return usn
 
     def mediaList(self):
         """Returns a list of all the fnames in this collections media database."""
         fnames = []
-        for fname in self.col.media.db.execute("select fname from media"):
+        for fname, in self.col.media.db.execute("select fname from media"):
             fnames.append(fname)
+        fnames.sort()
         return fnames
 
 class SyncUserSession(object):
@@ -171,10 +276,10 @@ class SyncApp(object):
         del self.sessions[hkey]
 
     def _decode_data(self, data, compression=0):
-        import gzip, StringIO
+        import gzip
 
         if compression:
-            buf = gzip.GzipFile(mode="rb", fileobj=StringIO.StringIO(data))
+            buf = gzip.GzipFile(mode="rb", fileobj=StringIO(data))
             data = buf.read()
             buf.close()
 
@@ -227,7 +332,7 @@ class SyncApp(object):
                         body=zlib.compress(json.dumps({'status': 'oldVersion'})))
 
             try:
-                compression = req.POST['c']
+                compression = int(req.POST['c'])
             except KeyError:
                 compression = 0
 
