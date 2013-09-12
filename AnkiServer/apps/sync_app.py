@@ -180,11 +180,12 @@ class SyncMediaHandler(MediaSyncer):
         return fnames
 
 class SyncUserSession(object):
-    def __init__(self, name, path, collection_manager):
+    def __init__(self, name, path, collection_manager, setup_new_collection=None):
         import time
         self.name = name
         self.path = path
         self.collection_manager = collection_manager
+        self.setup_new_collection = setup_new_collection
         self.version = 0
         self.created = time.time()
 
@@ -199,7 +200,7 @@ class SyncUserSession(object):
         return os.path.realpath(os.path.join(self.path, 'collection.anki2'))
 
     def get_thread(self):
-        return self.collection_manager.get_collection(self.get_collection_path())
+        return self.collection_manager.get_collection(self.get_collection_path(), self.setup_new_collection)
 
     def get_handler_for_operation(self, operation, col):
         if operation in SyncCollectionHandler.operations:
@@ -220,6 +221,7 @@ class SyncApp(object):
         self.data_root = os.path.abspath(kw.get('data_root', '.'))
         self.base_url  = kw.get('base_url', '/')
         self.auth_db_path = os.path.abspath(kw.get('auth_db_path', '.'))
+        self.setup_new_collection = kw.get('setup_new_collection', None)
         self.sessions = {}
 
         try:
@@ -263,7 +265,7 @@ class SyncApp(object):
     def create_session(self, hkey, username, user_path):
         """Creates, stores and returns a new session for the given hkey and username."""
 
-        session = self.sessions[hkey] = SyncUserSession(username, user_path, self.collection_manager)
+        session = self.sessions[hkey] = SyncUserSession(username, user_path, self.collection_manager, self.setup_new_collection)
         return session
 
     def load_session(self, hkey):
