@@ -51,7 +51,7 @@ class SyncCollectionHandler(Syncer):
     def meta(self):
         # Make sure the media database is open!
         if self.col.media.db is None:
-            self.col.media.db.connect()
+            self.col.media.connect()
 
         # We override to return the real 'mediaUsn' at the end
         return (self.col.mod, self.col.scm, self.col._usn, intTime(), self.col.media.usn())
