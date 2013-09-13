@@ -213,7 +213,11 @@ class SyncUserSession(object):
 
         if getattr(self, cache_name) is None:
             setattr(self, cache_name, handler_class(col))
-        return getattr(self, cache_name)
+        handler = getattr(self, cache_name)
+        # The col object may actually be new now! This happens when we close a collection
+        # for inactivity and then later re-open it (creating a new Collection object).
+        handler.col = col
+        return handler
 
 class SimpleSessionManager(object):
     """A simple session manager that keeps the sessions in memory."""
