@@ -341,7 +341,7 @@ class SyncApp(object):
 
     @wsgify
     def __call__(self, req):
-        print req.path
+        #print req.path
         if req.path.startswith(self.base_url):
             url = req.path[len(self.base_url):]
             if url not in self.valid_urls:
@@ -349,12 +349,15 @@ class SyncApp(object):
 
             if url == 'getDecks':
                 # This is an Anki 1.x client! Tell them to upgrade.
-                import zlib
+                import zlib, logging
+                u = req.params.getone('u')
+                if u:
+                    logging.warn("'%s' is attempting to sync with an Anki 1.x client" % u)
                 return Response(
-                        status='200 OK',
-                        content_type='application/json',
-                        content_encoding='deflate',
-                        body=zlib.compress(json.dumps({'status': 'oldVersion'})))
+                    status='200 OK',
+                    content_type='application/json',
+                    content_encoding='deflate',
+                    body=zlib.compress(json.dumps({'status': 'oldVersion'})))
 
             try:
                 compression = int(req.POST['c'])
@@ -369,7 +372,7 @@ class SyncApp(object):
             except ValueError:
                 # Bad JSON
                 raise HTTPBadRequest()
-            print 'data:', data
+            #print 'data:', data
 
             if url == 'hostKey':
                 try:
