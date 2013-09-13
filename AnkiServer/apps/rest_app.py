@@ -73,14 +73,17 @@ class RestApp(object):
     # Defines not only the valid handler types, but their position in the URL string
     handler_types = ['collection', ['model', 'note', 'deck', 'card']]
 
-    def __init__(self, data_root, allowed_hosts='*', setup_new_collection=None, use_default_handlers=True, collection_manager=None):
+    def __init__(self, data_root, **kw):
         from AnkiServer.threading import getCollectionManager
 
         self.data_root = os.path.abspath(data_root)
-        self.allowed_hosts = allowed_hosts
-        self.setup_new_collection = setup_new_collection
+        self.allowed_hosts = kw.get('allowed_hosts', '*')
+        self.setup_new_collection = kw.get('setup_new_collection')
+        # TODO: implement! The idea is that these will run before/after executing any handler
+        #self.hook_pre_execute = kw.get('hook_pre_execute')
+        #self.hook_post_execute = kw.get('hook_post_execute')
 
-        if collection_manager is not None:
+        if kw.get('collection_manager') is not None:
             self.collection_manager = collection_manager
         else:
             self.collection_manager = getCollectionManager()
@@ -92,7 +95,7 @@ class RestApp(object):
             for handler_type in type_list:
                 self.handlers[handler_type] = {}
 
-        if use_default_handlers:
+        if kw.get('use_default_handlers', True):
             self.add_handler_group('collection', CollectionHandler())
             self.add_handler_group('note', NoteHandler())
             self.add_handler_group('model', ModelHandler())

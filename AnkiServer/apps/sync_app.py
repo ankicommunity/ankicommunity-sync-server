@@ -263,7 +263,11 @@ class SyncApp(object):
 
         self.data_root = os.path.abspath(kw.get('data_root', '.'))
         self.base_url  = kw.get('base_url', '/')
-        self.setup_new_collection = kw.get('setup_new_collection', None)
+        self.setup_new_collection = kw.get('setup_new_collection')
+        self.hook_pre_sync = kw.get('hook_pre_sync')
+        self.hook_post_sync = kw.get('hook_post_sync')
+        self.hook_download = kw.get('hook_download')
+        self.hook_upload = kw.get('hook_upload')
 
         try:
             self.session_manager = kw['session_manager']
@@ -316,6 +320,7 @@ class SyncApp(object):
 
     def operation_upload(self, col, data, session):
         col.close()
+
         # TODO: we should verify the database integrity before perminantly overwriting
         # (ie. use a temporary file) and declaring this a success!
         #
@@ -328,10 +333,18 @@ class SyncApp(object):
                 fd.write(data)
         finally:
             col.reopen()
+
+        # run hook_upload if one is defined
+        if self.hook_upload is not None:
+            self.hook_upload(col, session)
         
         return True
 
     def operation_download(self, col, session):
+        # run hook_download if one is defined
+        if self.hook_download is not None:
+            self.hook_download(col, session)
+
         col.close()
         try:
             data = open(session.get_collection_path(), 'rb').read()
@@ -414,6 +427,13 @@ class SyncApp(object):
                     session.version = data['v']
                     del data['v']
 
+                thread = session.get_thread()
+
+                # run hook_pre_sync if one is defined
+                if url == 'start':
+                    if self.hook_pre_sync is not None:
+                        thread.execute(self.hook_pre_sync, [session])
+
                 # Create a closure to run this operation inside of the thread allocated to this collection
                 def runFunc(col):
                     handler = session.get_handler_for_operation(url, col)
@@ -424,18 +444,20 @@ class SyncApp(object):
                 runFunc.func_name = url
 
                 # Send to the thread to execute
-                thread = session.get_thread()
                 result = thread.execute(runFunc)
 
                 # If it's a complex data type, we convert it to JSON
                 if type(result) not in (str, unicode):
                     result = json.dumps(result)
 
-                # TODO: Apparently 'finish' isn't when we're done because 'mediaList' comes after it...
-                #       When can we possibly delete the session?
+                if url == 'finish':
+                    # TODO: Apparently 'finish' isn't when we're done because 'mediaList' comes
+                    #       after it... When can we possibly delete the session?
+                    #self.session_manager.delete(hkey)
 
-                #if url == 'finish':
-                #    self.session_manager.delete(hkey)
+                    # run hook_post_sync if one is defined
+                    if self.hook_post_sync is not None:
+                        thread.execute(self.hook_post_sync, [session])
 
                 return Response(
                     status='200 OK',
