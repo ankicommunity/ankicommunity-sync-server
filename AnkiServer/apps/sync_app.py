@@ -104,7 +104,7 @@ class SyncMediaHandler(MediaSyncer):
             minUsn += 1
             z.write(os.path.join(self.col.media.dir(), fname), str(cnt))
             files[str(cnt)] = fname
-            sz += os.path.getsize(fname)
+            sz += os.path.getsize(os.path.join(self.col.media.dir(), fname))
             if sz > SYNC_ZIP_SIZE or cnt > SYNC_ZIP_COUNT:
                 break
             cnt += 1
@@ -153,12 +153,13 @@ class SyncMediaHandler(MediaSyncer):
                 csum = checksum(data)
                 name = meta[i.filename]
                 # can we store the file on this system?
+                # TODO: this function changed it's name in Anki 2.0.12 to media.hasIllegal()
                 if self.col.media.illegal(name):
                     continue
                 # save file
                 open(os.path.join(self.col.media.dir(), name), "wb").write(data)
                 # update db
-                media.append((name, csum, self.col.media._mtime(name)))
+                media.append((name, csum, self.col.media._mtime(os.path.join(self.col.media.dir(), name))))
                 # remove entries from local log
                 self.col.media.db.execute("delete from log where fname = ?", name)
                 usn += 1
