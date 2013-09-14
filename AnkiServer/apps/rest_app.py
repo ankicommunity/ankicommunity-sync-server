@@ -545,6 +545,10 @@ class CollectionHandler(RestHandlerBase):
 
         return result
 
+    # TODO: calling answer_card() when the scheduler is not setup can 
+    #       be an error! This can happen after a collection has been closed
+    #       for inactivity, and opened later. But since we're using
+    #       @noReturnValue, no error will be passed up. :-/ What to do?
     @noReturnValue
     def answer_card(self, col, req):
         import time
