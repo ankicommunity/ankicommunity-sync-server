@@ -71,7 +71,7 @@ class SyncMediaHandler(MediaSyncer):
         #self.col.media.setUsn(self.col.media.usn() + len(rrem))
         return rrem
 
-    def files(self, minUsn, need):
+    def files(self, minUsn=0, need=None):
         """Gets files from the media database and returns them as ZIP file data."""
 
         import zipfile
