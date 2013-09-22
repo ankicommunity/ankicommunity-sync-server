@@ -451,9 +451,16 @@ class CollectionHandler(RestHandlerBase):
     #
 
     def find_cards(self, col, req):
+        from AnkiServer.find import Finder
+
         query = req.data.get('query', '')
         order = req.data.get('order', False)
-        ids = anki.find.Finder(col).findCards(query, order)
+
+        # TODO: patch Anki to support limit/offset and then remove this crazy hack!
+        finder = Finder(col)
+        finder.limit = int(req.data.get('limit', 0))
+        finder.offset = int(req.data.get('offset', 0))
+        ids = finder.findCards(query, order)
 
         if req.data.get('preload', False):
             cards = [CardHandler._serialize(col.getCard(id), req.data) for id in ids]
