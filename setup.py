@@ -41,7 +41,7 @@ setup(
     ],
     zip_safe=False,
     test_suite='nose.collector',
-    packages=['AnkiServer'],
+    packages=['AnkiServer','AnkiServer.apps'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
