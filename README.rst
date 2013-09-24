@@ -25,11 +25,11 @@ Installing the easy way!
 If you have ``easy_install`` or ``pip`` on your system, you can
 simply run::
 
-   $ easy_install AnkiSyncServer
+   $ easy_install AnkiServer
 
 Or using ``pip``::
 
-   $ pip install AnkiSyncServer
+   $ pip install AnkiServer
 
 This will give you the latest released version!
 
