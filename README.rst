@@ -228,3 +228,14 @@ use::
 See the `Supervisor documentation <http://supervisord.org>`_ for
 more info!
 
+How to get help
+---------------
+
+If you're having any problems installing or using Anki Server, please
+post a message on our Google Group:
+
+https://groups.google.com/forum/#!forum/anki-sync-server
+
+Be sure to let us know which operating system and version you're using
+and how you intend to use the Anki Server!
+
