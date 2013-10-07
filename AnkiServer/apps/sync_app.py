@@ -191,6 +191,7 @@ class SyncUserSession(object):
         self.collection_manager = collection_manager
         self.setup_new_collection = setup_new_collection
         self.version = 0
+        self.client_version = ''
         self.created = time.time()
 
         # make sure the user path exists
@@ -424,9 +425,13 @@ class SyncApp(object):
 
             if url in SyncCollectionHandler.operations + SyncMediaHandler.operations:
                 # 'meta' passes the SYNC_VER but it isn't used in the handler
-                if url == 'meta' and data.has_key('v'):
-                    session.version = data['v']
-                    del data['v']
+                if url == 'meta':
+                    if data.has_key('v'):
+                        session.version = data['v']
+                        del data['v']
+                    if data.has_key('cv'):
+                        session.client_version = data['cv']
+                        del data['cv']
 
                 thread = session.get_thread()
 
