@@ -84,7 +84,7 @@ class RestApp(object):
         #self.hook_post_execute = kw.get('hook_post_execute')
 
         if kw.get('collection_manager') is not None:
-            self.collection_manager = collection_manager
+            self.collection_manager = kw['collection_manager']
         else:
             self.collection_manager = getCollectionManager()
 

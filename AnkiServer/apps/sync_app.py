@@ -51,13 +51,33 @@ class SyncCollectionHandler(Syncer):
         # So that 'server' (the 3rd argument) can't get set
         Syncer.__init__(self, col)
 
-    def meta(self):
+    def meta(self, cv=None):
         # Make sure the media database is open!
         if self.col.media.db is None:
             self.col.media.connect()
 
-        # We override to return the real 'mediaUsn' at the end
-        return (self.col.mod, self.col.scm, self.col._usn, intTime(), self.col.media.usn())
+        if cv is not None:
+            client, version, platform = cv.split(',')
+        else:
+            client = 'ankidesktop'
+            version = '2.0.12'
+            platform = 'unknown'
+
+        version_int = [int(x) for x in version.split('.')] 
+
+        # Some insanity added in Anki 2.0.13
+        if client == 'ankidesktop' and version_int[0] >= 2 and version_int[1] >= 0 and version_int[2] >= 13:
+            return {
+              'scm': self.col.scm,
+              'ts': intTime(),
+              'mod': self.col.mod,
+              'usn': self.col._usn,
+              'musn': self.col.media.usn(),
+              'msg': '',
+              'cont': True,
+            }
+        else:
+            return (self.col.mod, self.col.scm, self.col._usn, intTime(), self.col.media.usn())
 
 class SyncMediaHandler(MediaSyncer):
     operations = ['remove', 'files', 'addFiles', 'mediaSanity', 'mediaList']
@@ -431,7 +451,6 @@ class SyncApp(object):
                         del data['v']
                     if data.has_key('cv'):
                         session.client_version = data['cv']
-                        del data['cv']
 
                 thread = session.get_thread()
 
