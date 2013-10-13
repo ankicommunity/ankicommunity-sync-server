@@ -61,5 +61,5 @@ Instructions for installing and running AnkiServer:
 
  7. Then we can run AnkiServer like so:
 
-      $ AnkiServer.env/bin/python AnkiServer/sync_app.py
+      $ AnkiServer.env/bin/python src/sync_app.py
 
