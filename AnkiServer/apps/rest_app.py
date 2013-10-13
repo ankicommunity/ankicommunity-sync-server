@@ -35,6 +35,8 @@ import anki.lang
 from anki.lang import _ as t
 from anki.utils import intTime
 
+import AnkiServer
+
 __all__ = ['RestApp', 'RestHandlerBase', 'noReturnValue']
 
 def noReturnValue(func):
@@ -154,7 +156,10 @@ class RestApp(object):
             if remote_addr != self.allowed_hosts:
                 raise HTTPForbidden()
         
-        if req.method != 'POST':
+        if req.path == '/':
+            if req.method != 'GET':
+                raise HTTPMethodNotAllowed(allow=['GET'])
+        elif req.method != 'POST':
             raise HTTPMethodNotAllowed(allow=['POST'])
 
     def _parsePath(self, path):
@@ -262,6 +267,9 @@ class RestApp(object):
         # make sure the request is valid
         self._checkRequest(req)
 
+        # special non-collection paths
+        if req.path == '/':
+            return Response('AnkiServer ' + str(AnkiServer.__version__), content_type='text/plain')
         if req.path == '/list_collections':
             return Response(json.dumps(self.list_collections()), content_type='application/json')
 
