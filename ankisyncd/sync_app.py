@@ -1,4 +1,4 @@
-# AnkiServer - A personal Anki sync server
+# ankisyncd - A personal Anki sync server
 # Copyright (C) 2013 David Snopek
 #
 # This program is free software: you can redistribute it and/or modify
@@ -23,7 +23,7 @@ from webob import Response
 import os
 import hashlib
 
-import AnkiServer
+import ankisyncd
 
 import anki
 from anki.sync import Syncer, MediaSyncer
@@ -282,7 +282,7 @@ class SyncApp(object):
     valid_urls = SyncCollectionHandler.operations + SyncMediaHandler.operations + ['hostKey', 'upload', 'download', 'getDecks']
 
     def __init__(self, config):
-        from AnkiServer.thread import getCollectionManager
+        from ankisyncd.thread import getCollectionManager
 
         self.data_root = os.path.abspath(config.get("sync_app", "data_root"))
         self.base_url  = config.get("sync_app", "base_url")
@@ -589,7 +589,7 @@ def make_app(global_conf, **local_conf):
 
 def main():
     from wsgiref.simple_server import make_server
-    from AnkiServer.thread import shutdown
+    from ankisyncd.thread import shutdown
 
     config = SafeConfigParser()
     config.read("production.ini")

@@ -4,7 +4,7 @@ from __future__ import absolute_import
 import anki
 import anki.storage
 
-from AnkiServer.collection import CollectionWrapper, CollectionManager
+from ankisyncd.collection import CollectionWrapper, CollectionManager
 
 from threading import Thread
 from Queue import Queue
