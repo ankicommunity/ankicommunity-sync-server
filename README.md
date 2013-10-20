@@ -1,7 +1,8 @@
 Anki Sync Server
 ================
 
-A personal Anki sync server (so you can sync against your own server rather than AnkiWeb).
+A personal Anki sync server (so you can sync against your own server rather than
+AnkiWeb). This version has been simplified to remove some dependencies.
 
 Installing
 ----------
