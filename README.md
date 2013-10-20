@@ -9,42 +9,42 @@ Installing
 
 ### Manual installation
 
- 1. First, you need to install "virtualenv".  If your system has easy_install, this is
-    just a matter of:
+1. First, you need to install "virtualenv".  If your system has easy_install, this is
+   just a matter of:
 
       $ easy_install virtualenv
 
-    If your system doesn't have easy_install, I recommend getting it!
+   If your system doesn't have easy_install, I recommend getting it!
 
- 2. Next, you need to create a Python environment for running AnkiServer and install some of
-    the dependencies we need there:
+2. Next, you need to create a Python environment for running AnkiServer and install some of
+   the dependencies we need there:
 
       $ virtualenv ankisyncd.env
 
       $ ankisyncd.env/bin/easy_install webob simplejson
 
- 3. Download and install libanki.  You can find the latest release of Anki here:
+3. Download and install libanki.  You can find the latest release of Anki here:
 
-    http://code.google.com/p/anki/downloads/list
+   http://code.google.com/p/anki/downloads/list
 
-    Look for a *.tgz file with a Summary of "Anki Source".  At the time of this writing
-    that is anki-2.0.11.tgz.
+   Look for a *.tgz file with a Summary of "Anki Source".  At the time of this writing
+   that is anki-2.0.11.tgz.
 
-    Download this file and extract.
+   Download this file and extract.
 
-    Then either:
+   Then either:
 
       a. Run the 'make install', or
 
       b. Copy the entire directory to /usr/share/anki
 
- 4. Copy the example.ini to production.ini and edit for your needs.
+4. Copy the example.ini to production.ini and edit for your needs.
 
- 5. Create authentication database:
+5. Create authentication database:
 
       $ sqlite3 auth.db 'CREATE TABLE auth (user VARCHAR PRIMARY KEY, hash VARCHAR)'
 
- 6. Create user:
+6. Create user:
 
       Enter username and password when prompted.
 
@@ -60,7 +60,7 @@ Installing
 
       $ unset USER PASS SALT HASH
 
- 7. Then we can run AnkiServer like so:
+7. Then we can run AnkiServer like so:
 
       $ ankisyncd.env/bin/python src/sync_app.py
       
@@ -68,12 +68,12 @@ Installing
 
 There's PKGBUILD available for Arch Linux. To install, simply run:
 
-      $ wget https://codeload.github.com/jdoe0/ankisyncd-pkgbuild/zip/master
+   $ wget https://codeload.github.com/jdoe0/ankisyncd-pkgbuild/zip/master
       
-      $ unzip master
+   $ unzip master
       
-      $ cd ankisyncd-pkgbuild-master
+   $ cd ankisyncd-pkgbuild-master
       
-      $ makepkg -s
+   $ makepkg -s
       
-      $ sudo pacman -U *.xz
+   $ sudo pacman -U *.xz
