@@ -77,3 +77,22 @@ There's PKGBUILD available for Arch Linux. To install, simply run:
    $ makepkg -s
       
    $ sudo pacman -U *.xz
+   
+Configuration file is at /etc/ankisyncd/ankisyncd.conf
+
+To start the server run:
+
+   $ sudo systemctl start ankisyncd
+   
+Setting up Anki
+---------------
+
+To make Anki use ankisyncd as its sync server, create a file (name it something like ankisyncd.py) 
+containing the code below and put it in ~/Anki/addons.
+
+    import anki.sync
+    
+    anki.sync.SYNC_URL = 'http://127.0.0.1:27701/sync/'
+
+Replace 127.0.0.1 with the IP address or the domain name of your server if ankisyncd is not running 
+on the same machine as Anki.
