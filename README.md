@@ -1,5 +1,5 @@
-Anki Sync Server
-================
+ankisyncd
+=========
 
 A personal Anki sync server (so you can sync against your own server rather than
 AnkiWeb). This version has been simplified to remove some dependencies.
@@ -7,7 +7,7 @@ AnkiWeb). This version has been simplified to remove some dependencies.
 Installing
 ----------
 
-Instructions for installing and running AnkiServer:
+### Manual installation
 
  1. First, you need to install "virtualenv".  If your system has easy_install, this is
     just a matter of:
@@ -19,9 +19,9 @@ Instructions for installing and running AnkiServer:
  2. Next, you need to create a Python environment for running AnkiServer and install some of
     the dependencies we need there:
 
-      $ virtualenv AnkiServer.env
+      $ virtualenv ankisyncd.env
 
-      $ AnkiServer.env/bin/easy_install webob simplejson
+      $ ankisyncd.env/bin/easy_install webob simplejson
 
  3. Download and install libanki.  You can find the latest release of Anki here:
 
@@ -62,5 +62,18 @@ Instructions for installing and running AnkiServer:
 
  7. Then we can run AnkiServer like so:
 
-      $ AnkiServer.env/bin/python src/sync_app.py
+      $ ankisyncd.env/bin/python src/sync_app.py
+      
+### Via PKGBUILD
 
+There's PKGBUILD available for Arch Linux. To install, simply run:
+
+      $ wget https://codeload.github.com/jdoe0/ankisyncd-pkgbuild/zip/master
+      
+      $ unzip master
+      
+      $ cd ankisyncd-pkgbuild-master
+      
+      $ makepkg -s
+      
+      $ sudo pacman -U *.xz
