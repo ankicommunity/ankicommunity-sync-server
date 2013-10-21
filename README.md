@@ -9,90 +9,79 @@ Installing
 
 ### Manual installation
 
-1. First, you need to install "virtualenv".  If your system has easy_install, this is
-   just a matter of:
+1. First, you need to install "virtualenv".  If your system has easy_install,
+this is just a matter of:
 
-      $ easy_install virtualenv
+        $ easy_install virtualenv
 
-   If your system doesn't have easy_install, I recommend getting it!
+    If your system doesn't have easy_install, I recommend getting it!
 
-2. Next, you need to create a Python environment for running AnkiServer and install some of
-   the dependencies we need there:
+2. Next, you need to create a Python environment for running ankisyncd and
+install some of the dependencies we need there:
 
-      $ virtualenv ankisyncd.env
-
-      $ ankisyncd.env/bin/easy_install webob simplejson
+        $ virtualenv ankisyncd.env
+        $ ankisyncd.env/bin/easy_install webob simplejson
 
 3. Download and install libanki.  You can find the latest release of Anki here:
 
-   http://code.google.com/p/anki/downloads/list
+    http://code.google.com/p/anki/downloads/list
 
-   Look for a *.tgz file with a Summary of "Anki Source".  At the time of this writing
-   that is anki-2.0.11.tgz.
+    Look for a *.tgz file with a Summary of "Anki Source".  At the time of this
+    writing that is anki-2.0.11.tgz.
 
-   Download this file and extract.
+    Download this file and extract.
 
-   Then either:
+    Then either:
 
-      a. Run the 'make install', or
+    a. Run ```make install```, or
 
-      b. Copy the entire directory to /usr/share/anki
+    b. Copy the entire directory to /usr/share/anki
 
 4. Copy the example.ini to production.ini and edit for your needs.
 
 5. Create authentication database:
 
-      $ sqlite3 auth.db 'CREATE TABLE auth (user VARCHAR PRIMARY KEY, hash VARCHAR)'
+        $ sqlite3 auth.db 'CREATE TABLE auth (user VARCHAR PRIMARY KEY, hash VARCHAR)'
 
 6. Create user:
 
-      Enter username and password when prompted.
+        # Enter username and password when prompted.
+        $ read -p "Username: " USER && read -sp "Password: " PASS
+        $ SALT=$(openssl rand -hex 8)
+        $ HASH=$(echo -n "$USER$PASS$SALT" | sha256sum | sed 's/[ ]*-$//')$SALT
+        $ sqlite3 auth.db "INSERT INTO auth VALUES ('$USER', '$HASH')"
+        $ mkdir -p "collections/$USER"
+        $ unset USER PASS SALT HASH
 
-      $ read -p "Username: " USER && read -sp "Password: " PASS
+7. Then we can run ankisyncd like so:
 
-      $ SALT=$(openssl rand -hex 8)
+        $ ankisyncd.env/bin/python src/sync_app.py
 
-      $ HASH=$(echo -n "$USER$PASS$SALT" | sha256sum | sed 's/[ ]*-$//')$SALT
-
-      $ sqlite3 auth.db "INSERT INTO auth VALUES ('$USER', '$HASH')"
-
-      $ mkdir -p "collections/$USER"
-
-      $ unset USER PASS SALT HASH
-
-7. Then we can run AnkiServer like so:
-
-      $ ankisyncd.env/bin/python src/sync_app.py
-      
 ### Via PKGBUILD
 
 There's PKGBUILD available for Arch Linux. To install, simply run:
 
-   $ wget https://codeload.github.com/jdoe0/ankisyncd-pkgbuild/zip/master
-      
-   $ unzip master
-      
-   $ cd ankisyncd-pkgbuild-master
-      
-   $ makepkg -s
-      
-   $ sudo pacman -U *.xz
-   
+    $ wget https://codeload.github.com/jdoe0/ankisyncd-pkgbuild/zip/master
+    $ unzip master
+    $ cd ankisyncd-pkgbuild-master
+    $ makepkg -s
+    $ sudo pacman -U *.xz
+
 Configuration file is at /etc/ankisyncd/ankisyncd.conf
 
 To start the server run:
 
-   $ sudo systemctl start ankisyncd
-   
+    $ sudo systemctl start ankisyncd
+
 Setting up Anki
 ---------------
 
-To make Anki use ankisyncd as its sync server, create a file (name it something like ankisyncd.py) 
-containing the code below and put it in ~/Anki/addons.
+To make Anki use ankisyncd as its sync server, create a file (name it something
+like ankisyncd.py) containing the code below and put it in ~/Anki/addons.
 
     import anki.sync
-    
+
     anki.sync.SYNC_URL = 'http://127.0.0.1:27701/sync/'
 
-Replace 127.0.0.1 with the IP address or the domain name of your server if ankisyncd is not running 
-on the same machine as Anki.
+Replace 127.0.0.1 with the IP address or the domain name of your server if
+ankisyncd is not running on the same machine as Anki.
