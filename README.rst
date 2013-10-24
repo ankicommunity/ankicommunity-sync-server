@@ -140,15 +140,15 @@ Configuring and running your Anki Server
 
 3. Create user::
 
-   $ ./ankiserverctl.sh adduser <username>
+   $ ./ankiserverctl.py adduser <username>
 
 4. Then we can run AnkiServer like so::
 
-   $ ./ankiserverctl.sh start
+   $ ./ankiserverctl.py start
 
    To stop AnkiServer, run::
 
-   $ ./ankiserverctl.sh stop
+   $ ./ankiserverctl.py stop
 
 Point the Anki desktop program at it
 ------------------------------------
