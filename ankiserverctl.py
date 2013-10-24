@@ -12,6 +12,7 @@ import sqlite3
 SERVERCONFIG = "production.ini"
 AUTHDBPATH = "auth.db"
 PIDPATH = "/tmp/ankiserver.pid"
+COLLECTIONPATH = "collections/"
 
 def usage():
     print "usage: "+sys.argv[0]+" <command> [<args>]"
@@ -67,8 +68,8 @@ def adduser(username):
 
         cursor.execute("INSERT INTO auth VALUES (?, ?)", (username, hash))
 
-        if not os.path.isdir("collections/"+username):
-            os.makedirs("collections/"+username)
+        if not os.path.isdir(COLLECTIONPATH+username):
+            os.makedirs(COLLECTIONPATH+username)
 
         conn.commit()
         conn.close()
