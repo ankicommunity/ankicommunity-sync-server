@@ -21,6 +21,7 @@ def usage():
     print "  stop               - stop the server"
     print "  adduser <username> - add a new user"
     print "  deluser <username> - delete a user"
+    print "  lsuser             - list users"
     print "  passwd <username>  - change password of a user"
 
 def startsrv(configpath):
@@ -88,6 +89,21 @@ def deluser(username):
     else:
         print >>sys.stderr, sys.argv[0]+": Database file does not exist"
 
+def lsuser():
+    conn = sqlite3.connect(AUTHDBPATH)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT user FROM auth")
+
+    row = cursor.fetchone()
+
+    while row is not None:
+        print row[0]
+
+        row = cursor.fetchone()
+
+    conn.close()
+
 def passwd(username):
     if os.path.isfile(AUTHDBPATH):
         print "Enter password for "+username+": "
@@ -125,6 +141,8 @@ def main():
             adduser(sys.argv[2])
         elif sys.argv[1] == "deluser":
             deluser(sys.argv[2])
+        elif sys.argv[1] == "lsuser":
+            lsuser()
         elif sys.argv[1] == "passwd":
             passwd(sys.argv[2])
         else:
