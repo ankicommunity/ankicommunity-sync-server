@@ -45,17 +45,15 @@ install some of the dependencies we need there:
 
 6. Create user:
 
-        # Enter username and password when prompted.
-        $ read -p "Username: " USER && read -sp "Password: " PASS
-        $ SALT=$(openssl rand -hex 8)
-        $ HASH=$(echo -n "$USER$PASS$SALT" | sha256sum | sed 's/[ ]*-$//')$SALT
-        $ sqlite3 auth.db "INSERT INTO auth VALUES ('$USER', '$HASH')"
-        $ mkdir -p "collections/$USER"
-        $ unset USER PASS SALT HASH
+        $ ./ankisyncctl.py adduser <username>
 
 7. Then we can run ankisyncd like so:
 
-        $ ankisyncd.env/bin/python src/sync_app.py
+        $ ./ankisyncctl.py start
+        
+    To stop the server, run:
+
+        $ ./ankisyncctl.py stop
 
 ### Via PKGBUILD
 
