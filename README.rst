@@ -112,7 +112,7 @@ Installing your Anki Server from source
    Download this file and extract.
 
    Then either:
-   
+
    a. Run the 'make install', or
 
    b. Copy the entire directory to /usr/share/anki
@@ -138,29 +138,17 @@ Configuring and running your Anki Server
 
         /usr/lib/python2.7/site-packages/AnkiServer-2.0.0a6-py2.7.egg/examples/example.ini
 
-2. Create authentication database::
-
-     $ sqlite3 auth.db 'CREATE TABLE auth (user VARCHAR PRIMARY KEY, hash VARCHAR)'
-
 3. Create user::
 
-     # Enter username and password when prompted.
-      
-     $ read -p "Username: " USER && read -sp "Password: " PASS
-      
-     $ SALT=$(openssl rand -hex 8)
-      
-     $ HASH=$(echo -n "$USER$PASS$SALT" | sha256sum | sed 's/[ ]*-$//')$SALT
-      
-     $ sqlite3 auth.db "INSERT INTO auth VALUES ('$USER', '$HASH')"
-      
-     $ mkdir -p "collections/$USER"
-      
-     $ unset USER PASS SALT HASH
+   $ ./ankiserverctl.py adduser <username>
 
 4. Then we can run AnkiServer like so::
 
-     $ paster serve production.ini
+   $ ./ankiserverctl.py start
+
+   To stop AnkiServer, run::
+
+   $ ./ankiserverctl.py stop
 
 Point the Anki desktop program at it
 ------------------------------------
@@ -220,9 +208,9 @@ Later if you manually want to stop, start or restart it, you can
 use::
 
    $ sudo supervisorctl stop anki-server
-   
+
    $ sudo supervisorctl start anki-server
-   
+
    $ sudo supervisorctl restart anki-server
 
 See the `Supervisor documentation <http://supervisord.org>`_ for
