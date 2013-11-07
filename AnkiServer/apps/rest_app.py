@@ -297,9 +297,9 @@ class RestApp(object):
         pprint(data)
 
         # run it!
-        col = self.collection_manager.get_collection(collection_path, self.setup_new_collection)
-        handler_request = RestHandlerRequest(self, data, ids, session)
         try:
+            col = self.collection_manager.get_collection(collection_path, self.setup_new_collection)
+            handler_request = RestHandlerRequest(self, data, ids, session)
             output = col.execute(handler, [handler_request], {}, hasReturnValue)
         except HTTPError, e:
             # we pass these on through!
