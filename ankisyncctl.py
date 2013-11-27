@@ -1,4 +1,4 @@
-#! /usr/bin/env python2
+#!/usr/bin/env python
 
 import os
 import sys
@@ -28,6 +28,13 @@ def usage():
 def startsrv(configpath):
     if not configpath:
         configpath = SERVERCONFIG
+
+    # We change to the directory containing the config file
+    # so that all the paths will be relative to it.
+    configdir = os.path.dirname(configpath)
+    if configdir != '':
+        os.chdir(configdir)
+    configpath = os.path.basename(configpath)
 
     devnull = open(os.devnull, "w")
 
