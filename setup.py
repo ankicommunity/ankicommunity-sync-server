@@ -15,7 +15,7 @@ def get_anki_bundled_files():
 
 setup(
     name="AnkiServer",
-    version="2.0.2",
+    version="2.0.3",
     description="A personal Anki sync server (so you can sync against your own server rather than AnkiWeb)",
     long_description=open('README.rst').read(),
     license='LICENSE.txt',
