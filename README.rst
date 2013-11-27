@@ -80,8 +80,8 @@ Here are step-by-step instruction for setting up your virtualenv:
 
 If you skip step 3, you'll have to type
 ``AnkiServer.env/bin/python`` instead of ``python`` and
-``AnkiServer.env/bin/paster`` instead of ``paster`` in the next
-section.
+``AnkiServer.env/bin/paster`` instead of ``paster`` in the following
+sections.
 
 Also, remember that the environment change in step 3 only lasts as
 long as your current terminal session. You'll have to re-enter the
@@ -155,7 +155,7 @@ Point the Anki desktop program at it
 
 Unfortunately, there isn't currently any user interface in the Anki
 destop program to point it at your personal sync server instead of
-AnkiWeb, so you'll have to write a short 'addon'.
+AnkiWeb, so you'll have to write a short "addon".
 
 Create a file like this in your Anki/addons folder called
 "mysyncserver.py"::
@@ -166,7 +166,32 @@ Create a file like this in your Anki/addons folder called
 Be sure to change the SYNC_URL to point at your sync server. The
 address ``127.0.0.1`` refers to the local computer.
 
-Restart Anki for your plugin to take effect.
+Restart Anki for your plugin to take effect. Now, everytime you sync,
+it will be to your personal sync server rather than AnkiWeb.
+
+However, if you just want to switch temporarily, rather than creating
+an addon, you can set the ``SYNC_URL`` environment variable when
+running from the command-line (on Linux)::
+
+  export SYNC_URL=http://127.0.0.1:27701/sync/
+  ./runanki &
+
+Point the mobile apps at it
+---------------------------
+
+At the moment, there isn't any way to get AnkiDroid or the Anki iOS
+app to point at your personal sync server. :-/
+
+However, there are a couple issues open on AnkiDroid about it:
+
+ * [Issue 154:  Custom sync server
+   setting](http://code.google.com/p/ankidroid/issues/detail?id=154)
+
+ * [Allow users to configure the URL of the sync
+   server](https://github.com/ankidroid/Anki-Android/issues/133)
+
+If you're interested in seeing this feature, please go to those links
+and let the maintainers know!
 
 Running with Supervisor
 -----------------------
