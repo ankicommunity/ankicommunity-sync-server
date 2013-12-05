@@ -69,9 +69,8 @@ def adduser(username):
         conn = sqlite3.connect(AUTHDBPATH)
         cursor = conn.cursor()
 
-        if not os.path.isfile(AUTHDBPATH):
-            cursor.execute( "CREATE TABLE auth "
-                            "(user VARCHAR PRIMARY KEY, hash VARCHAR)")
+        cursor.execute( "CREATE TABLE IF NOT EXISTS auth "
+                        "(user VARCHAR PRIMARY KEY, hash VARCHAR)")
 
         cursor.execute("INSERT INTO auth VALUES (?, ?)", (username, hash))
 
