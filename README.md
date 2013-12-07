@@ -2,8 +2,8 @@ ankisyncd
 =========
 
 A personal Anki sync server (so you can sync against your own server rather than
-AnkiWeb). This version has been modified to remove the REST API and some 
-dependencies (sqlalchemy, PasteDeploy, PasteScript).
+AnkiWeb). This version has been modified to remove the REST API, which makes it
+possible to drop some dependencies.
 
 Installing
 ----------
