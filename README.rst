@@ -241,6 +241,34 @@ use::
 See the `Supervisor documentation <http://supervisord.org>`_ for
 more info!
 
+Using with Apache
+-----------------
+
+If you're already serving your website via Apache (on port 80) and
+want to also allow users to sync against a URL on port 80, you can
+forward requests from Apache to the Anki server.
+
+On Bibliobird.com, I have a special anki.bibliobird.com virtual host
+which users can synch against. Here is an excerpt from my Apache
+conf::
+
+    <VirtualHost *:80>
+        ServerAdmin support@lingwo.org
+        ServerName anki.bibliobird.com
+
+        # The Anki server handles gzip itself!
+        SetEnv no-gzip 1
+
+        <Location />
+            ProxyPass http://localhost:27701/
+            ProxyPassReverse http://localhost:27701/
+        </Location>
+    </VirtualHost>
+
+It may also be possible to use `mod_wsgi
+<http://code.google.com/p/modwsgi/>`_, however, I have no experience
+with that.
+
 How to get help
 ---------------
 
