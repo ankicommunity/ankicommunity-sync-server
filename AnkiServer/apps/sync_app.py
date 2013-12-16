@@ -1,17 +1,17 @@
 
 # AnkiServer - A personal Anki sync server
 # Copyright (C) 2013 David Snopek
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -63,7 +63,7 @@ class SyncCollectionHandler(Syncer):
             version = '2.0.12'
             platform = 'unknown'
 
-        version_int = [int(x) for x in version.split('.')] 
+        version_int = [int(x) for x in version.split('.')]
 
         # Some insanity added in Anki 2.0.13
         if client == 'ankidesktop' and version_int[0] >= 2 and version_int[1] >= 0 and version_int[2] >= 13:
@@ -320,7 +320,7 @@ class SyncApp(object):
         chars = string.ascii_letters + string.digits
         val = ':'.join([username, str(int(time.time())), ''.join(random.choice(chars) for x in range(8))])
         return hashlib.md5(val).hexdigest()
-    
+
     def create_session(self, username, user_path):
         return SyncUserSession(username, user_path, self.collection_manager, self.setup_new_collection)
 
@@ -359,7 +359,7 @@ class SyncApp(object):
         # run hook_upload if one is defined
         if self.hook_upload is not None:
             self.hook_upload(col, session)
-        
+
         return True
 
     def operation_download(self, col, session):
@@ -526,7 +526,7 @@ class SqliteSessionManager(SimpleSessionManager):
             cursor = conn.cursor()
             cursor.execute("CREATE TABLE session (hkey VARCHAR PRIMARY KEY, user VARCHAR, path VARCHAR)")
         return conn
-    
+
     def load(self, hkey, session_factory=None):
         session = SimpleSessionManager.load(self, hkey)
         if session is not None:
@@ -535,7 +535,7 @@ class SqliteSessionManager(SimpleSessionManager):
         conn = self._conn()
         cursor = conn.cursor()
 
-        cursor.execute("SELECT user, path FROM session WHERE hkey=?", (hkey,)) 
+        cursor.execute("SELECT user, path FROM session WHERE hkey=?", (hkey,))
         res = cursor.fetchone()
 
         if res is not None:
@@ -584,7 +584,7 @@ class SqliteUserManager(SimpleUserManager):
             hashobj = hashlib.sha256()
 
             hashobj.update(username+password+salt)
-    
+
         conn.close()
 
         return (db_ret != None and hashobj.hexdigest()+salt == db_hash)
@@ -612,4 +612,3 @@ def main():
         shutdown()
 
 if __name__ == '__main__': main()
-
