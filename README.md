@@ -56,9 +56,11 @@ install some of the dependencies we need there:
 
         $ ./ankisyncctl.py stop
 
-### Via PKGBUILD
+### Via AUR
 
-There's PKGBUILD available for Arch Linux. To install, simply run:
+For Arch Linux, ankisyncd is also available on AUR: https://aur.archlinux.org/packages/ankisyncd-git/
+
+Use your AUR wrapper to install or run the commands below to install manually from PKGBUILD.
 
     $ wget https://codeload.github.com/jdoe0/ankisyncd-pkgbuild/zip/master
     $ unzip master
