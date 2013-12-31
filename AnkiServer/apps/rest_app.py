@@ -81,9 +81,8 @@ class RestApp(object):
         self.data_root = os.path.abspath(data_root)
         self.allowed_hosts = kw.get('allowed_hosts', '*')
         self.setup_new_collection = kw.get('setup_new_collection')
-        # TODO: implement! The idea is that these will run before/after executing any handler
-        #self.hook_pre_execute = kw.get('hook_pre_execute')
-        #self.hook_post_execute = kw.get('hook_post_execute')
+        self.hook_pre_execute = kw.get('hook_pre_execute')
+        self.hook_post_execute = kw.get('hook_post_execute')
 
         if kw.get('collection_manager') is not None:
             self.collection_manager = kw['collection_manager']
@@ -262,6 +261,14 @@ class RestApp(object):
 
         return data
 
+    def _execute_handler(self, col, req, handler):
+        if self.hook_pre_execute is not None:
+            self.hook_pre_execute(col, req)
+        result = handler(col, req)
+        if self.hook_post_execute is not None:
+            self.hook_post_execute(col, req, result)
+        return result
+
     @wsgify
     def __call__(self, req):
         # make sure the request is valid
@@ -300,7 +307,7 @@ class RestApp(object):
         try:
             col = self.collection_manager.get_collection(collection_path, self.setup_new_collection)
             handler_request = RestHandlerRequest(self, data, ids, session)
-            output = col.execute(handler, [handler_request], {}, hasReturnValue)
+            output = col.execute(self._execute_handler, [handler_request, handler], {}, hasReturnValue)
         except HTTPError, e:
             # we pass these on through!
             raise
