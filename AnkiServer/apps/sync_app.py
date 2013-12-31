@@ -173,8 +173,10 @@ class SyncMediaHandler(MediaSyncer):
                 csum = checksum(data)
                 name = meta[i.filename]
                 # can we store the file on this system?
-                # TODO: this function changed it's name in Anki 2.0.12 to media.hasIllegal()
-                if self.col.media.illegal(name):
+                # NOTE: this function changed it's name in Anki 2.0.12 to media.hasIllegal()
+                if hasattr(self.col.media, 'illegal') and self.col.media.illegal(name):
+                    continue
+                if hasattr(self.col.media, 'hasIllegal') and self.col.media.hasIllegal(name):
                     continue
                 # save file
                 open(os.path.join(self.col.media.dir(), name), "wb").write(data)
