@@ -196,6 +196,10 @@ class SyncMediaHandler(MediaSyncer):
 
         return usn
 
+    def mediaSanity(self, client=None):
+        # TODO: Do something with 'client' argument?
+        return self.col.media.sanityCheck()
+
     def mediaList(self):
         """Returns a list of all the fnames in this collections media database."""
         fnames = []
