@@ -97,7 +97,7 @@ class ImporterTest(unittest.TestCase):
         exporter.exportInto(dst2_path)
 
         # first, import it without allow_update - no change should happen
-        import_file(get_importer_class('apkg'), self.collection, dst2_path)
+        import_file(get_importer_class('apkg'), self.collection, dst2_path, allow_update=False)
         note = self.collection.getNote(note_id)
         self.assertEqual(note['Front'], 'The front')
         self.assertEqual(note.tags, ['Tag1', 'Tag2'])
