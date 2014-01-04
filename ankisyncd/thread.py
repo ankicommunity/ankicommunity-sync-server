@@ -1,9 +1,6 @@
 
 from __future__ import absolute_import
 
-import anki
-import anki.storage
-
 from ankisyncd.collection import CollectionWrapper, CollectionManager
 
 from threading import Thread
