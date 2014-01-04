@@ -590,7 +590,7 @@ def main():
     from ankisyncd.thread import shutdown
 
     config = SafeConfigParser()
-    config.read("production.ini")
+    config.read("ankisyncd.conf")
 
     ankiserver = SyncApp(config)
     httpd = make_server('', config.getint("sync_app", "port"), ankiserver)
