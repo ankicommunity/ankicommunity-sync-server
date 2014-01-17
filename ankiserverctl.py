@@ -19,13 +19,14 @@ def usage():
     print
     print "Commands:"
     print "  start [configfile] - start the server"
+    print "  debug [configfile] - start the server in debug mode"
     print "  stop               - stop the server"
     print "  adduser <username> - add a new user"
     print "  deluser <username> - delete a user"
     print "  lsuser             - list users"
     print "  passwd <username>  - change password of a user"
 
-def startsrv(configpath):
+def startsrv(configpath, debug):
     if not configpath:
         configpath = SERVERCONFIG
 
@@ -38,9 +39,13 @@ def startsrv(configpath):
 
     devnull = open(os.devnull, "w")
 
-    pid = subprocess.Popen( ["paster", "serve", configpath],
-                            stdout=devnull,
-                            stderr=devnull).pid
+    if debug:
+        pid = subprocess.Popen( ["paster", "serve", configpath],
+                                shell=False).pid
+    else:
+        pid = subprocess.Popen( ["paster", "serve", configpath],
+                                stdout=devnull,
+                                stderr=devnull).pid
 
     with open(PIDPATH, "w") as pidfile:
         pidfile.write(str(pid))
@@ -141,7 +146,9 @@ def main():
             sys.argv.append(None)
 
         if sys.argv[1] == "start":
-            startsrv(sys.argv[2])
+            startsrv(sys.argv[2], False)
+        elif sys.argv[1] == "debug":
+            startsrv(sys.argv[2], True)
         elif sys.argv[1] == "stop":
             stopsrv()
         elif sys.argv[1] == "adduser":
