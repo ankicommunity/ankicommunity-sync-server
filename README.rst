@@ -142,7 +142,11 @@ Configuring and running your Anki Server
 
    $ ./ankiserverctl.py adduser <username>
 
-4. Then we can run AnkiServer like so::
+4. Test the server by starting it debug mode::
+
+   $ ./ankiserverctl.py debug
+   
+   If the output looks good, you can stop the server by pressing Ctrl-C and start it again in normal mode::
 
    $ ./ankiserverctl.py start
 
