@@ -37,15 +37,15 @@ def startsrv(configpath, debug):
         os.chdir(configdir)
     configpath = os.path.basename(configpath)
 
-    devnull = open(os.devnull, "w")
-
     if debug:
-        pid = subprocess.Popen( ["paster", "serve", configpath],
-                                shell=False).pid
-    else:
-        pid = subprocess.Popen( ["paster", "serve", configpath],
-                                stdout=devnull,
-                                stderr=devnull).pid
+        # Start it in the foreground and wait for it to complete.
+        subprocess.call( ["paster", "serve", configpath], shell=False)
+        return
+
+    devnull = open(os.devnull, "w")
+    pid = subprocess.Popen( ["paster", "serve", configpath],
+                            stdout=devnull,
+                            stderr=devnull).pid
 
     with open(PIDPATH, "w") as pidfile:
         pidfile.write(str(pid))
