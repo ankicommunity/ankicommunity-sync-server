@@ -51,7 +51,7 @@ install some of the dependencies we need there:
 7. Then we can run ankisyncd like so:
 
         $ ./ankisyncctl.py start
-        
+
     To stop the server, run:
 
         $ ./ankisyncctl.py stop
@@ -82,7 +82,7 @@ like ankisyncd.py) containing the code below and put it in ~/Anki/addons.
 
     import anki.sync
 
-    anki.sync.SYNC_URL = 'http://127.0.0.1:27701/sync/'
+    anki.sync.SYNC_BASE = 'http://127.0.0.1:27701/'
 
 Replace 127.0.0.1 with the IP address or the domain name of your server if
 ankisyncd is not running on the same machine as Anki.
