@@ -186,15 +186,12 @@ Point the mobile apps at it
 At the moment, there isn't any way to get AnkiDroid or the Anki iOS
 app to point at your personal sync server. :-/
 
-However, there are a couple issues open on AnkiDroid about it:
+However, there are an issue open on AnkiDroid about it:
 
 - `Issue 154: Custom sync server setting
   <http://code.google.com/p/ankidroid/issues/detail?id=154>`_
 
-- `Allow users to configure the URL of the sync server
-  <https://github.com/ankidroid/Anki-Android/issues/133>`_
-
-If you're interested in seeing this feature, please go to those links
+If you're interested in seeing this feature, please go to this link
 and let the maintainers know!
 
 Running with Supervisor
