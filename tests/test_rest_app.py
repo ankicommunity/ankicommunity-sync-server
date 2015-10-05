@@ -15,6 +15,8 @@ import AnkiServer
 from AnkiServer.collection import CollectionManager
 from AnkiServer.apps.rest_app import RestApp, RestHandlerRequest, CollectionHandler, ImportExportHandler, NoteHandler, ModelHandler, DeckHandler, CardHandler
 
+from CollectionTestBase import CollectionTestBase
+
 from webob.exc import *
 
 import anki
@@ -34,7 +36,7 @@ class RestAppTest(unittest.TestCase):
         self.collection_manager = None
         self.rest_app = None
         shutil.rmtree(self.temp_dir)
-    
+
     def test_list_collections(self):
         os.mkdir(os.path.join(self.temp_dir, 'test1'))
         os.mkdir(os.path.join(self.temp_dir, 'test2'))
@@ -79,7 +81,7 @@ class RestAppTest(unittest.TestCase):
     def test_getCollectionPath(self):
         def fullpath(collection_id):
             return os.path.normpath(os.path.join(self.temp_dir, collection_id, 'collection.anki2'))
-            
+
         # This is simple and straight forward!
         self.assertEqual(self.rest_app._getCollectionPath('user'), fullpath('user'))
 
@@ -95,7 +97,7 @@ class RestAppTest(unittest.TestCase):
         def handlerTwo():
             pass
         handlerTwo.hasReturnValue = False
-        
+
         self.rest_app.add_handler('collection', 'handlerOne', handlerOne)
         self.rest_app.add_handler('deck', 'handlerTwo', handlerTwo)
 
@@ -123,49 +125,6 @@ class RestAppTest(unittest.TestCase):
         # test some bad data
         req.body = '{aaaaaaa}'
         self.assertRaises(HTTPBadRequest, self.rest_app._parseRequestBody, req)
-
-class CollectionTestBase(unittest.TestCase):
-    """Parent class for tests that need a collection set up and torn down."""
-
-    def setUp(self):
-        self.temp_dir = tempfile.mkdtemp()
-        self.collection_path = os.path.join(self.temp_dir, 'collection.anki2');
-        self.collection = anki.storage.Collection(self.collection_path)
-        self.mock_app = MagicMock()
-
-    def tearDown(self):
-        self.collection.close()
-        self.collection = None
-        shutil.rmtree(self.temp_dir)
-        self.mock_app.reset_mock()
-
-    # TODO: refactor into some kind of utility
-    def add_note(self, data):
-        from anki.notes import Note
-
-        model = self.collection.models.byName(data['model'])
-
-        note = Note(self.collection, model)
-        for name, value in data['fields'].items():
-            note[name] = value
-
-        if data.has_key('tags'):
-            note.setTagsFromStr(data['tags'])
-
-        self.collection.addNote(note)
-
-    # TODO: refactor into a parent class
-    def add_default_note(self, count=1):
-        data = {
-            'model': 'Basic',
-            'fields': {
-                'Front': 'The front',
-                'Back': 'The back',
-            },
-            'tags': "Tag1 Tag2",
-        }
-        for idx in range(0, count):
-            self.add_note(data)
 
 class CollectionHandlerTest(CollectionTestBase):
     def setUp(self):
@@ -494,7 +453,7 @@ class ImportExportHandlerTest(CollectionTestBase):
         }
         ret = self.execute('import_file', data)
         self.check_import()
-        
+
 class NoteHandlerTest(CollectionTestBase):
     def setUp(self):
         super(NoteHandlerTest, self).setUp()
