@@ -31,6 +31,7 @@ import zipfile
 import ankisyncd
 
 import anki
+from anki.db import DB
 from anki.sync import Syncer, MediaSyncer
 from anki.utils import intTime, checksum, isMac
 from anki.consts import SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
@@ -405,23 +406,31 @@ class SyncApp(object):
         return data
 
     def operation_upload(self, col, data, session):
-        col.close()
+        # Verify integrity of the received database file before replacing our
+        # existing db.
+        temp_db_path = session.get_collection_path() + ".tmp"
+        with open(temp_db_path, 'wb') as f:
+            f.write(data)
 
-        # TODO: we should verify the database integrity before perminantly overwriting
-        # (ie. use a temporary file) and declaring this a success!
-        #
-        # d = DB(path)
-        # assert d.scalar("pragma integrity_check") == "ok"
-        # d.close()
-        #
         try:
-            with open(session.get_collection_path(), 'wb') as fd:
-                fd.write(data)
+            test_db = DB(temp_db_path)
+            if test_db.scalar("pragma integrity_check") != "ok":
+                raise HTTPBadRequest("Integrity check failed for uploaded "
+                                     "collection database file.")
+            test_db.close()
+        except sqlite.Error as e:
+            raise HTTPBadRequest("Uploaded collection database file is "
+                                 "corrupt.")
+
+        # Overwrite existing db.
+        col.close()
+        try:
+            os.rename(temp_db_path, session.get_collection_path())
         finally:
             col.reopen()
             col.load()
 
-        # run hook_upload if one is defined
+        # If everything went fine, run hook_upload if one is defined.
         if self.hook_upload is not None:
             self.hook_upload(col, session)
 
