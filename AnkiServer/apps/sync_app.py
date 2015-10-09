@@ -326,6 +326,12 @@ class SyncApp(object):
         val = ':'.join([username, str(int(time.time())), ''.join(random.choice(chars) for x in range(8))])
         return hashlib.md5(val).hexdigest()
 
+    def create_session(self, username, user_path):
+        return SyncUserSession(username,
+                               user_path,
+                               self.collection_manager,
+                               self.setup_new_collection)
+
     def _create_session_for_user(self, username):
         """
         Creates a session object for the user and creates a hkey by which we
@@ -344,10 +350,8 @@ class SyncApp(object):
 
         user_path = os.path.join(self.data_root, dirname)
 
-        session = SyncUserSession(username,
-                                  user_path,
-                                  self.collection_manager,
-                                  self.setup_new_collection)
+        session = self.create_session(username, user_path)
+
         self.session_manager.save(hkey, session)
 
         return hkey
