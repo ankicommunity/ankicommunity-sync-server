@@ -21,6 +21,7 @@ from webob import Response
 
 import os
 import hashlib
+import logging
 
 import AnkiServer
 
@@ -326,7 +327,34 @@ class SyncApp(object):
         return hashlib.md5(val).hexdigest()
 
     def create_session(self, username, user_path):
-        return SyncUserSession(username, user_path, self.collection_manager, self.setup_new_collection)
+        return SyncUserSession(username,
+                               user_path,
+                               self.collection_manager,
+                               self.setup_new_collection)
+
+    def _create_session_for_user(self, username):
+        """
+        Creates a session object for the user and creates a hkey by which we
+        can retrieve it on later requests by that user during the same sync
+        session.
+        Returns the hkey.
+        """
+
+        dirname = self.user_manager.username2dirname(username)
+        if dirname is None:
+            raise HTTPForbidden()
+
+        hkey = self.generateHostKey(username)
+        logging.debug("generated session key '%s' for user '%s'"
+                      % (hkey, username))
+
+        user_path = os.path.join(self.data_root, dirname)
+
+        session = self.create_session(username, user_path)
+
+        self.session_manager.save(hkey, session)
+
+        return hkey
 
     def _decode_data(self, data, compression=0):
         import gzip
@@ -420,14 +448,7 @@ class SyncApp(object):
                 except KeyError:
                     raise HTTPForbidden('Must pass username and password')
                 if self.user_manager.authenticate(u, p):
-                    dirname = self.user_manager.username2dirname(u)
-                    if dirname is None:
-                        raise HTTPForbidden()
-
-                    hkey = self.generateHostKey(u)
-                    user_path = os.path.join(self.data_root, dirname)
-                    session = self.create_session(u, user_path)
-                    self.session_manager.save(hkey, session)
+                    hkey = self._create_session_for_user(u)
 
                     result = {'key': hkey}
                     return Response(
@@ -463,17 +484,7 @@ class SyncApp(object):
                     if self.hook_pre_sync is not None:
                         thread.execute(self.hook_pre_sync, [session])
 
-                # Create a closure to run this operation inside of the thread allocated to this collection
-                def runFunc(col):
-                    handler = session.get_handler_for_operation(url, col)
-                    func = getattr(handler, url)
-                    result = func(**data)
-                    col.save()
-                    return result
-                runFunc.func_name = url
-
-                # Send to the thread to execute
-                result = thread.execute(runFunc)
+                result = self._execute_handler_method_in_thread(url, data, session)
 
                 # If it's a complex data type, we convert it to JSON
                 if type(result) not in (str, unicode):
@@ -513,6 +524,33 @@ class SyncApp(object):
             raise HTTPInternalServerError()
 
         return Response(status='200 OK', content_type='text/plain', body='Anki Sync Server')
+
+    @staticmethod
+    def _execute_handler_method_in_thread(method_name, keyword_args, session):
+        """
+        Gets and runs the handler method specified by method_name inside the
+        thread for session. The handler method will access the collection as
+        self.col.
+        """
+
+        def run_func(col):
+            # Retrieve the correct handler method.
+            handler = session.get_handler_for_operation(method_name, col)
+            handler_method = getattr(handler, method_name)
+
+            res = handler_method(**keyword_args)
+
+            col.save()
+            return res
+
+        run_func.func_name = method_name  # More useful debugging messages.
+
+        # Send the closure to the thread for execution.
+        thread = session.get_thread()
+        result = thread.execute(run_func)
+
+        return result
+
 
 class SqliteSessionManager(SimpleSessionManager):
     """Stores sessions in a SQLite database to prevent the user from being logged out
