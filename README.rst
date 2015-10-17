@@ -188,8 +188,8 @@ app to point at your personal sync server. :-/
 
 However, there are an issue open on AnkiDroid about it:
 
-- `Issue 154: Custom sync server setting
-  <http://code.google.com/p/ankidroid/issues/detail?id=154>`_
+- `Option to sync with personal sync server · Issue #1057
+  <https://github.com/ankidroid/Anki-Android/issues/1057>`_
 
 If you're interested in seeing this feature, please go to this link
 and let the maintainers know!
