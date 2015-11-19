@@ -73,78 +73,28 @@ class SyncCollectionHandler(Syncer):
               'ts': intTime(),
               'mod': self.col.mod,
               'usn': self.col._usn,
-              'musn': self.col.media.usn(),
+              'musn': self.col.media.lastUsn(),
               'msg': '',
               'cont': True,
             }
         else:
-            return (self.col.mod, self.col.scm, self.col._usn, intTime(), self.col.media.usn())
+            return (self.col.mod, self.col.scm, self.col._usn, intTime(), self.col.media.lastUsn())
 
 class SyncMediaHandler(MediaSyncer):
-    operations = ['remove', 'files', 'addFiles', 'mediaSanity', 'mediaList']
+    operations = ['begin', 'mediaChanges', 'mediaSanity', 'mediaList', 'uploadChanges', 'downloadFiles']
 
     def __init__(self, col):
         MediaSyncer.__init__(self, col)
 
-    def remove(self, fnames, minUsn):
-        rrem = MediaSyncer.remove(self, fnames, minUsn)
-        # increment the USN for each file removed
-        #self.col.media.setUsn(self.col.media.usn() + len(rrem))
-        return rrem
+    def begin(self, skey):
+        return json.dumps({'data':{'sk':skey, 'usn':self.col._usn}, 'err':None})
 
-    def files(self, minUsn=0, need=None):
-        """Gets files from the media database and returns them as ZIP file data."""
-
-        import zipfile
-
-        # The client can pass None - I'm not sure what the correct action is in that case,
-        # for now, we're going to resync everything.
-        if need is None:
-            need = self.mediaList()
-
-        # Comparing minUsn to need, we attempt to determine which files have already
-        # been sent, and we remove them from the front of the list.
-        need = need[len(need) - (self.col.media.usn() - minUsn):]
-
-        # Copied and modified from anki.media.MediaManager.zipAdded(). Instead of going
-        # over the log, we loop over the files needed and increment the USN along the
-        # way. The zip also has an additional '_usn' member, which the client uses to
-        # update the usn on their end.
-
-        f = StringIO()
-        z = zipfile.ZipFile(f, "w", compression=zipfile.ZIP_DEFLATED)
-        sz = 0
-        cnt = 0
-        files = {}
-        while 1:
-            if len(need) == 0:
-                # add a flag so the server knows it can clean up
-                z.writestr("_finished", "")
-                break
-            fname = need.pop()
-            minUsn += 1
-            z.write(os.path.join(self.col.media.dir(), fname), str(cnt))
-            files[str(cnt)] = fname
-            sz += os.path.getsize(os.path.join(self.col.media.dir(), fname))
-            if sz > SYNC_ZIP_SIZE or cnt > SYNC_ZIP_COUNT:
-                break
-            cnt += 1
-        z.writestr("_meta", json.dumps(files))
-        z.writestr("_usn", str(minUsn))
-        z.close()
-
-        return f.getvalue()
-
-    def addFiles(self, data):
+    def uploadChanges(self, data, skey):
         """Adds files based from ZIP file data and returns the usn."""
 
         import zipfile
 
-        # The argument name is 'zip' on MediaSyncer, but we always use 'data' when
-        # we receive non-JSON data. We have to override to receive the right argument!
-        #MediaSyncer.addFiles(self, zip=fd.getvalue())
-
-        usn = self.col.media.usn()
+        usn = self.col.media.lastUsn()
 
         # Copied from anki.media.MediaManager.syncAdd(). Modified to not need the
         # _usn file and, instead, to increment the server usn with each file added.
@@ -155,6 +105,7 @@ class SyncMediaHandler(MediaSyncer):
         meta = None
         media = []
         sizecnt = 0
+        processedCnt = 0
         # get meta info first
         assert z.getinfo("_meta").file_size < 100000
         meta = json.loads(z.read("_meta"))
@@ -172,7 +123,7 @@ class SyncMediaHandler(MediaSyncer):
             else:
                 data = z.read(i)
                 csum = checksum(data)
-                name = meta[i.filename]
+                name = [x for x in meta if x[1] == i.filename][0][0]
                 # can we store the file on this system?
                 # NOTE: this function changed it's name in Anki 2.0.12 to media.hasIllegal()
                 if hasattr(self.col.media, 'illegal') and self.col.media.illegal(name):
@@ -182,37 +133,66 @@ class SyncMediaHandler(MediaSyncer):
                 # save file
                 open(os.path.join(self.col.media.dir(), name), "wb").write(data)
                 # update db
-                media.append((name, csum, self.col.media._mtime(os.path.join(self.col.media.dir(), name))))
-                # remove entries from local log
-                self.col.media.db.execute("delete from log where fname = ?", name)
+                media.append((name, csum, self.col.media._mtime(os.path.join(self.col.media.dir(), name)), 0))
+                processedCnt += 1
                 usn += 1
         # update media db and note new starting usn
         if media:
             self.col.media.db.executemany(
-                "insert or replace into media values (?,?,?)", media)
-        self.col.media.setUsn(usn) # commits
+                "insert or replace into media values (?,?,?,?)", media)
+        self.col.media.setLastUsn(usn) # commits
         # if we have finished adding, we need to record the new folder mtime
         # so that we don't trigger a needless scan
         if finished:
             self.col.media.syncMod()
 
-        return usn
+        return json.dumps({'data':[processedCnt, usn], 'err':None})
 
-    def mediaSanity(self, client=None):
-        # TODO: Do something with 'client' argument?
-        return self.col.media.sanityCheck()
+    def downloadFiles(self, files):
+        import zipfile
 
-    def mediaList(self):
-        """Returns a list of all the fnames in this collections media database."""
-        fnames = []
-        for fname, in self.col.media.db.execute("select fname from media"):
-            fnames.append(fname)
-        fnames.sort()
-        return fnames
+        flist = {}
+        cnt = 0
+        sz = 0
+        f = StringIO()
+        z = zipfile.ZipFile(f, "w", compression=zipfile.ZIP_DEFLATED)
+
+        for fname in files:
+            z.write(os.path.join(self.col.media.dir(), fname), str(cnt))
+            flist[str(cnt)] = fname
+            sz += os.path.getsize(os.path.join(self.col.media.dir(), fname))
+            if sz > SYNC_ZIP_SIZE or cnt > SYNC_ZIP_COUNT:
+                break
+            cnt += 1
+
+        z.writestr("_meta", json.dumps(flist))
+        z.close()
+
+        return f.getvalue()
+
+    def mediaChanges(self, lastUsn, skey):
+        result = []
+        usn = self.col.media.lastUsn()
+        fname = csum = None
+
+        if lastUsn < usn or lastUsn == 0:
+            for fname,mtime,csum, in self.col.media.db.execute("select fname,mtime,csum from media"):
+                result.append([fname, usn, csum])
+
+        return json.dumps({'data':result, 'err':None})
+
+    def mediaSanity(self, local=None):
+        if self.col.media.mediaCount() == local:
+            result = "OK"
+        else:
+            result = "FAILED"
+
+        return json.dumps({'data':result, 'err':None})
 
 class SyncUserSession(object):
     def __init__(self, name, path, collection_manager, setup_new_collection=None):
         import time
+        self.skey = None
         self.name = name
         self.path = path
         self.collection_manager = collection_manager
@@ -257,6 +237,11 @@ class SimpleSessionManager(object):
     def load(self, hkey, session_factory=None):
         return self.sessions.get(hkey)
 
+    def load_from_skey(self, skey, session_factory=None):
+        for i in self.sessions:
+            if self.sessions[i].skey == skey:
+                return self.sessions[i]
+
     def save(self, hkey, session):
         self.sessions[hkey] = session
 
@@ -292,6 +277,7 @@ class SyncApp(object):
 
         self.data_root = os.path.abspath(config.get("sync_app", "data_root"))
         self.base_url  = config.get("sync_app", "base_url")
+        self.base_media_url  = config.get("sync_app", "base_media_url")
         self.setup_new_collection = None
         self.hook_pre_sync = None
         self.hook_post_sync = None
@@ -305,6 +291,8 @@ class SyncApp(object):
         # make sure the base_url has a trailing slash
         if not self.base_url.endswith('/'):
             self.base_url += '/'
+        if not self.base_media_url.endswith('/'):
+            self.base_media_url += '/'
 
     def generateHostKey(self, username):
         """Generates a new host key to be used by the given username to identify their session.
@@ -370,7 +358,35 @@ class SyncApp(object):
 
     @wsgify
     def __call__(self, req):
-        #print req.path
+        # Get and verify the session
+        try:
+            hkey = req.POST['k']
+        except KeyError:
+            hkey = None
+
+        session = self.session_manager.load(hkey, self.create_session)
+
+        if session is None:
+            try:
+                skey = req.POST['sk']
+                session = self.session_manager.load_from_skey(skey, self.create_session)
+            except KeyError:
+                skey = None
+
+        try:
+            compression = int(req.POST['c'])
+        except KeyError:
+            compression = 0
+
+        try:
+            data = req.POST['data'].file.read()
+            data = self._decode_data(data, compression)
+        except KeyError:
+            data = {}
+        except ValueError:
+            # Bad JSON
+            raise HTTPBadRequest()
+
         if req.path.startswith(self.base_url):
             url = req.path[len(self.base_url):]
             if url not in self.valid_urls:
@@ -387,21 +403,6 @@ class SyncApp(object):
                     content_type='application/json',
                     content_encoding='deflate',
                     body=zlib.compress(json.dumps({'status': 'oldVersion'})))
-
-            try:
-                compression = int(req.POST['c'])
-            except KeyError:
-                compression = 0
-
-            try:
-                data = req.POST['data'].file.read()
-                data = self._decode_data(data, compression)
-            except KeyError:
-                data = {}
-            except ValueError:
-                # Bad JSON
-                raise HTTPBadRequest()
-            #print 'data:', data
 
             if url == 'hostKey':
                 try:
@@ -428,23 +429,21 @@ class SyncApp(object):
                     # TODO: do I have to pass 'null' for the client to receive None?
                     raise HTTPForbidden('null')
 
-            # Get and verify the session
-            try:
-                hkey = req.POST['k']
-            except KeyError:
-                raise HTTPForbidden()
-            session = self.session_manager.load(hkey, self.create_session)
             if session is None:
                 raise HTTPForbidden()
 
             if url in SyncCollectionHandler.operations + SyncMediaHandler.operations:
                 # 'meta' passes the SYNC_VER but it isn't used in the handler
                 if url == 'meta':
+                    if session.skey == None and req.POST.has_key('s'):
+                        session.skey = req.POST['s']
                     if data.has_key('v'):
                         session.version = data['v']
                         del data['v']
                     if data.has_key('cv'):
                         session.client_version = data['cv']
+                    self.session_manager.save(hkey, session)
+                    session = self.session_manager.load(hkey, self.create_session)
 
                 thread = session.get_thread()
 
@@ -502,6 +501,21 @@ class SyncApp(object):
             # This was one of our operations but it didn't get handled... Oops!
             raise HTTPInternalServerError()
 
+        # media sync
+        elif req.path.startswith(self.base_media_url):
+            if session is None:
+                raise HTTPForbidden()
+
+            url = req.path[len(self.base_media_url):]
+
+            if url not in self.valid_urls:
+                raise HTTPNotFound()
+
+            if url == 'begin' or url == 'mediaChanges' or url == 'uploadChanges':
+                data['skey'] = session.skey
+
+            return self._execute_handler_method_in_thread(url, data, session)
+
         return Response(status='200 OK', content_type='text/plain', body='Anki Sync Server')
 
 class SqliteSessionManager(SimpleSessionManager):
@@ -518,7 +532,7 @@ class SqliteSessionManager(SimpleSessionManager):
         conn = sqlite.connect(self.session_db_path)
         if new:
             cursor = conn.cursor()
-            cursor.execute("CREATE TABLE session (hkey VARCHAR PRIMARY KEY, user VARCHAR, path VARCHAR)")
+            cursor.execute("CREATE TABLE session (hkey VARCHAR PRIMARY KEY, skey VARCHAR, user VARCHAR, path VARCHAR)")
         return conn
 
     def load(self, hkey, session_factory=None):
@@ -529,11 +543,28 @@ class SqliteSessionManager(SimpleSessionManager):
         conn = self._conn()
         cursor = conn.cursor()
 
-        cursor.execute("SELECT user, path FROM session WHERE hkey=?", (hkey,))
+        cursor.execute("SELECT skey, user, path FROM session WHERE hkey=?", (hkey,))
         res = cursor.fetchone()
 
         if res is not None:
-            session = self.sessions[hkey] = session_factory(res[0], res[1])
+            session = self.sessions[hkey] = session_factory(res[1], res[2])
+            session.skey = res[0]
+            return session
+
+    def load_from_skey(self, skey, session_factory=None):
+        session = SimpleSessionManager.load_from_skey(self, skey)
+        if session is not None:
+            return session
+
+        conn = self._conn()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT hkey, user, path FROM session WHERE skey=?", (skey,))
+        res = cursor.fetchone()
+
+        if res is not None:
+            session = self.sessions[res[0]] = session_factory(res[1], res[2])
+            session.skey = skey
             return session
 
     def save(self, hkey, session):
@@ -542,8 +573,8 @@ class SqliteSessionManager(SimpleSessionManager):
         conn = self._conn()
         cursor = conn.cursor()
 
-        cursor.execute("INSERT OR REPLACE INTO session (hkey, user, path) VALUES (?, ?, ?)",
-            (hkey, session.name, session.path))
+        cursor.execute("INSERT OR REPLACE INTO session (hkey, skey, user, path) VALUES (?, ?, ?, ?)",
+            (hkey, session.skey, session.name, session.path))
         conn.commit()
 
     def delete(self, hkey):
