@@ -518,6 +518,32 @@ class SyncApp(object):
 
         return Response(status='200 OK', content_type='text/plain', body='Anki Sync Server')
 
+    @staticmethod
+    def _execute_handler_method_in_thread(method_name, keyword_args, session):
+        """
+        Gets and runs the handler method specified by method_name inside the
+        thread for session. The handler method will access the collection as
+        self.col.
+        """
+
+        def run_func(col):
+            # Retrieve the correct handler method.
+            handler = session.get_handler_for_operation(method_name, col)
+            handler_method = getattr(handler, method_name)
+
+            res = handler_method(**keyword_args)
+
+            col.save()
+            return res
+
+        run_func.func_name = method_name  # More useful debugging messages.
+
+        # Send the closure to the thread for execution.
+        thread = session.get_thread()
+        result = thread.execute(run_func)
+
+        return result
+
 class SqliteSessionManager(SimpleSessionManager):
     """Stores sessions in a SQLite database to prevent the user from being logged out
     everytime the SyncApp is restarted."""
