@@ -22,6 +22,7 @@ from webob import Response
 import os
 import hashlib
 import logging
+import string
 
 import AnkiServer
 
@@ -65,10 +66,12 @@ class SyncCollectionHandler(Syncer):
             version = '2.0.12'
             platform = 'unknown'
 
-        version_int = [int(x) for x in version.split('.')]
+        version_int = [ int(str(x).translate(None, string.ascii_letters))
+                        for x in version.split('.') ]
 
         # Some insanity added in Anki 2.0.13
-        if client == 'ankidesktop' and version_int[0] >= 2 and version_int[1] >= 0 and version_int[2] >= 13:
+        if (client == 'ankidroid' and version_int[0] >=2 and version_int[1] >= 3) \
+        or (client == 'ankidesktop' and version_int[0] >= 2 and version_int[1] >= 0 and version_int[2] >= 13):
             return {
               'scm': self.col.scm,
               'ts': intTime(),
@@ -88,7 +91,7 @@ class SyncMediaHandler(MediaSyncer):
         MediaSyncer.__init__(self, col)
 
     def begin(self, skey):
-        return json.dumps({'data':{'sk':skey, 'usn':self.col._usn}, 'err':None})
+        return json.dumps({'data':{'sk':skey, 'usn':self.col._usn}, 'err':''})
 
     def uploadChanges(self, data, skey):
         """Adds files based from ZIP file data and returns the usn."""
@@ -147,7 +150,7 @@ class SyncMediaHandler(MediaSyncer):
         if finished:
             self.col.media.syncMod()
 
-        return json.dumps({'data':[processedCnt, usn], 'err':None})
+        return json.dumps({'data':[processedCnt, usn], 'err':''})
 
     def downloadFiles(self, files):
         import zipfile
@@ -180,7 +183,7 @@ class SyncMediaHandler(MediaSyncer):
             for fname,mtime,csum, in self.col.media.db.execute("select fname,mtime,csum from media"):
                 result.append([fname, usn, csum])
 
-        return json.dumps({'data':result, 'err':None})
+        return json.dumps({'data':result, 'err':''})
 
     def mediaSanity(self, local=None):
         if self.col.media.mediaCount() == local:
@@ -188,7 +191,7 @@ class SyncMediaHandler(MediaSyncer):
         else:
             result = "FAILED"
 
-        return json.dumps({'data':result, 'err':None})
+        return json.dumps({'data':result, 'err':''})
 
 class SyncUserSession(object):
     def __init__(self, name, path, collection_manager, setup_new_collection=None):
