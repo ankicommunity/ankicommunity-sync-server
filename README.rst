@@ -165,7 +165,8 @@ Create a file like this in your Anki/addons folder called
 "mysyncserver.py"::
 
   import anki.sync
-  anki.sync.SYNC_URL = 'http://127.0.0.1:27701/sync/'
+  anki.sync.SYNC_BASE = 'http://127.0.0.1:27701/'
+  anki.sync.SYNC_MEDIA_BASE = 'http://127.0.0.1:27701/msync/'
 
 Be sure to change the SYNC_URL to point at your sync server. The
 address ``127.0.0.1`` refers to the local computer.
