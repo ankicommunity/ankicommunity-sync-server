@@ -90,7 +90,13 @@ class SyncMediaHandler(MediaSyncer):
         MediaSyncer.__init__(self, col)
 
     def begin(self, skey):
-        return json.dumps({'data':{'sk':skey, 'usn':self.col._usn}, 'err':''})
+        return json.dumps({
+            'data':{
+                'sk':skey,
+                'usn':self.col.media.lastUsn()
+            },
+            'err':''
+        })
 
     def uploadChanges(self, data, skey):
         """Adds files based from ZIP file data and returns the usn."""
@@ -257,7 +263,6 @@ class SimpleUserManager(object):
     def authenticate(self, username, password):
         """
         Returns True if this username is allowed to connect with this password. False otherwise.
-
         Override this to change how users are authenticated.
         """
 
@@ -266,7 +271,6 @@ class SimpleUserManager(object):
     def username2dirname(self, username):
         """
         Returns the directory name for the given user. By default, this is just the username.
-
         Override this to adjust the mapping between users and their directory.
         """
 
