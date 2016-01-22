@@ -518,7 +518,11 @@ class SyncApp(object):
             if url not in self.valid_urls:
                 raise HTTPNotFound()
 
-            if url == 'begin' or url == 'mediaChanges' or url == 'uploadChanges':
+            if url == 'begin':
+                skey = checksum(str(random.random()))[:8]
+                data['skey'] = skey
+                session.skey = skey
+            elif url == 'mediaChanges' or url == 'uploadChanges':
                 data['skey'] = session.skey
 
             return self._execute_handler_method_in_thread(url, data, session)
