@@ -22,6 +22,7 @@ from webob import Response
 import os
 import hashlib
 import logging
+import random
 import string
 
 import AnkiServer
@@ -202,7 +203,7 @@ class SyncMediaHandler(MediaSyncer):
 class SyncUserSession(object):
     def __init__(self, name, path, collection_manager, setup_new_collection=None):
         import time
-        self.skey = None
+        self.skey = self._generate_session_key()
         self.name = name
         self.path = path
         self.collection_manager = collection_manager
@@ -217,6 +218,9 @@ class SyncUserSession(object):
 
         self.collection_handler = None
         self.media_handler = None
+
+    def _generate_session_key(self):
+        return checksum(str(random.random()))[:8]
 
     def get_collection_path(self):
         return os.path.realpath(os.path.join(self.path, 'collection.anki2'))
