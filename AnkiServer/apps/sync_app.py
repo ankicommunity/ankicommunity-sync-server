@@ -24,13 +24,15 @@ import hashlib
 import logging
 import random
 import string
+import unicodedata
+import zipfile
 
 import AnkiServer
 
 import anki
 from anki.db import DB
 from anki.sync import Syncer, MediaSyncer
-from anki.utils import intTime, checksum
+from anki.utils import intTime, checksum, isMac
 from anki.consts import SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
 
 try:
@@ -101,63 +103,137 @@ class SyncMediaHandler(MediaSyncer):
         })
 
     def uploadChanges(self, data, skey):
-        """Adds files based from ZIP file data and returns the usn."""
+        """
+        The zip file contains files the client hasn't synced with the server
+        yet ('dirty'), and info on files it has deleted from its own media dir.
+        """
 
-        import zipfile
+        self._check_zip_data(data)
 
-        usn = self.col.media.lastUsn()
+        processed_count = self._adopt_media_changes_from_zip(data)
 
-        # Copied from anki.media.MediaManager.syncAdd(). Modified to not need the
-        # _usn file and, instead, to increment the server usn with each file added.
+        # We increment our lastUsn once for each file we processed.
+        # (lastUsn - processed_count) must equal the client's lastUsn.
+        our_last_usn = self.col.media.lastUsn()
+        self.col.media.setLastUsn(our_last_usn + processed_count)
 
-        f = StringIO(data)
-        z = zipfile.ZipFile(f, "r")
-        finished = False
-        meta = None
-        media = []
-        sizecnt = 0
-        processedCnt = 0
-        # get meta info first
-        assert z.getinfo("_meta").file_size < 100000
-        meta = json.loads(z.read("_meta"))
-        # then loop through all files
-        for i in z.infolist():
-            # check for zip bombs
-            sizecnt += i.file_size
-            assert sizecnt < 100*1024*1024
-            if i.filename == "_meta" or i.filename == "_usn":
-                # ignore previously-retrieved meta
+        return json.dumps(
+            {
+                'data': [processed_count,
+                         self.col.media.lastUsn()],
+                'err': ''
+            }
+        )
+
+    @staticmethod
+    def _check_zip_data(zip_data):
+        max_zip_size = 100*1024*1024
+        max_meta_file_size = 100000
+
+        file_buffer = StringIO(zip_data)
+        zip_file = zipfile.ZipFile(file_buffer, 'r')
+
+        meta_file_size = zip_file.getinfo("_meta").file_size
+        sum_file_sizes = sum(info.file_size for info in zip_file.infolist())
+
+        zip_file.close()
+        file_buffer.close()
+
+        if meta_file_size > max_meta_file_size:
+            raise ValueError("Zip file's metadata file is larger than %s "
+                             "Bytes." % max_meta_file_size)
+        elif sum_file_sizes > max_zip_size:
+            raise ValueError("Zip file contents are larger than %s Bytes." %
+                             max_zip_size)
+
+    def _adopt_media_changes_from_zip(self, zip_data):
+        """
+        Adds and removes files to/from the database and media directory
+        according to the data in zip file zipData.
+        """
+
+        file_buffer = StringIO(zip_data)
+        zip_file = zipfile.ZipFile(file_buffer, 'r')
+
+        # Get meta info first.
+        meta = json.loads(zip_file.read("_meta"))
+
+        # Remove media files that were removed on the client.
+        media_to_remove = []
+        for normname, ordinal in meta:
+            if ordinal == '':
+                media_to_remove.append(self._normalize_filename(normname))
+
+        # Add media files that were added on the client.
+        media_to_add = []
+        for i in zip_file.infolist():
+            if i.filename == "_meta":  # Ignore previously retrieved metadata.
                 continue
-            elif i.filename == "_finished":
-                # last zip in set
-                finished = True
             else:
-                data = z.read(i)
-                csum = checksum(data)
-                name = [x for x in meta if x[1] == i.filename][0][0]
-                # can we store the file on this system?
-                # NOTE: this function changed it's name in Anki 2.0.12 to media.hasIllegal()
-                if hasattr(self.col.media, 'illegal') and self.col.media.illegal(name):
-                    continue
-                if hasattr(self.col.media, 'hasIllegal') and self.col.media.hasIllegal(name):
-                    continue
-                # save file
-                open(os.path.join(self.col.media.dir(), name), "wb").write(data)
-                # update db
-                media.append((name, csum, self.col.media._mtime(os.path.join(self.col.media.dir(), name)), 0))
-                processedCnt += 1
-                usn += 1
-        # update media db and note new starting usn
-        if media:
-            self.col.media.db.executemany(
-                "insert or replace into media values (?,?,?,?)", media)
-        self.col.media.setLastUsn(usn) # commits
-        # if we have finished adding, we need to record the new folder mtime
-        # so that we don't trigger a needless scan
-        if finished:
-            self.col.media.syncMod()
+                file_data = zip_file.read(i)
+                csum = checksum(file_data)
+                filename = self._normalize_filename(meta[int(i.filename)][0])
+                file_path = os.path.join(self.col.media.dir(), filename)
 
-        return json.dumps({'data':[processedCnt, usn], 'err':''})
+                # Save file to media directory.
+                open(file_path, 'wb').write(file_data)
+                mtime = self.col.media._mtime(file_path)
+
+                media_to_add.append((filename, csum, mtime, 0))
+
+        # We count all files we are to remove, even if we don't have them in
+        # our media directory and our db doesn't know about them.
+        processed_count = len(media_to_remove) + len(media_to_add)
+
+        assert len(meta) == processed_count  # sanity check
+
+        if media_to_remove:
+            self._remove_media_files(media_to_remove)
+
+        if media_to_add:
+            self.col.media.db.executemany(
+                "INSERT OR REPLACE INTO media VALUES (?,?,?,?)", media_to_add)
+
+        return processed_count
+
+    @staticmethod
+    def _normalize_filename(filename):
+        """
+        Performs unicode normalization for file names. Logic taken from Anki's
+        MediaManager.addFilesFromZip().
+        """
+
+        if not isinstance(filename, unicode):
+            filename = unicode(filename, "utf8")
+
+        # Normalize name for platform.
+        if isMac:  # global
+            filename = unicodedata.normalize("NFD", filename)
+        else:
+            filename = unicodedata.normalize("NFC", filename)
+
+        return filename
+
+    def _remove_media_files(self, filenames):
+        """
+        Marks all files in list filenames as deleted and removes them from the
+        media directory.
+        """
+
+        # Mark the files as deleted in our db.
+        self.col.media.db.executemany("UPDATE media " +
+                                      "SET csum = NULL " +
+                                      " WHERE fname = ?",
+                                      [(f, ) for f in filenames])
+
+        # Remove the files from our media directory if it is present.
+        logging.debug('Removing %d files from media dir.' % len(filenames))
+        for filename in filenames:
+            try:
+                os.remove(os.path.join(self.col.media.dir(), filename))
+            except OSError as err:
+                logging.error("Error when removing file '%s' from media dir: "
+                              "%s" % filename, str(err))
 
     def downloadFiles(self, files):
         import zipfile
