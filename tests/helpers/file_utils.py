@@ -169,3 +169,19 @@ class FileUtils(object):
         zip_file.close()
 
         return file_buffer.getvalue()
+
+    def get_asset_path(self, relative_file_path):
+        """
+        Retrieves the path of a file for testing from the "assets" directory.
+
+        :param relative_file_path: the name of the file to retrieve, relative
+                                   to the "assets" directory
+        :return: the absolute path to the file in the "assets" directory.
+        """
+
+        join = os.path.join
+
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        support_dir = join(script_dir, os.pardir, "assets")
+        res = join(support_dir, relative_file_path)
+        return res
