@@ -2,8 +2,8 @@ ankisyncd
 =========
 
 A personal Anki sync server (so you can sync against your own server rather than
-AnkiWeb). This version has been modified to remove the REST API, which makes it
-possible to drop some dependencies.
+AnkiWeb). This version has been modified from dsnopek's Anki Sync Server to
+remove the REST API, which makes it possible to drop some dependencies.
 
 Installing
 ----------
@@ -55,24 +55,6 @@ install some of the dependencies we need there:
     To stop the server, run:
 
         $ ./ankisyncctl.py stop
-
-### Via AUR
-
-For Arch Linux, ankisyncd is also available on AUR: https://aur.archlinux.org/packages/ankisyncd-git/
-
-Use your AUR wrapper to install or run the commands below to install manually from PKGBUILD.
-
-    $ wget https://codeload.github.com/jdoe0/ankisyncd-pkgbuild/zip/master
-    $ unzip master
-    $ cd ankisyncd-pkgbuild-master
-    $ makepkg -s
-    $ sudo pacman -U *.xz
-
-Configuration file is at /etc/ankisyncd/ankisyncd.conf
-
-To start the server run:
-
-    $ sudo systemctl start ankisyncd
 
 Setting up Anki
 ---------------
