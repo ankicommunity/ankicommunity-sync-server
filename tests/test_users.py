@@ -5,17 +5,39 @@ import os
 import unittest
 
 
-from ankisyncd.users import UserManager
+from ankisyncd.users import SimpleUserManager, SqliteUserManager
 from helpers.file_utils import FileUtils
 
 
 class SimpleUserManagerTest(unittest.TestCase):
-    _good_test_un = 'username'
-    _good_test_pw = 'password'
+    def setUp(self):
+        self.user_manager = SimpleUserManager()
 
-    _bad_test_un = 'notAUsername'
-    _bad_test_pw = 'notAPassword'
+    def tearDown(self):
+        self._user_manager = None
 
+    def test_authenticate(self):
+        good_test_un = 'username'
+        good_test_pw = 'password'
+        bad_test_un = 'notAUsername'
+        bad_test_pw = 'notAPassword'
+
+        self.assertTrue(self.user_manager.authenticate(good_test_un,
+                                                       good_test_pw))
+        self.assertTrue(self.user_manager.authenticate(bad_test_un,
+                                                       bad_test_pw))
+        self.assertTrue(self.user_manager.authenticate(good_test_un,
+                                                       bad_test_pw))
+        self.assertTrue(self.user_manager.authenticate(bad_test_un,
+                                                       good_test_pw))
+
+    def test_username2dirname(self):
+        username = 'my_username'
+        dirname = self.user_manager.username2dirname(username)
+        self.assertEqual(dirname, username)
+
+
+class SqliteUserManagerTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.fileutils = FileUtils()
@@ -28,8 +50,8 @@ class SimpleUserManagerTest(unittest.TestCase):
     def setUp(self):
         self.auth_db_path = self.fileutils.create_file_path(suffix='auth.db')
         self.collection_path = self.fileutils.create_dir_path()
-        self.user_manager = UserManager(self.auth_db_path,
-                                        self.collection_path)
+        self.user_manager = SqliteUserManager(self.auth_db_path,
+                                              self.collection_path)
 
     def tearDown(self):
         self.user_manager = None
@@ -124,6 +146,27 @@ class SimpleUserManagerTest(unittest.TestCase):
         self.user_manager._create_user_dir(username)
         self.assertTrue(os.path.isdir(expected_dir_path))
 
+    def test_authenticate_user(self):
+        username = "my_username"
+        password = "my_password"
 
-if __name__ == '__main__':
-    unittest.main()
+        self.user_manager.create_auth_db()
+        self.user_manager.add_user(username, password)
+
+        self.assertTrue(self.user_manager.authenticate_user(username,
+                                                            password))
+
+    def test_set_password_for_user(self):
+        username = "my_username"
+        password = "my_password"
+        new_password = "my_new_password"
+
+        self.user_manager.create_auth_db()
+        self.user_manager.add_user(username, password)
+
+        self.user_manager.set_password_for_user(username, new_password)
+        self.assertFalse(self.user_manager.authenticate_user(username,
+                                                             password))
+        self.assertTrue(self.user_manager.authenticate_user(username,
+                                                            new_password))
+

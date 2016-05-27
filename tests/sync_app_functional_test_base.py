@@ -6,7 +6,7 @@ import unittest
 from webtest import TestApp
 
 
-from ankisyncd.users import UserManager
+from ankisyncd.users import SqliteUserManager
 from helpers.collection_utils import CollectionUtils
 from helpers.db_utils import DBUtils
 from helpers.file_utils import FileUtils
@@ -45,8 +45,8 @@ class SyncAppFunctionalTestBase(unittest.TestCase):
         self.server_paths = self.serverutils.create_server_paths()
 
         # Add a test user to the temp auth db the server will use.
-        self.user_manager = UserManager(self.server_paths['auth_db'],
-                                        self.server_paths['data_root'])
+        self.user_manager = SqliteUserManager(self.server_paths['auth_db'],
+                                              self.server_paths['data_root'])
         self.user_manager.add_user('testuser', 'testpassword')
 
         # Get absolute path to development ini file.

@@ -38,6 +38,8 @@ from anki.sync import Syncer, MediaSyncer
 from anki.utils import intTime, checksum, isMac
 from anki.consts import SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
 
+from ankisyncd.users import SimpleUserManager, SqliteUserManager
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -315,25 +317,6 @@ class SimpleSessionManager(object):
 
     def delete(self, hkey):
         del self.sessions[hkey]
-
-class SimpleUserManager(object):
-    """A simple user manager that always allows any user."""
-
-    def authenticate(self, username, password):
-        """
-        Returns True if this username is allowed to connect with this password. False otherwise.
-        Override this to change how users are authenticated.
-        """
-
-        return True
-
-    def username2dirname(self, username):
-        """
-        Returns the directory name for the given user. By default, this is just the username.
-        Override this to adjust the mapping between users and their directory.
-        """
-
-        return username
 
 class SyncApp(object):
     valid_urls = SyncCollectionHandler.operations + SyncMediaHandler.operations + ['hostKey', 'upload', 'download']
@@ -693,34 +676,6 @@ class SqliteSessionManager(SimpleSessionManager):
 
         cursor.execute("DELETE FROM session WHERE hkey=?", (hkey,))
         conn.commit()
-
-class SqliteUserManager(SimpleUserManager):
-    """Authenticates users against a SQLite database."""
-
-    def __init__(self, auth_db_path):
-        self.auth_db_path = os.path.abspath(auth_db_path)
-
-    def authenticate(self, username, password):
-        """Returns True if this username is allowed to connect with this password. False otherwise."""
-
-        conn = sqlite.connect(self.auth_db_path)
-        cursor = conn.cursor()
-        param = (username,)
-
-        cursor.execute("SELECT hash FROM auth WHERE user=?", param)
-
-        db_ret = cursor.fetchone()
-
-        if db_ret != None:
-            db_hash = str(db_ret[0])
-            salt = db_hash[-16:]
-            hashobj = hashlib.sha256()
-
-            hashobj.update(username+password+salt)
-
-        conn.close()
-
-        return (db_ret != None and hashobj.hexdigest()+salt == db_hash)
 
 def make_app(global_conf, **local_conf):
     return SyncApp(**local_conf)
