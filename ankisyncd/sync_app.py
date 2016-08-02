@@ -218,7 +218,7 @@ class SyncMediaHandler(MediaSyncer):
                 os.remove(os.path.join(self.col.media.dir(), filename))
             except OSError as err:
                 logging.error("Error when removing file '%s' from media dir: "
-                              "%s" % filename, str(err))
+                              "%s" % (filename, str(err)))
 
     def downloadFiles(self, files):
         import zipfile
