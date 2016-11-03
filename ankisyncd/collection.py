@@ -59,7 +59,7 @@ class CollectionWrapper(object):
             else:
                 raise
 
-        col = anki.storage.Collection(self.path)
+        col = anki.storage.Collection(self.path, server=True)
 
         # Do any special setup
         if self.setup_new_collection is not None:
@@ -71,7 +71,7 @@ class CollectionWrapper(object):
         """Open the collection, or create it if it doesn't exist."""
         if self.__col is None:
             if os.path.exists(self.path):
-                self.__col = anki.storage.Collection(self.path)
+                self.__col = anki.storage.Collection(self.path, server=True)
             else:
                 self.__col = self.__create_collection()
 

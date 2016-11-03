@@ -1,0 +1,46 @@
+diff -urN anki/collection.py anki/collection.py
+--- anki/collection.py	2016-10-22 00:04:43.365953912 +0200
++++ anki/collection.py	2016-10-23 10:46:26.171300370 +0200
+@@ -60,7 +60,7 @@
+         self.server = server
+         self._lastSave = time.time()
+         self.clearUndo()
+-        self.media = MediaManager(self, server)
++        self.media = MediaManager(self)
+         self.models = ModelManager(self)
+         self.decks = DeckManager(self)
+         self.tags = TagManager(self)
+diff -urN anki/media.py anki/media.py
+--- anki/media.py	2016-10-22 00:04:43.367953863 +0200
++++ anki/media.py	2016-10-23 10:46:16.947524341 +0200
+@@ -26,11 +26,8 @@
+     ]
+     regexps = soundRegexps + imgRegexps
+ 
+-    def __init__(self, col, server):
++    def __init__(self, col):
+         self.col = col
+-        if server:
+-            self._dir = None
+-            return
+         # media directory
+         self._dir = re.sub("(?i)\.(anki2)$", ".media", self.col.path)
+         # convert dir to unicode if it's not already
+@@ -51,8 +48,6 @@
+         self.connect()
+ 
+     def connect(self):
+-        if self.col.server:
+-            return
+         path = self.dir()+".db2"
+         create = not os.path.exists(path)
+         os.chdir(self._dir)
+@@ -103,8 +98,6 @@
+             os.rename("../collection.media.db", npath)
+ 
+     def close(self):
+-        if self.col.server:
+-            return
+         self.db.close()
+         self.db = None
+         # change cwd back to old location

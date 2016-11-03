@@ -425,6 +425,7 @@ class SyncApp(object):
                 fd.write(data)
         finally:
             col.reopen()
+            col.load()
 
         # run hook_upload if one is defined
         if self.hook_upload is not None:
@@ -442,6 +443,7 @@ class SyncApp(object):
             data = open(session.get_collection_path(), 'rb').read()
         finally:
             col.reopen()
+            col.load()
         return data
 
     @wsgify

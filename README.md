@@ -23,20 +23,9 @@ install some of the dependencies we need there:
         $ virtualenv ankisyncd.env
         $ ankisyncd.env/bin/easy_install webob simplejson eventlet
 
-3. Download and install libanki.  You can find the latest release of Anki here:
+3. Patch the bundled libanki:
 
-    http://code.google.com/p/anki/downloads/list
-
-    Look for a *.tgz file with a Summary of "Anki Source".  At the time of this
-    writing that is anki-2.0.11.tgz.
-
-    Download this file and extract.
-
-    Then either:
-
-    a. Run ```make install```, or
-
-    b. Copy the entire directory to /usr/share/anki
+	$ ./patch_libanki.sh
 
 4. Copy the example.ini to production.ini and edit for your needs. Warning: If
    you disable SSL, login credentials will be transported in plain text!

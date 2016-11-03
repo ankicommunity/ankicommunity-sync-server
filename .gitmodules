@@ -1,0 +1,3 @@
+[submodule "anki-bundled"]
+	path = anki-bundled
+	url = https://github.com/dae/anki.git
