@@ -730,12 +730,7 @@ class SqliteUserManager(SimpleUserManager):
 
         return (db_ret != None and hashobj.hexdigest()+salt == db_hash)
 
-# Our entry point
 def make_app(global_conf, **local_conf):
-    if local_conf.has_key('session_db_path'):
-        local_conf['session_manager'] = SqliteSessionManager(local_conf['session_db_path'])
-    if local_conf.has_key('auth_db_path'):
-        local_conf['user_manager'] = SqliteUserManager(local_conf['auth_db_path'])
     return SyncApp(**local_conf)
 
 def main():
@@ -752,7 +747,7 @@ def main():
         print "Starting..."
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print "Exiting ..."
+        print "Exiting..."
     finally:
         shutdown()
 

@@ -1,10 +1,7 @@
-
 import anki
 import anki.storage
 
 import os, errno
-
-__all__ = ['CollectionWrapper', 'CollectionManager']
 
 class CollectionWrapper(object):
     """A simple wrapper around an anki.storage.Collection object.

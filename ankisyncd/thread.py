@@ -1,4 +1,3 @@
-
 from __future__ import absolute_import
 
 from ankisyncd.collection import CollectionWrapper, CollectionManager
@@ -7,8 +6,6 @@ from threading import Thread
 from Queue import Queue
 
 import time, logging
-
-__all__ = ['ThreadingCollectionWrapper', 'ThreadingCollectionManager']
 
 class ThreadingCollectionWrapper(object):
     """Provides the same interface as CollectionWrapper, but it creates a new Thread to 
