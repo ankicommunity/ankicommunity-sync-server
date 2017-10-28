@@ -10,7 +10,7 @@ Installing
 
 1. Install the dependencies:
 
-        $ pip install webob simplejson
+        $ pip install webob
 
 2. Patch the bundled libanki:
 
