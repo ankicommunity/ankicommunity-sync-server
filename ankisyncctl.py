@@ -90,28 +90,28 @@ def passwd(username):
 
 def main():
     argc = len(sys.argv)
-    exitcode = 0
+
+    cmds = {
+        "adduser": adduser,
+        "deluser": deluser,
+        "lsuser": lsuser,
+        "passwd": passwd,
+    }
 
     if argc < 2:
         usage()
-        exitcode = 1
-    else:
-        if argc < 3:
-            sys.argv.append(None)
+        exit(1)
 
-        if sys.argv[1] == "adduser":
-            adduser(sys.argv[2])
-        elif sys.argv[1] == "deluser":
-            deluser(sys.argv[2])
-        elif sys.argv[1] == "lsuser":
-            lsuser()
-        elif sys.argv[1] == "passwd":
-            passwd(sys.argv[2])
+    c = sys.argv[1]
+    try:
+        if argc > 2:
+            for arg in sys.argv[2:]:
+                cmds[c](arg)
         else:
-            usage()
-            exitcode = 1
-
-    sys.exit(exitcode)
+            cmds[c]()
+    except KeyError:
+        usage()
+        exit(1)
 
 if __name__ == "__main__":
     main()
