@@ -372,8 +372,17 @@ class SyncApp(object):
         self.hook_download = None
         self.hook_upload = None
 
-        self.session_manager = SimpleSessionManager()
-        self.user_manager = SimpleUserManager()
+        if config.has_option("sync_app", "session_db_path"):
+            self.session_manager = SqliteSessionManager(config.get("sync_app", "session_db_path"))
+        else:
+            self.session_manager = SimpleSessionManager()
+
+        if config.has_option("sync_app", "auth_db_path"):
+            self.user_manager = SqliteUserManager(config.get("sync_app", "auth_db_path"))
+        else:
+            print "WARNING: auth_db_path not set, ankisyncd will accept any password"
+            self.user_manager = SimpleUserManager()
+
         self.collection_manager = getCollectionManager()
 
         # make sure the base_url has a trailing slash
