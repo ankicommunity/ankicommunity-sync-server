@@ -59,7 +59,9 @@ class SyncCollectionHandlerTest(CollectionTestBase):
 
 class SimpleSessionManagerTest(unittest.TestCase):
     test_hkey = '1234567890'
-    test_session = SyncUserSession('testName', 'testPath', None, None)
+    sdir = tempfile.mkdtemp(suffix="_session")
+    os.rmdir(sdir)
+    test_session = SyncUserSession('testName', sdir, None, None)
 
     def setUp(self):
         self.sessionManager = SimpleSessionManager()
