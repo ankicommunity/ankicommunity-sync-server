@@ -35,8 +35,9 @@ def adduser(username):
 
         cursor.execute("INSERT INTO auth VALUES (?, ?)", (username, hash))
 
-        if not os.path.isdir(COLLECTIONPATH+username):
-            os.makedirs(COLLECTIONPATH+username)
+        colpath = os.path.join(COLLECTIONPATH, username)
+        if not os.path.isdir(colpath):
+            os.makedirs(colpath)
 
         conn.commit()
         conn.close()
