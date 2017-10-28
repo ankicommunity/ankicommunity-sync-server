@@ -7,8 +7,10 @@ import getpass
 import hashlib
 import sqlite3
 
-AUTHDBPATH = "/etc/ankisyncd/auth.db"
-COLLECTIONPATH = "/etc/ankisyncd/collections/"
+DATAPREFIX = os.path.join(os.path.expanduser("~"), ".local", "share")
+DATADIR = os.path.join(DATAPREFIX, "ankisyncd")
+AUTHDBPATH = os.path.join(DATADIR, "auth.db")
+COLLECTIONPATH = os.path.join(DATADIR, "collections")
 
 def usage():
     print "usage: "+sys.argv[0]+" <command> [<args>]"
