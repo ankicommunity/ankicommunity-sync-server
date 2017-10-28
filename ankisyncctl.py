@@ -2,61 +2,22 @@
 
 import os
 import sys
-import signal
-import subprocess
 import binascii
 import getpass
 import hashlib
 import sqlite3
 
-SERVERCONFIG = "/etc/ankisyncd/ankisyncd.conf"
 AUTHDBPATH = "/etc/ankisyncd/auth.db"
 COLLECTIONPATH = "/etc/ankisyncd/collections/"
-PIDPATH = "/tmp/ankiserver.pid"
 
 def usage():
     print "usage: "+sys.argv[0]+" <command> [<args>]"
     print
     print "Commands:"
-    print "  start [configfile] - start the server"
-    print "  stop               - stop the server"
     print "  adduser <username> - add a new user"
     print "  deluser <username> - delete a user"
     print "  lsuser             - list users"
     print "  passwd <username>  - change password of a user"
-
-def startsrv(configpath):
-    if not configpath:
-        configpath = SERVERCONFIG
-
-    # We change to the directory containing the config file
-    # so that all the paths will be relative to it.
-    configdir = os.path.dirname(configpath)
-    if configdir != '':
-        os.chdir(configdir)
-    configpath = os.path.basename(configpath)
-
-    devnull = open(os.devnull, "w")
-
-    pid = subprocess.Popen( "ankisyncd",
-                            stdout=devnull,
-                            stderr=devnull).pid
-
-    with open(PIDPATH, "w") as pidfile:
-        pidfile.write(str(os.getpgid(pid)))
-
-def stopsrv():
-    if os.path.isfile(PIDPATH):
-        try:
-            with open(PIDPATH) as pidfile:
-                pid = int(pidfile.read())
-
-                os.killpg(pid, signal.SIGTERM)
-                os.remove(PIDPATH)
-        except Exception, error:
-            print >>sys.stderr, sys.argv[0]+": Failed to stop server: "+error.message
-    else:
-        print >>sys.stderr, sys.argv[0]+": The server is not running"
 
 def adduser(username):
     if username:
@@ -140,11 +101,7 @@ def main():
         if argc < 3:
             sys.argv.append(None)
 
-        if sys.argv[1] == "start":
-            startsrv(sys.argv[2])
-        elif sys.argv[1] == "stop":
-            stopsrv()
-        elif sys.argv[1] == "adduser":
+        if sys.argv[1] == "adduser":
             adduser(sys.argv[2])
         elif sys.argv[1] == "deluser":
             deluser(sys.argv[2])
