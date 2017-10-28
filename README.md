@@ -8,42 +8,23 @@ remove the REST API, which makes it possible to drop some dependencies.
 Installing
 ----------
 
-### Manual installation
+1. Install the dependencies:
 
-1. First, you need to install "virtualenv".  If your system has easy_install,
-this is just a matter of:
+        $ pip install webob simplejson
 
-        $ easy_install virtualenv
-
-    If your system doesn't have easy_install, I recommend getting it!
-
-2. Next, you need to create a Python environment for running ankisyncd and
-install some of the dependencies we need there:
-
-        $ virtualenv ankisyncd.env
-        $ ankisyncd.env/bin/easy_install webob simplejson
-
-3. Patch the bundled libanki:
+2. Patch the bundled libanki:
 
 	$ ./patch_libanki.sh
 
-4. Copy the example.ini to production.ini and edit for your needs.
+3. Modify ankisyncd.conf according to your needs
 
-5. Create authentication database:
-
-        $ sqlite3 auth.db 'CREATE TABLE auth (user VARCHAR PRIMARY KEY, hash VARCHAR)'
-
-6. Create user:
+4. Create user:
 
         $ ./ankisyncctl.py adduser <username>
 
-7. Then we can run ankisyncd like so:
+5. Run ankisyncd:
 
-        $ ./ankisyncctl.py start
-
-    To stop the server, run:
-
-        $ ./ankisyncctl.py stop
+        $ python ./ankisyncd/sync_app.py
 
 Setting up Anki
 ---------------
