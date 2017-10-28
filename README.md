@@ -21,14 +21,13 @@ this is just a matter of:
 install some of the dependencies we need there:
 
         $ virtualenv ankisyncd.env
-        $ ankisyncd.env/bin/easy_install webob simplejson eventlet
+        $ ankisyncd.env/bin/easy_install webob simplejson
 
 3. Patch the bundled libanki:
 
 	$ ./patch_libanki.sh
 
-4. Copy the example.ini to production.ini and edit for your needs. Warning: If
-   you disable SSL, login credentials will be transported in plain text!
+4. Copy the example.ini to production.ini and edit for your needs.
 
 5. Create authentication database:
 
@@ -53,11 +52,9 @@ To make Anki use ankisyncd as its sync server, create a file (name it something
 like ankisyncd.py) containing the code below and put it in ~/Anki/addons.
 
     import anki.sync
-    import httplib2
 
     anki.sync.SYNC_BASE = 'http://127.0.0.1:27701/'
     anki.sync.SYNC_MEDIA_BASE = 'http://127.0.0.1:27701/msync/'
-    anki.sync.httpCon = lambda: httplib2.Http()
 
 Replace 127.0.0.1 with the IP address or the domain name of your server if
 ankisyncd is not running on the same machine as Anki.

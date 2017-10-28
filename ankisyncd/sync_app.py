@@ -739,28 +739,20 @@ def make_app(global_conf, **local_conf):
     return SyncApp(**local_conf)
 
 def main():
-    from eventlet import wsgi,wrap_ssl,listen
+    from wsgiref.simple_server import make_server
     from ankisyncd.thread import shutdown
 
     config = SafeConfigParser()
     config.read("ankisyncd.conf")
 
     ankiserver = SyncApp(config)
-    host = config.get("sync_app", "host")
-    port = config.getint("sync_app", "port")
-
-    if(config.getboolean("sync_app", "ssl")):
-        certfile = config.get("sync_app", "certfile")
-        keyfile = config.get("sync_app", "keyfile")
-        socket = wrap_ssl(  listen((host, port)),
-                            certfile=certfile,
-                            keyfile=keyfile,
-                            server_side=True )
-    else:
-        socket = listen((host, port))
+    httpd = make_server('', config.getint("sync_app", "port"), ankiserver)
 
     try:
-        wsgi.server(socket, ankiserver)
+        print "Starting..."
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print "Exiting ..."
     finally:
         shutdown()
 
