@@ -23,9 +23,7 @@ def usage():
 
 def adduser(username):
     if username:
-        print "Enter password for "+username+": "
-
-        password = getpass.getpass()
+        password = getpass.getpass("Enter password for "+username+": ")
         salt = binascii.b2a_hex(os.urandom(8))
         hash = hashlib.sha256(username+password+salt).hexdigest()+salt
 
@@ -76,9 +74,7 @@ def lsuser():
 
 def passwd(username):
     if os.path.isfile(AUTHDBPATH):
-        print "Enter password for "+username+": "
-
-        password = getpass.getpass()
+        password = getpass.getpass("Enter password for "+username+": ")
         salt = binascii.b2a_hex(os.urandom(8))
         hash = hashlib.sha256(username+password+salt).hexdigest()+salt
 
