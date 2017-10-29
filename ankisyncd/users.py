@@ -120,7 +120,7 @@ class SqliteUserManager(SimpleUserManager):
 
             logging.info("Changed password for user {}.".format(username))
 
-    def authenticate_user(self, username, password):
+    def authenticate(self, username, password):
         """Returns True if this username is allowed to connect with this password. False otherwise."""
 
         conn = sqlite.connect(self.auth_db_path)

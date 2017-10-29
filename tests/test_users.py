@@ -146,15 +146,15 @@ class SqliteUserManagerTest(unittest.TestCase):
         self.user_manager._create_user_dir(username)
         self.assertTrue(os.path.isdir(expected_dir_path))
 
-    def test_authenticate_user(self):
+    def test_authenticate(self):
         username = "my_username"
         password = "my_password"
 
         self.user_manager.create_auth_db()
         self.user_manager.add_user(username, password)
 
-        self.assertTrue(self.user_manager.authenticate_user(username,
-                                                            password))
+        self.assertTrue(self.user_manager.authenticate(username,
+                                                       password))
 
     def test_set_password_for_user(self):
         username = "my_username"
@@ -165,8 +165,8 @@ class SqliteUserManagerTest(unittest.TestCase):
         self.user_manager.add_user(username, password)
 
         self.user_manager.set_password_for_user(username, new_password)
-        self.assertFalse(self.user_manager.authenticate_user(username,
-                                                             password))
-        self.assertTrue(self.user_manager.authenticate_user(username,
-                                                            new_password))
+        self.assertFalse(self.user_manager.authenticate(username,
+                                                        password))
+        self.assertTrue(self.user_manager.authenticate(username,
+                                                       new_password))
 
