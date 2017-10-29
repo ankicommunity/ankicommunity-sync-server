@@ -23,7 +23,7 @@ Installing
 
 2. Patch the bundled libanki:
 
-	$ ./patch_libanki.sh
+        $ ./patch_libanki.sh
 
 3. Modify ankisyncd.conf according to your needs
 
