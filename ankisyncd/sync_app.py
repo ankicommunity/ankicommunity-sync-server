@@ -380,6 +380,21 @@ class SyncApp(object):
 
         return data
 
+    def operation_hostKey(self, username, password):
+        if not self.user_manager.authenticate(username, password):
+            return
+
+        dirname = self.user_manager.username2dirname(username)
+        if dirname is None:
+            return
+
+        hkey = self.generateHostKey(username)
+        user_path = os.path.join(self.data_root, dirname)
+        session = self.create_session(username, user_path)
+        self.session_manager.save(hkey, session)
+
+        return hkey
+
     def operation_upload(self, col, data, session):
         # Verify integrity of the received database file before replacing our
         # existing db.
@@ -461,26 +476,12 @@ class SyncApp(object):
                 raise HTTPNotFound()
 
             if url == 'hostKey':
-                try:
-                    u = data['u']
-                    p = data['p']
-                except KeyError:
-                    raise HTTPForbidden('Must pass username and password')
-                if self.user_manager.authenticate(u, p):
-                    dirname = self.user_manager.username2dirname(u)
-                    if dirname is None:
-                        raise HTTPForbidden()
-
-                    hkey = self.generateHostKey(u)
-                    user_path = os.path.join(self.data_root, dirname)
-                    session = self.create_session(u, user_path)
-                    self.session_manager.save(hkey, session)
-
-                    result = {'key': hkey}
+                hkey = self.operation_hostKey(data.get("u"), data.get("p"))
+                if hkey:
                     return Response(
                         status='200 OK',
                         content_type='application/json',
-                        body=json.dumps(result))
+                        body=json.dumps({'key': hkey}))
                 else:
                     # TODO: do I have to pass 'null' for the client to receive None?
                     raise HTTPForbidden('null')
