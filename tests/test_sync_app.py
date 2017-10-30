@@ -1,25 +1,18 @@
 # -*- coding: utf-8 -*-
-
-import binascii
-import hashlib
 import os
 import sqlite3
 import tempfile
 import unittest
 
 from ankisyncd.sync_app import SyncCollectionHandler
-from ankisyncd.sync_app import SimpleUserManager
-from ankisyncd.sync_app import SqliteUserManager
 from ankisyncd.sync_app import SyncUserSession
 from ankisyncd.sync_app import SimpleSessionManager
 from ankisyncd.sync_app import SqliteSessionManager
-from ankisyncd.sync_app import SyncApp
 
 from collection_test_base import CollectionTestBase
 
 
 class SyncCollectionHandlerTest(CollectionTestBase):
-
     def setUp(self):
         CollectionTestBase.setUp(self)
         self.syncCollectionHandler = SyncCollectionHandler(self.collection)
@@ -122,7 +115,3 @@ class SqliteSessionManagerTest(SimpleSessionManagerTest):
 
 class SyncAppTest(unittest.TestCase):
     pass
-
-
-if __name__ == '__main__':
-    unittest.main()

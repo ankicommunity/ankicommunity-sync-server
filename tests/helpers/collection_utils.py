@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
-
-
 import os
 import shutil
 import tempfile
-
 
 from anki import Collection
 from helpers.file_utils import FileUtils

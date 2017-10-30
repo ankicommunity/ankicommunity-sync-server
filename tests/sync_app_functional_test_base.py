@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
-
-
 import os
 import unittest
 from webtest import TestApp
-
 
 from ankisyncd.users import SqliteUserManager
 from helpers.collection_utils import CollectionUtils

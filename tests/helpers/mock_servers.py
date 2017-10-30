@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
-
-
 import logging
 
-
-from anki.sync import HttpSyncer, RemoteServer, RemoteMediaServer, FullSyncer
+from anki.sync import HttpSyncer, RemoteServer, RemoteMediaServer
 
 
 class MockServerConnection(object):

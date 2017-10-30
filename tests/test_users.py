@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
-
-
 import os
 import unittest
-
 
 from ankisyncd.users import SimpleUserManager, SqliteUserManager
 from helpers.file_utils import FileUtils

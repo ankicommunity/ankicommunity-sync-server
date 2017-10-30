@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
-
-
 import os
 import sqlite3 as sqlite
 from anki.media import MediaManager
 from anki.storage import DB
-
 
 mediamanager_orig_funcs = {
     "findChanges": None,
@@ -13,7 +10,6 @@ mediamanager_orig_funcs = {
     "addFilesFromZip": None,
     "syncDelete": None
 }
-
 
 db_orig_funcs = {
     "__init__": None

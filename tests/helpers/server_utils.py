@@ -1,12 +1,6 @@
 # -*- coding: utf-8 -*-
-
-
-import filecmp
 import logging
-import os
 import ConfigParser
-import shutil
-
 
 from ankisyncd.sync_app import SyncApp, SyncCollectionHandler, SyncMediaHandler
 from helpers.file_utils import FileUtils

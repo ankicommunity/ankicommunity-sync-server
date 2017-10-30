@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-
-
 from cStringIO import StringIO
 import json
 import logging
@@ -12,9 +10,7 @@ import tempfile
 import unicodedata
 import zipfile
 
-
 from anki.consts import SYNC_ZIP_SIZE
-from anki.utils import checksum
 
 
 class FileUtils(object):

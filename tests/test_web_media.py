@@ -1,18 +1,14 @@
 # -*- coding: utf-8 -*-
-
-
 import filecmp
 import os
 
-
-from anki.sync import Syncer, MediaSyncer
+from anki.sync import MediaSyncer
 from helpers.mock_servers import MockRemoteMediaServer
 from helpers.monkey_patches import monkeypatch_mediamanager, unpatch_mediamanager
 from sync_app_functional_test_base import SyncAppFunctionalTestBase
 
 
 class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
-
     def setUp(self):
         SyncAppFunctionalTestBase.setUp(self)
 
