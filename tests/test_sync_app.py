@@ -15,7 +15,7 @@ from ankisyncd.sync_app import SimpleSessionManager
 from ankisyncd.sync_app import SqliteSessionManager
 from ankisyncd.sync_app import SyncApp
 
-from CollectionTestBase import CollectionTestBase
+from collection_test_base import CollectionTestBase
 
 
 class SyncCollectionHandlerTest(CollectionTestBase):
