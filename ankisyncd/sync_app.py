@@ -368,7 +368,7 @@ class SyncApp(object):
         if config.has_option("sync_app", "auth_db_path"):
             self.user_manager = SqliteUserManager(config.get("sync_app", "auth_db_path"))
         else:
-            print("WARNING: auth_db_path not set, ankisyncd will accept any password")
+            logging.warn("auth_db_path not set, ankisyncd will accept any password")
             self.user_manager = SimpleUserManager()
 
         self.collection_manager = getCollectionManager()
