@@ -368,7 +368,7 @@ class SyncApp(object):
         if config.has_option("sync_app", "auth_db_path"):
             self.user_manager = SqliteUserManager(config.get("sync_app", "auth_db_path"))
         else:
-            print "WARNING: auth_db_path not set, ankisyncd will accept any password"
+            print("WARNING: auth_db_path not set, ankisyncd will accept any password")
             self.user_manager = SimpleUserManager()
 
         self.collection_manager = getCollectionManager()
@@ -715,10 +715,10 @@ def main():
     httpd = make_server('', config.getint("sync_app", "port"), ankiserver)
 
     try:
-        print "Starting..."
+        print("Serving HTTP on {} port {}...".format(*httpd.server_address))
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print "Exiting..."
+        print("Exiting...")
     finally:
         shutdown()
 
