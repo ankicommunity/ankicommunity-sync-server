@@ -39,6 +39,8 @@ class SyncCollectionHandlerTest(CollectionTestBase):
             ','.join(('ankidroid', '2.2.3', '')),
             ','.join(('ankidroid', '2.3alpha4', '')),
             ','.join(('ankidroid', '2.3alpha5', '')),
+            ','.join(('ankidroid', '2.3beta1', '')),
+            ','.join(('ankidroid', '2.3', '')),
             ','.join(('ankidroid', '2.9', '')),
         )
 

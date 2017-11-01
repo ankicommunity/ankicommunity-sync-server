@@ -71,7 +71,11 @@ class SyncCollectionHandler(Syncer):
         if client == 'ankidesktop':
             return version_int < [2, 0, 27]
         elif client == 'ankidroid':
-            return version_int < [2, 2, 3] or (version_int == [2, 3] and note["alpha"] < 4)
+            if version_int == [2, 3]:
+               if note["alpha"]:
+                  return note["alpha"] < 4
+            else:
+               return version_int < [2, 2, 3]
         else:  # unknown client, assume current version
             return False
 
