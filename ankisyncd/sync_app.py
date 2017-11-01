@@ -264,16 +264,15 @@ class SyncUserSession(object):
         self.path = path
         self.collection_manager = collection_manager
         self.setup_new_collection = setup_new_collection
-        self.version = 0
-        self.client_version = ''
+        self.version = None
+        self.client_version = None
         self.created = time.time()
+        self.collection_handler = None
+        self.media_handler = None
 
         # make sure the user path exists
         if not os.path.exists(path):
             os.mkdir(path)
-
-        self.collection_handler = None
-        self.media_handler = None
 
     def _generate_session_key(self):
         return checksum(str(random.random()))[:8]
@@ -286,13 +285,13 @@ class SyncUserSession(object):
 
     def get_handler_for_operation(self, operation, col):
         if operation in SyncCollectionHandler.operations:
-            cache_name, handler_class = 'collection_handler', SyncCollectionHandler
+            attr, handler_class = 'collection_handler', SyncCollectionHandler
         else:
-            cache_name, handler_class = 'media_handler', SyncMediaHandler
+            attr, handler_class = 'media_handler', SyncMediaHandler
 
-        if getattr(self, cache_name) is None:
-            setattr(self, cache_name, handler_class(col))
-        handler = getattr(self, cache_name)
+        if getattr(self, attr) is None:
+            setattr(self, attr, handler_class(col))
+        handler = getattr(self, attr)
         # The col object may actually be new now! This happens when we close a collection
         # for inactivity and then later re-open it (creating a new Collection object).
         handler.col = col
