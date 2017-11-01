@@ -11,6 +11,7 @@ class SyncAppFunctionalHostKeyTest(SyncAppFunctionalTestBase):
         self.server = None
         SyncAppFunctionalTestBase.tearDown(self)
 
+    # First breakage: c7d7ff3e858415ec12785579882a4c7586cbfce4
     def test_login(self):
         self.assertIsNotNone(self.server.hostKey("testuser", "testpassword"))
         self.assertIsNone(self.server.hostKey("testuser", "wrongpassword"))
