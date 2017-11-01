@@ -8,6 +8,7 @@ from ankisyncd.sync_app import SyncCollectionHandler
 from ankisyncd.sync_app import SyncUserSession
 from ankisyncd.sync_app import SimpleSessionManager
 from ankisyncd.sync_app import SqliteSessionManager
+from ankisyncd.sync_app import old_client
 
 from collection_test_base import CollectionTestBase
 
@@ -45,12 +46,12 @@ class SyncCollectionHandlerTest(CollectionTestBase):
         )
 
         for cv in old:
-            if not self.syncCollectionHandler._old_client(cv):
-                raise AssertionError("_old_client(\"%s\") is False" % cv)
+            if not old_client(cv):
+                raise AssertionError("old_client(\"%s\") is False" % cv)
 
         for cv in current:
-            if self.syncCollectionHandler._old_client(cv):
-                raise AssertionError("_old_client(\"%s\") is True" % cv)
+            if old_client(cv):
+                raise AssertionError("old_client(\"%s\") is True" % cv)
 
     def test_meta(self):
         meta = self.syncCollectionHandler.meta()

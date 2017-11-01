@@ -45,39 +45,40 @@ try:
 except ImportError:
     from StringIO import StringIO
 
+def old_client(cv):
+    if not cv:
+        return False
+
+    note = {"alpha": 0, "beta": 0}
+    client, version, platform = cv.split(',')
+
+    for name in note.keys():
+        if name in version:
+            vs = version.split(name)
+            version = vs[0]
+            note[name] = int(vs[-1])
+
+    version_int = [int(x) for x in version.split('.')]
+
+    if client == 'ankidesktop':
+        return version_int < [2, 0, 27]
+    elif client == 'ankidroid':
+        if version_int == [2, 3]:
+           if note["alpha"]:
+              return note["alpha"] < 4
+        else:
+           return version_int < [2, 2, 3]
+    else:  # unknown client, assume current version
+        return False
+
+
+
 class SyncCollectionHandler(Syncer):
     operations = ['meta', 'applyChanges', 'start', 'chunk', 'applyChunk', 'sanityCheck2', 'finish']
 
     def __init__(self, col):
         # So that 'server' (the 3rd argument) can't get set
         Syncer.__init__(self, col)
-
-    @staticmethod
-    def _old_client(cv):
-        if not cv:
-            return False
-
-        note = {"alpha": 0, "beta": 0}
-        client, version, platform = cv.split(',')
-
-        for name in note.keys():
-            if name in version:
-                vs = version.split(name)
-                version = vs[0]
-                note[name] = int(vs[-1])
-
-        version_int = [int(x) for x in version.split('.')]
-
-        if client == 'ankidesktop':
-            return version_int < [2, 0, 27]
-        elif client == 'ankidroid':
-            if version_int == [2, 3]:
-               if note["alpha"]:
-                  return note["alpha"] < 4
-            else:
-               return version_int < [2, 2, 3]
-        else:  # unknown client, assume current version
-            return False
 
     def meta(self):
         # Make sure the media database is open!
@@ -527,7 +528,7 @@ class SyncApp(object):
                         session.client_version = data['cv']
                         del data['cv']
 
-                    if self.session.collection_handler._old_client(session.client_version):
+                    if old_client(session.client_version):
                         return Response(status="501")  # client needs upgrade
 
                     self.session_manager.save(hkey, session)
