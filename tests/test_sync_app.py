@@ -27,8 +27,8 @@ class SyncCollectionHandlerTest(CollectionTestBase):
             ','.join(('ankidesktop', '2.0.26', 'lin::')),
             ','.join(('ankidroid', '2.1', '')),
             ','.join(('ankidroid', '2.2', '')),
-            #','.join(('ankidroid', '2.2.2', '')),
-            #','.join(('ankidroid', '2.3alpha3', '')),
+            ','.join(('ankidroid', '2.2.2', '')),
+            ','.join(('ankidroid', '2.3alpha3', '')),
         )
 
         current = (

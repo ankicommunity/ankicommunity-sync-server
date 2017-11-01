@@ -57,12 +57,23 @@ class SyncCollectionHandler(Syncer):
         if not cv:
             return False
 
+        note = {"alpha": 0, "beta": 0}
         client, version, platform = cv.split(',')
-        version_int = [ int(str(x).translate(None, string.ascii_letters))
-                        for x in version.split('.') ]
 
-        return (client == 'ankidroid' and version_int < [2, 3, 0]) \
-            or (client == 'ankidesktop' and version_int < [2, 0, 27])
+        for name in note.keys():
+            if name in version:
+                vs = version.split(name)
+                version = vs[0]
+                note[name] = int(vs[-1])
+
+        version_int = [int(x) for x in version.split('.')]
+
+        if client == 'ankidesktop':
+            return version_int < [2, 0, 27]
+        elif client == 'ankidroid':
+            return version_int < [2, 2, 3] or (version_int == [2, 3] and note["alpha"] < 4)
+        else:  # unknown client, assume current version
+            return False
 
     def meta(self):
         # Make sure the media database is open!
