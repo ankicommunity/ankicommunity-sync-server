@@ -38,15 +38,17 @@ class SyncCollectionHandlerTest(CollectionTestBase):
             ','.join(('ankidesktop', '2.1.0', 'lin::')),
             ','.join(('ankidroid', '2.2.3', '')),
             ','.join(('ankidroid', '2.3alpha4', '')),
+            ','.join(('ankidroid', '2.3alpha5', '')),
             ','.join(('ankidroid', '2.9', '')),
         )
 
-        # FIXME: unittest is too dumb to print the failing version
         for cv in old:
-            self.assertTrue(self.syncCollectionHandler._old_client(cv))
+            if not self.syncCollectionHandler._old_client(cv):
+                raise AssertionError("_old_client(\"%s\") is False" % cv)
 
         for cv in current:
-            self.assertFalse(self.syncCollectionHandler._old_client(cv))
+            if self.syncCollectionHandler._old_client(cv):
+                raise AssertionError("_old_client(\"%s\") is True" % cv)
 
     def test_meta(self):
         meta = self.syncCollectionHandler.meta()
