@@ -21,26 +21,35 @@ class SyncCollectionHandlerTest(CollectionTestBase):
         CollectionTestBase.tearDown(self)
         self.syncCollectionHandler = None
 
+    def test_old_client(self):
+        old = (
+            ','.join(('ankidesktop', '2.0.12', 'lin::')),
+            ','.join(('ankidesktop', '2.0.26', 'lin::')),
+            ','.join(('ankidroid', '2.1', '')),
+            ','.join(('ankidroid', '2.2', '')),
+            #','.join(('ankidroid', '2.2.2', '')),
+            #','.join(('ankidroid', '2.3alpha3', '')),
+        )
+
+        current = (
+            None,
+            ','.join(('ankidesktop', '2.0.27', 'lin::')),
+            ','.join(('ankidesktop', '2.0.32', 'lin::')),
+            ','.join(('ankidesktop', '2.1.0', 'lin::')),
+            ','.join(('ankidroid', '2.2.3', '')),
+            ','.join(('ankidroid', '2.3alpha4', '')),
+            ','.join(('ankidroid', '2.9', '')),
+        )
+
+        # FIXME: unittest is too dumb to print the failing version
+        for cv in old:
+            self.assertTrue(self.syncCollectionHandler._old_client(cv))
+
+        for cv in current:
+            self.assertFalse(self.syncCollectionHandler._old_client(cv))
+
     def test_meta(self):
-        version_info = (None,
-                        ','.join(('ankidesktop', '2.0.12', 'lin::')),
-                        ','.join(('ankidesktop', '2.0.32', 'lin::')))
-
-        meta = self.syncCollectionHandler.meta(version_info[0])
-        self.assertEqual(meta[0], self.collection.mod)
-        self.assertEqual(meta[1], self.collection.scm)
-        self.assertEqual(meta[2], self.collection._usn)
-        self.assertTrue((type(meta[3]) == int) and meta[3] > 0)
-        self.assertEqual(meta[4], self.collection.media.usn())
-
-        meta = self.syncCollectionHandler.meta(version_info[1])
-        self.assertEqual(meta[0], self.collection.mod)
-        self.assertEqual(meta[1], self.collection.scm)
-        self.assertEqual(meta[2], self.collection._usn)
-        self.assertTrue((type(meta[3]) == int) and meta[3] > 0)
-        self.assertEqual(meta[4], self.collection.media.usn())
-
-        meta = self.syncCollectionHandler.meta(version_info[2])
+        meta = self.syncCollectionHandler.meta()
         self.assertEqual(meta['scm'], self.collection.scm)
         self.assertTrue((type(meta['ts']) == int) and meta['ts'] > 0)
         self.assertEqual(meta['mod'], self.collection.mod)

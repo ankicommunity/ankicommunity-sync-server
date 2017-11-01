@@ -52,6 +52,18 @@ class SyncCollectionHandler(Syncer):
         # So that 'server' (the 3rd argument) can't get set
         Syncer.__init__(self, col)
 
+    @staticmethod
+    def _old_client(cv):
+        if not cv:
+            return False
+
+        client, version, platform = cv.split(',')
+        version_int = [ int(str(x).translate(None, string.ascii_letters))
+                        for x in version.split('.') ]
+
+        return (client == 'ankidroid' and version_int < [2, 3, 0]) \
+            or (client == 'ankidesktop' and version_int < [2, 0, 27])
+
     def meta(self):
         # Make sure the media database is open!
         if self.col.media.db is None:
@@ -498,15 +510,11 @@ class SyncApp(object):
                         del data['v']
                     if data.has_key('cv'):
                         session.client_version = data['cv']
-                        client, version, platform = data['cv'].split(',')
                         del data['cv']
 
-                        version_int = [ int(str(x).translate(None, string.ascii_letters))
-                                        for x in version.split('.') ]
+                    if self.session.collection_handler._old_client(session.client_version):
+                        return Response(status="501")  # client needs upgrade
 
-                        if (client == 'ankidroid' and version_int < [2, 3, 0]) \
-                        or (client == 'ankidesktop' and version_int < [2, 0, 27]):
-                            return Response(status="501")  # client needs upgrade
                     self.session_manager.save(hkey, session)
                     session = self.session_manager.load(hkey, self.create_session)
 
