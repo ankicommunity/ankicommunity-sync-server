@@ -5,7 +5,6 @@ from webtest import TestApp
 
 from ankisyncd.users import SqliteUserManager
 from helpers.collection_utils import CollectionUtils
-from helpers.db_utils import DBUtils
 from helpers.file_utils import FileUtils
 from helpers.mock_servers import MockRemoteServer
 from helpers.monkey_patches import monkeypatch_db, unpatch_db
@@ -19,7 +18,6 @@ class SyncAppFunctionalTestBase(unittest.TestCase):
         cls.fileutils = FileUtils()
         cls.colutils = CollectionUtils()
         cls.serverutils = ServerUtils()
-        cls.dbutils = DBUtils()
 
     @classmethod
     def tearDownClass(cls):
@@ -31,9 +29,6 @@ class SyncAppFunctionalTestBase(unittest.TestCase):
 
         cls.serverutils.clean_up()
         cls.serverutils = None
-
-        cls.dbutils.clean_up()
-        cls.dbutils = None
 
     def setUp(self):
         monkeypatch_db()

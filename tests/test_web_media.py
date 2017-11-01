@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
+import tempfile
 import filecmp
+import sqlite3
 import os
 
+import helpers.db_utils
 from anki.sync import MediaSyncer
 from helpers.mock_servers import MockRemoteMediaServer
 from helpers.monkey_patches import monkeypatch_mediamanager, unpatch_mediamanager
@@ -33,6 +36,43 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         media_syncer = MediaSyncer(col=collection,
                                    server=mock_remote_server)
         return media_syncer
+
+    def media_dbs_differ(self, left_db_path, right_db_path, compare_timestamps=False):
+        """
+        Compares two media sqlite database files for equality. mtime and dirMod
+        timestamps are not considered when comparing.
+
+        :param left_db_path: path to the left db file
+        :param right_db_path: path to the right db file
+        :param compare_timestamps: flag determining if timestamp values
+                                   (media.mtime and meta.dirMod) are included
+                                   in the comparison
+        :return: True if the specified databases differ, False else
+        """
+
+        if not os.path.isfile(right_db_path):
+            raise IOError("file '" + left_db_path + "' does not exist")
+        elif not os.path.isfile(right_db_path):
+            raise IOError("file '" + right_db_path + "' does not exist")
+
+        # Create temporary copies of the files to act on.
+        left_db_path = self.fileutils.create_file_copy(left_db_path)
+        right_db_path = self.fileutils.create_file_copy(right_db_path)
+
+        if not compare_timestamps:
+            # Set all timestamps that are not NULL to 0.
+            for dbPath in [left_db_path, right_db_path]:
+                connection = sqlite3.connect(dbPath)
+
+                connection.execute("""UPDATE media SET mtime=0
+                                      WHERE mtime IS NOT NULL""")
+
+                connection.execute("""UPDATE meta SET dirMod=0
+                                      WHERE rowid=1""")
+                connection.commit()
+                connection.close()
+
+        return helpers.db_utils.diff(left_db_path, right_db_path)
 
     def test_sync_empty_media_dbs(self):
         # With both the client and the server having no media to sync,
@@ -105,8 +145,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         # Except for timestamps, the media databases of client and server
         # should be identical.
         self.assertFalse(
-            self.dbutils.media_dbs_differ(client.col.media.db._path,
-                                          server.col.media.db._path)
+            self.media_dbs_differ(client.col.media.db._path, server.col.media.db._path)
         )
 
     def test_sync_different_files(self):
@@ -301,11 +340,13 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
             CREATE INDEX idx_media_dirty on media (dirty);
         """ % chksum)
 
-        temp_db_path = self.dbutils.create_sqlite_db_with_sql(sql)
+        _, dbpath = tempfile.mkstemp(suffix=".anki2")
+        helpers.db_utils.from_sql(dbpath, sql)
 
         # Except for timestamps, the client's db after sync should be identical
         # to the expected data.
-        self.assertFalse(self.dbutils.media_dbs_differ(
+        self.assertFalse(self.media_dbs_differ(
             client.col.media.db._path,
-            temp_db_path
+            dbpath
         ))
+        os.unlink(dbpath)
