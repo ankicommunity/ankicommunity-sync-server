@@ -58,7 +58,7 @@ class SyncCollectionHandlerTest(CollectionTestBase):
         self.assertTrue((type(meta['ts']) == int) and meta['ts'] > 0)
         self.assertEqual(meta['mod'], self.collection.mod)
         self.assertEqual(meta['usn'], self.collection._usn)
-        self.assertEqual(meta['musn'], self.collection.media.usn())
+        self.assertEqual(meta['musn'], self.collection.media.lastUsn())
         self.assertEqual(meta['msg'], '')
         self.assertEqual(meta['cont'], True)
 
