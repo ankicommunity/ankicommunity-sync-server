@@ -52,7 +52,7 @@ def diff(left_db_path, right_db_path):
     :return: True if the specified databases differ, False else
     """
 
-    command = ["/bin/sqldiff", left_db_path, right_db_path]
+    command = ["sqldiff", left_db_path, right_db_path]
 
     child_process = subprocess.Popen(command,
                                      shell=False,
