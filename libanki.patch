@@ -1,7 +1,8 @@
-diff -urN anki/collection.py anki/collection.py
---- anki/collection.py	2016-10-22 00:04:43.365953912 +0200
-+++ anki/collection.py	2016-10-23 10:46:26.171300370 +0200
-@@ -60,7 +60,7 @@
+diff --git a/anki/collection.py b/anki/collection.py
+index 76e6944..2c761f9 100644
+--- a/anki/collection.py
++++ b/anki/collection.py
+@@ -60,7 +60,7 @@ class _Collection(object):
          self.server = server
          self._lastSave = time.time()
          self.clearUndo()
@@ -10,10 +11,11 @@ diff -urN anki/collection.py anki/collection.py
          self.models = ModelManager(self)
          self.decks = DeckManager(self)
          self.tags = TagManager(self)
-diff -urN anki/media.py anki/media.py
---- anki/media.py	2016-10-22 00:04:43.367953863 +0200
-+++ anki/media.py	2016-10-23 10:46:16.947524341 +0200
-@@ -26,11 +26,8 @@
+diff --git a/anki/media.py b/anki/media.py
+index 7f36312..d504774 100644
+--- a/anki/media.py
++++ b/anki/media.py
+@@ -26,11 +26,8 @@ class MediaManager(object):
      ]
      regexps = soundRegexps + imgRegexps
  
@@ -26,7 +28,7 @@ diff -urN anki/media.py anki/media.py
          # media directory
          self._dir = re.sub("(?i)\.(anki2)$", ".media", self.col.path)
          # convert dir to unicode if it's not already
-@@ -51,8 +48,6 @@
+@@ -51,8 +48,6 @@ class MediaManager(object):
          self.connect()
  
      def connect(self):
@@ -35,7 +37,7 @@ diff -urN anki/media.py anki/media.py
          path = self.dir()+".db2"
          create = not os.path.exists(path)
          os.chdir(self._dir)
-@@ -103,8 +98,6 @@
+@@ -103,8 +98,6 @@ create table meta (dirMod int, lastUsn int); insert into meta values (0, 0);
              os.rename("../collection.media.db", npath)
  
      def close(self):
