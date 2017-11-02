@@ -401,10 +401,9 @@ class SyncApp(object):
             data = buf.read()
             buf.close()
 
-        # really lame check for JSON
-        if data[0] == '{' and data[-1] == '}':
+        try:
             data = json.loads(data)
-        else:
+        except ValueError:
             data = {'data': data}
 
         return data
