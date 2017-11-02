@@ -420,7 +420,7 @@ class SyncApp(object):
         session = self.create_session(username, user_path)
         self.session_manager.save(hkey, session)
 
-        return hkey
+        return {'key': hkey}
 
     def operation_upload(self, col, data, session):
         # Verify integrity of the received database file before replacing our
@@ -451,7 +451,7 @@ class SyncApp(object):
         if self.hook_upload is not None:
             self.hook_upload(col, session)
 
-        return True
+        return "OK"
 
     def operation_download(self, col, session):
         # run hook_download if one is defined
@@ -503,12 +503,12 @@ class SyncApp(object):
                 raise HTTPNotFound()
 
             if url == 'hostKey':
-                hkey = self.operation_hostKey(data.get("u"), data.get("p"))
-                if hkey:
+                result = self.operation_hostKey(data.get("u"), data.get("p"))
+                if result:
                     return Response(
                         status='200 OK',
                         content_type='application/json',
-                        body=json.dumps({'key': hkey}))
+                        body=json.dumps(result))
                 else:
                     # TODO: do I have to pass 'null' for the client to receive None?
                     raise HTTPForbidden('null')
@@ -577,7 +577,7 @@ class SyncApp(object):
                 return Response(
                     status='200 OK',
                     content_type='text/plain',
-                    body='OK' if result else 'Error')
+                    body=result)
 
             elif url == 'download':
                 thread = session.get_thread()
