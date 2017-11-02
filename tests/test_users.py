@@ -28,9 +28,9 @@ class SimpleUserManagerTest(unittest.TestCase):
         self.assertTrue(self.user_manager.authenticate(bad_test_un,
                                                        good_test_pw))
 
-    def test_username2dirname(self):
+    def test_userdir(self):
         username = 'my_username'
-        dirname = self.user_manager.username2dirname(username)
+        dirname = self.user_manager.userdir(username)
         self.assertEqual(dirname, username)
 
 

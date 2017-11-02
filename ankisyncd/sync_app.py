@@ -413,7 +413,7 @@ class SyncApp(object):
         if not self.user_manager.authenticate(username, password):
             return
 
-        dirname = self.user_manager.username2dirname(username)
+        dirname = self.user_manager.userdir(username)
         if dirname is None:
             return
 

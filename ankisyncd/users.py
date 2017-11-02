@@ -20,7 +20,7 @@ class SimpleUserManager(object):
 
         return True
 
-    def username2dirname(self, username):
+    def userdir(self, username):
         """
         Returns the directory name for the given user. By default, this is just
         the username. Override this to adjust the mapping between users and
