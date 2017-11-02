@@ -314,8 +314,10 @@ class SyncUserSession(object):
     def get_handler_for_operation(self, operation, col):
         if operation in SyncCollectionHandler.operations:
             attr, handler_class = 'collection_handler', SyncCollectionHandler
-        else:
+        elif operation in SyncMediaHandler.operations:
             attr, handler_class = 'media_handler', SyncMediaHandler
+        else:
+            raise Exception("no handler for {}".format(operation))
 
         if getattr(self, attr) is None:
             setattr(self, attr, handler_class(col))
