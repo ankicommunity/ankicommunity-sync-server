@@ -33,9 +33,9 @@ from sqlite3 import dbapi2 as sqlite
 import ankisyncd
 
 import anki
-from anki.db import DB
-from anki.sync import Syncer, MediaSyncer
-from anki.utils import intTime, checksum, isMac
+import anki.db
+import anki.sync
+import anki.utils
 from anki.consts import SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
 
 from ankisyncd.users import SimpleUserManager, SqliteUserManager
@@ -73,12 +73,12 @@ def old_client(cv):
 
 
 
-class SyncCollectionHandler(Syncer):
+class SyncCollectionHandler(anki.sync.Syncer):
     operations = ['meta', 'applyChanges', 'start', 'chunk', 'applyChunk', 'sanityCheck2', 'finish']
 
     def __init__(self, col):
         # So that 'server' (the 3rd argument) can't get set
-        Syncer.__init__(self, col)
+        anki.sync.Syncer.__init__(self, col)
 
     def meta(self):
         # Make sure the media database is open!
@@ -87,7 +87,7 @@ class SyncCollectionHandler(Syncer):
 
         return {
             'scm': self.col.scm,
-            'ts': intTime(),
+            'ts': anki.utils.intTime(),
             'mod': self.col.mod,
             'usn': self.col._usn,
             'musn': self.col.media.lastUsn(),
@@ -95,11 +95,11 @@ class SyncCollectionHandler(Syncer):
             'cont': True,
         }
 
-class SyncMediaHandler(MediaSyncer):
+class SyncMediaHandler(anki.sync.MediaSyncer):
     operations = ['begin', 'mediaChanges', 'mediaSanity', 'mediaList', 'uploadChanges', 'downloadFiles']
 
     def __init__(self, col):
-        MediaSyncer.__init__(self, col)
+        anki.sync.MediaSyncer.__init__(self, col)
 
     def begin(self, skey):
         return json.dumps({
@@ -179,7 +179,7 @@ class SyncMediaHandler(MediaSyncer):
                 continue
             else:
                 file_data = zip_file.read(i)
-                csum = checksum(file_data)
+                csum = anki.utils.checksum(file_data)
                 filename = self._normalize_filename(meta[int(i.filename)][0])
                 file_path = os.path.join(self.col.media.dir(), filename)
 
@@ -215,7 +215,7 @@ class SyncMediaHandler(MediaSyncer):
             filename = unicode(filename, "utf8")
 
         # Normalize name for platform.
-        if isMac:  # global
+        if anki.utils.isMac:  # global
             filename = unicodedata.normalize("NFD", filename)
         else:
             filename = unicodedata.normalize("NFC", filename)
@@ -303,7 +303,7 @@ class SyncUserSession(object):
             os.mkdir(path)
 
     def _generate_session_key(self):
-        return checksum(str(random.random()))[:8]
+        return anki.utils.checksum(str(random.random()))[:8]
 
     def get_collection_path(self):
         return os.path.realpath(os.path.join(self.path, 'collection.anki2'))
@@ -431,7 +431,7 @@ class SyncApp(object):
             f.write(data)
 
         try:
-            test_db = DB(temp_db_path)
+            test_db = anki.db.DB(temp_db_path)
             if test_db.scalar("pragma integrity_check") != "ok":
                 raise HTTPBadRequest("Integrity check failed for uploaded "
                                      "collection database file.")
