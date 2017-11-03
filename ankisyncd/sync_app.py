@@ -503,10 +503,7 @@ class SyncApp(object):
             if url == 'hostKey':
                 result = self.operation_hostKey(data.get("u"), data.get("p"))
                 if result:
-                    return Response(
-                        status='200 OK',
-                        content_type='application/json',
-                        body=json.dumps(result))
+                    return json.dumps(result)
                 else:
                     # TODO: do I have to pass 'null' for the client to receive None?
                     raise HTTPForbidden('null')
@@ -559,18 +556,12 @@ class SyncApp(object):
             elif url == 'upload':
                 thread = session.get_thread()
                 result = thread.execute(self.operation_upload, [data['data'], session])
-                return Response(
-                    status='200 OK',
-                    content_type='text/plain',
-                    body=result)
+                return result
 
             elif url == 'download':
                 thread = session.get_thread()
                 result = thread.execute(self.operation_download, [session])
-                return Response(
-                    status='200 OK',
-                    content_type='text/plain',
-                    body=result)
+                return result
 
             # This was one of our operations but it didn't get handled... Oops!
             raise HTTPInternalServerError()
