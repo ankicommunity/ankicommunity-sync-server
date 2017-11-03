@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
+import shutil
+import tempfile
 import unittest
 
 from ankisyncd.users import SimpleUserManager, SqliteUserManager
-from helpers.file_utils import FileUtils
 
 
 class SimpleUserManagerTest(unittest.TestCase):
@@ -35,22 +36,16 @@ class SimpleUserManagerTest(unittest.TestCase):
 
 
 class SqliteUserManagerTest(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.fileutils = FileUtils()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.fileutils.clean_up()
-        cls.fileutils = None
-
     def setUp(self):
-        self.auth_db_path = self.fileutils.create_file_path(suffix='auth.db')
-        self.collection_path = self.fileutils.create_dir_path()
+        basedir = tempfile.mkdtemp(prefix=self.__class__.__name__)
+        self.basedir = basedir
+        self.auth_db_path = os.path.join(basedir, "auth.db")
+        self.collection_path = os.path.join(basedir, "collections")
         self.user_manager = SqliteUserManager(self.auth_db_path,
                                               self.collection_path)
 
     def tearDown(self):
+        shutil.rmtree(self.basedir)
         self.user_manager = None
 
     def test_auth_db_exists(self):
