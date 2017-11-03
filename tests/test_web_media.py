@@ -3,7 +3,9 @@ import tempfile
 import filecmp
 import sqlite3
 import os
+import shutil
 
+import helpers.file_utils
 import helpers.db_utils
 from anki.sync import MediaSyncer
 from helpers.mock_servers import MockRemoteMediaServer
@@ -16,6 +18,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         SyncAppFunctionalTestBase.setUp(self)
 
         monkeypatch_mediamanager()
+        self.tempdir = tempfile.mkdtemp(prefix=self.__class__.__name__)
         self.hkey = self.mock_remote_server.hostKey("testuser", "testpassword")
         client_collection = self.colutils.create_empty_col()
         self.client_syncer = self.create_client_syncer(client_collection,
@@ -56,8 +59,13 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
             raise IOError("file '" + right_db_path + "' does not exist")
 
         # Create temporary copies of the files to act on.
-        left_db_path = self.fileutils.create_file_copy(left_db_path)
-        right_db_path = self.fileutils.create_file_copy(right_db_path)
+        newleft = os.path.join(self.tempdir, left_db_path) + ".tmp"
+        shutil.copyfile(left_db_path, newleft)
+        left_db_path = newleft
+
+        newright = os.path.join(self.tempdir, left_db_path) + ".tmp"
+        shutil.copyfile(right_db_path, newright)
+        right_db_path = newright
 
         if not compare_timestamps:
             # Set all timestamps that are not NULL to 0.
@@ -91,7 +99,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
                                                       'media')
 
         # Create a test file.
-        temp_file_path = self.fileutils.create_named_file(u"foo.jpg", "hello")
+        temp_file_path = helpers.file_utils.create_named_file(u"foo.jpg", "hello")
 
         # Add the test file to the server's collection.
         self.serverutils.add_files_to_mediasyncer(server,
@@ -123,7 +131,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
                                                       'media')
 
         # Create a test file.
-        temp_file_path = self.fileutils.create_named_file(u"foo.jpg", "hello")
+        temp_file_path = helpers.file_utils.create_named_file(u"foo.jpg", "hello")
 
         # Add the test file to the client's media collection.
         self.serverutils.add_files_to_mediasyncer(client,
@@ -162,10 +170,8 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
                                                       'media')
 
         # Create two files and add one to the server and one to the client.
-        file_for_client, file_for_server = self.fileutils.create_named_files([
-            (u"foo.jpg", "hello"),
-            (u"bar.jpg", "goodbye")
-        ])
+        file_for_client = helpers.file_utils.create_named_file(u"foo.jpg", "hello")
+        file_for_server = helpers.file_utils.create_named_file(u"bar.jpg", "goodbye")
 
         self.serverutils.add_files_to_mediasyncer(client,
                                                   [file_for_client],
@@ -212,10 +218,8 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
 
         # Create two files with identical names but different contents and
         # checksums. Add one to the server and one to the client.
-        file_for_client, file_for_server = self.fileutils.create_named_files([
-            (u"foo.jpg", "hello"),
-            (u"foo.jpg", "goodbye")
-        ])
+        file_for_client = helpers.file_utils.create_named_file(u"foo.jpg", "hello")
+        file_for_server = helpers.file_utils.create_named_file(u"foo.jpg", "goodbye")
 
         self.serverutils.add_files_to_mediasyncer(client,
                                                   [file_for_client],
@@ -259,7 +263,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
                                                       'media')
 
         # Create a test file.
-        temp_file_path = self.fileutils.create_named_file(u"foo.jpg", "hello")
+        temp_file_path = helpers.file_utils.create_named_file(u"foo.jpg", "hello")
 
         # Add the test file to client's media collection.
         self.serverutils.add_files_to_mediasyncer(client,
@@ -307,7 +311,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         # Add a test image file to the client's media collection but don't
         # update its media db since the desktop client updates that, using
         # findChanges(), only during syncs.
-        support_file = self.fileutils.get_asset_path(u'blue.jpg')
+        support_file = helpers.file_utils.get_asset_path(u'blue.jpg')
         self.assertTrue(os.path.isfile(support_file))
         self.serverutils.add_files_to_mediasyncer(client,
                                                   [support_file],

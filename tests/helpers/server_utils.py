@@ -1,33 +1,29 @@
 # -*- coding: utf-8 -*-
-import logging
 import ConfigParser
+import logging
+import os
+import shutil
+import tempfile
 
 from ankisyncd.sync_app import SyncApp, SyncCollectionHandler, SyncMediaHandler
-from helpers.file_utils import FileUtils
 
 
 class ServerUtils(object):
-    def __init__(self):
-        self.fileutils = FileUtils()
-
     def clean_up(self):
-        self.fileutils.clean_up()
+        shutil.rmtree(self.dir)
 
     def create_server_paths(self):
         """
         Creates temporary files and dirs for our app to use during tests.
         """
+        dir = tempfile.mkdtemp(prefix="ServerUtils")
+        self.dir = dir
+        os.mkdir(os.path.join(dir, "data"))
 
-        auth = self.fileutils.create_file_path(suffix='.db',
-                                               prefix='ankiserver_auth_db_')
-        session = self.fileutils.create_file_path(suffix='.db',
-                                                  prefix='ankiserver_session_db_')
-        data = self.fileutils.create_dir(suffix='',
-                                         prefix='ankiserver_data_root_')
         return {
-            "auth_db": auth,
-            "session_db": session,
-            "data_root": data
+            "auth_db": os.path.join(dir, "auth.db"),
+            "session_db": os.path.join(dir, "session.db"),
+            "data_root": os.path.join(dir, "data"),
         }
 
     @staticmethod

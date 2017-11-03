@@ -4,7 +4,6 @@ import shutil
 import tempfile
 
 from anki import Collection
-from helpers.file_utils import FileUtils
 
 
 class CollectionUtils(object):
@@ -15,7 +14,7 @@ class CollectionUtils(object):
 
     def __init__(self):
         self.collections_to_close = []
-        self.fileutils = FileUtils()
+        self.tempdir = tempfile.mkdtemp(prefix="CollectionUtils")
         self.master_db_path = None
 
     def __create_master_col(self):
@@ -25,15 +24,10 @@ class CollectionUtils(object):
         time.
         """
 
-        file_descriptor, file_path = tempfile.mkstemp(suffix=".anki2")
-        os.close(file_descriptor)
-        os.unlink(file_path)  # We only need the file path.
+        file_path = os.path.join(self.tempdir, "collection.anki2")
         master_col = Collection(file_path)
-        self.__mark_col_paths_for_deletion(master_col)
         master_col.db.close()
         self.master_db_path = file_path
-
-        self.fileutils.mark_for_deletion(self.master_db_path)
 
     def __enter__(self):
         return self
@@ -43,15 +37,6 @@ class CollectionUtils(object):
 
     def __mark_collection_for_closing(self, collection):
         self.collections_to_close.append(collection)
-
-    def __mark_col_paths_for_deletion(self, collection):
-        """
-        Marks the paths of all the database files and directories managed by
-        the collection for later deletion.
-        """
-        self.fileutils.mark_for_deletion(collection.path)
-        self.fileutils.mark_for_deletion(collection.media.dir())
-        self.fileutils.mark_for_deletion(collection.media.col.path)
 
     def clean_up(self):
         """
@@ -63,10 +48,7 @@ class CollectionUtils(object):
         for col in self.collections_to_close:
             col.close()  # This also closes the media col.
         self.collections_to_close = []
-
-        # Remove the files created by the collections.
-        self.fileutils.clean_up()
-
+        shutil.rmtree(self.tempdir)
         self.master_db_path = None
 
     def create_empty_col(self):
@@ -77,14 +59,11 @@ class CollectionUtils(object):
         if self.master_db_path is None:
             self.__create_master_col()
 
-        file_descriptor, file_path = tempfile.mkstemp(suffix=".anki2")
-
+        file_descriptor, file_path = tempfile.mkstemp(dir=self.tempdir, suffix=".anki2")
         # Overwrite temp file with a copy of our master db.
         shutil.copy(self.master_db_path, file_path)
         collection = Collection(file_path)
 
-        self.__mark_collection_for_closing(collection)
-        self.__mark_col_paths_for_deletion(collection)
         return collection
 
     @staticmethod
