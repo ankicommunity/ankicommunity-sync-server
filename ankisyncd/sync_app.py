@@ -542,17 +542,7 @@ class SyncApp(object):
                     if self.hook_pre_sync is not None:
                         thread.execute(self.hook_pre_sync, [session])
 
-                # Create a closure to run this operation inside of the thread allocated to this collection
-                def runFunc(col):
-                    handler = session.get_handler_for_operation(url, col)
-                    func = getattr(handler, url)
-                    result = func(**data)
-                    col.save()
-                    return result
-                runFunc.func_name = url
-
-                # Send to the thread to execute
-                result = thread.execute(runFunc)
+                result = self._execute_handler_method_in_thread(url, data, session)
 
                 # If it's a complex data type, we convert it to JSON
                 if type(result) not in (str, unicode):
@@ -567,10 +557,7 @@ class SyncApp(object):
                     if self.hook_post_sync is not None:
                         thread.execute(self.hook_post_sync, [session])
 
-                return Response(
-                    status='200 OK',
-                    content_type='application/json',
-                    body=result)
+                return result
 
             elif url == 'upload':
                 thread = session.get_thread()
@@ -604,9 +591,15 @@ class SyncApp(object):
             if url == "begin":
                 data['skey'] = session.skey
 
-            return self._execute_handler_method_in_thread(url, data, session)
+            result = self._execute_handler_method_in_thread(url, data, session)
 
-        return Response(status='200 OK', content_type='text/plain', body='Anki Sync Server')
+            # If it's a complex data type, we convert it to JSON
+            if type(result) not in (str, unicode):
+                result = json.dumps(result)
+
+            return result
+
+        return "Anki Sync Server"
 
     @staticmethod
     def _execute_handler_method_in_thread(method_name, keyword_args, session):
