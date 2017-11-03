@@ -6,6 +6,7 @@ import os
 import shutil
 
 import helpers.file_utils
+import helpers.server_utils
 import helpers.db_utils
 from anki.sync import MediaSyncer
 from helpers.mock_servers import MockRemoteMediaServer
@@ -94,7 +95,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         the identical file in their media directories and media databases.
         """
         client = self.client_syncer
-        server = self.serverutils.get_syncer_for_hkey(self.server_app,
+        server = helpers.server_utils.get_syncer_for_hkey(self.server_app,
                                                       self.hkey,
                                                       'media')
 
@@ -102,7 +103,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         temp_file_path = helpers.file_utils.create_named_file(u"foo.jpg", "hello")
 
         # Add the test file to the server's collection.
-        self.serverutils.add_files_to_mediasyncer(server,
+        helpers.server_utils.add_files_to_mediasyncer(server,
                                                   [temp_file_path],
                                                   update_db=True,
                                                   bump_last_usn=True)
@@ -126,7 +127,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         """
         join = os.path.join
         client = self.client_syncer
-        server = self.serverutils.get_syncer_for_hkey(self.server_app,
+        server = helpers.server_utils.get_syncer_for_hkey(self.server_app,
                                                       self.hkey,
                                                       'media')
 
@@ -134,7 +135,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         temp_file_path = helpers.file_utils.create_named_file(u"foo.jpg", "hello")
 
         # Add the test file to the client's media collection.
-        self.serverutils.add_files_to_mediasyncer(client,
+        helpers.server_utils.add_files_to_mediasyncer(client,
                                                   [temp_file_path],
                                                   update_db=True,
                                                   bump_last_usn=False)
@@ -165,7 +166,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         join = os.path.join
         isfile = os.path.isfile
         client = self.client_syncer
-        server = self.serverutils.get_syncer_for_hkey(self.server_app,
+        server = helpers.server_utils.get_syncer_for_hkey(self.server_app,
                                                       self.hkey,
                                                       'media')
 
@@ -173,10 +174,10 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         file_for_client = helpers.file_utils.create_named_file(u"foo.jpg", "hello")
         file_for_server = helpers.file_utils.create_named_file(u"bar.jpg", "goodbye")
 
-        self.serverutils.add_files_to_mediasyncer(client,
+        helpers.server_utils.add_files_to_mediasyncer(client,
                                                   [file_for_client],
                                                   update_db=True)
-        self.serverutils.add_files_to_mediasyncer(server,
+        helpers.server_utils.add_files_to_mediasyncer(server,
                                                   [file_for_server],
                                                   update_db=True,
                                                   bump_last_usn=True)
@@ -212,7 +213,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         join = os.path.join
         isfile = os.path.isfile
         client = self.client_syncer
-        server = self.serverutils.get_syncer_for_hkey(self.server_app,
+        server = helpers.server_utils.get_syncer_for_hkey(self.server_app,
                                                       self.hkey,
                                                       'media')
 
@@ -221,10 +222,10 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         file_for_client = helpers.file_utils.create_named_file(u"foo.jpg", "hello")
         file_for_server = helpers.file_utils.create_named_file(u"foo.jpg", "goodbye")
 
-        self.serverutils.add_files_to_mediasyncer(client,
+        helpers.server_utils.add_files_to_mediasyncer(client,
                                                   [file_for_client],
                                                   update_db=True)
-        self.serverutils.add_files_to_mediasyncer(server,
+        helpers.server_utils.add_files_to_mediasyncer(server,
                                                   [file_for_server],
                                                   update_db=True,
                                                   bump_last_usn=True)
@@ -258,7 +259,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         join = os.path.join
         isfile = os.path.isfile
         client = self.client_syncer
-        server = self.serverutils.get_syncer_for_hkey(self.server_app,
+        server = helpers.server_utils.get_syncer_for_hkey(self.server_app,
                                                       self.hkey,
                                                       'media')
 
@@ -266,7 +267,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         temp_file_path = helpers.file_utils.create_named_file(u"foo.jpg", "hello")
 
         # Add the test file to client's media collection.
-        self.serverutils.add_files_to_mediasyncer(client,
+        helpers.server_utils.add_files_to_mediasyncer(client,
                                                   [temp_file_path],
                                                   update_db=True,
                                                   bump_last_usn=False)
@@ -313,7 +314,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         # findChanges(), only during syncs.
         support_file = helpers.file_utils.get_asset_path(u'blue.jpg')
         self.assertTrue(os.path.isfile(support_file))
-        self.serverutils.add_files_to_mediasyncer(client,
+        helpers.server_utils.add_files_to_mediasyncer(client,
                                                   [support_file],
                                                   update_db=False)
 

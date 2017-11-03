@@ -3,11 +3,11 @@ import os
 import unittest
 from webtest import TestApp
 
+import helpers.server_utils
 from ankisyncd.users import SqliteUserManager
 from helpers.collection_utils import CollectionUtils
 from helpers.mock_servers import MockRemoteServer
 from helpers.monkey_patches import monkeypatch_db, unpatch_db
-from helpers.server_utils import ServerUtils
 
 
 class SyncAppFunctionalTestBase(unittest.TestCase):
@@ -15,21 +15,17 @@ class SyncAppFunctionalTestBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.colutils = CollectionUtils()
-        cls.serverutils = ServerUtils()
 
     @classmethod
     def tearDownClass(cls):
         cls.colutils.clean_up()
         cls.colutils = None
 
-        cls.serverutils.clean_up()
-        cls.serverutils = None
-
     def setUp(self):
         monkeypatch_db()
 
         # Create temporary files and dirs the server will use.
-        self.server_paths = self.serverutils.create_server_paths()
+        self.server_paths = helpers.server_utils.create_server_paths()
 
         # Add a test user to the temp auth db the server will use.
         self.user_manager = SqliteUserManager(self.server_paths['auth_db'],
@@ -44,7 +40,7 @@ class SyncAppFunctionalTestBase(unittest.TestCase):
 
         # Create SyncApp instance using the dev ini file and the temporary
         # paths.
-        self.server_app = self.serverutils.create_sync_app(self.server_paths,
+        self.server_app = helpers.server_utils.create_sync_app(self.server_paths,
                                                            ini_file_path)
 
         # Wrap the SyncApp object in TestApp instance for testing.
