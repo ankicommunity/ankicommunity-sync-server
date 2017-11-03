@@ -102,13 +102,13 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
         anki.sync.MediaSyncer.__init__(self, col)
 
     def begin(self, skey):
-        return json.dumps({
-            'data':{
-                'sk':skey,
-                'usn':self.col.media.lastUsn()
+        return {
+            'data': {
+                'sk': skey,
+                'usn': self.col.media.lastUsn(),
             },
-            'err':''
-        })
+            'err': '',
+        }
 
     def uploadChanges(self, data):
         """
@@ -125,13 +125,10 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
         our_last_usn = self.col.media.lastUsn()
         self.col.media.setLastUsn(our_last_usn + processed_count)
 
-        return json.dumps(
-            {
-                'data': [processed_count,
-                         self.col.media.lastUsn()],
-                'err': ''
-            }
-        )
+        return {
+            'data': [processed_count, self.col.media.lastUsn()],
+            'err': '',
+        }
 
     @staticmethod
     def _check_zip_data(zip_data):
@@ -274,7 +271,7 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
             for fname,mtime,csum, in self.col.media.db.execute("select fname,mtime,csum from media"):
                 result.append([fname, usn, csum])
 
-        return json.dumps({'data':result, 'err':''})
+        return {'data': result, 'err': ''}
 
     def mediaSanity(self, local=None):
         if self.col.media.mediaCount() == local:
@@ -282,7 +279,7 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
         else:
             result = "FAILED"
 
-        return json.dumps({'data':result, 'err':''})
+        return {'data': result, 'err':''}
 
 class SyncUserSession(object):
     def __init__(self, name, path, collection_manager, setup_new_collection=None):
