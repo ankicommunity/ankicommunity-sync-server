@@ -96,7 +96,7 @@ class SyncCollectionHandler(anki.sync.Syncer):
         }
 
 class SyncMediaHandler(anki.sync.MediaSyncer):
-    operations = ['begin', 'mediaChanges', 'mediaSanity', 'mediaList', 'uploadChanges', 'downloadFiles']
+    operations = ['begin', 'mediaChanges', 'mediaSanity', 'uploadChanges', 'downloadFiles']
 
     def __init__(self, col):
         anki.sync.MediaSyncer.__init__(self, col)
@@ -110,7 +110,7 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
             'err':''
         })
 
-    def uploadChanges(self, data, skey):
+    def uploadChanges(self, data):
         """
         The zip file contains files the client hasn't synced with the server
         yet ('dirty'), and info on files it has deleted from its own media dir.
@@ -265,7 +265,7 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
 
         return f.getvalue()
 
-    def mediaChanges(self, lastUsn, skey):
+    def mediaChanges(self, lastUsn):
         result = []
         usn = self.col.media.lastUsn()
         fname = csum = None
@@ -601,7 +601,7 @@ class SyncApp(object):
             if url not in self.valid_urls:
                 raise HTTPNotFound()
 
-            if url == 'begin' or url == 'mediaChanges' or url == 'uploadChanges':
+            if url == "begin":
                 data['skey'] = session.skey
 
             return self._execute_handler_method_in_thread(url, data, session)
