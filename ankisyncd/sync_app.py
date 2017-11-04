@@ -689,6 +689,7 @@ def make_app(global_conf, **local_conf):
 def main():
     from wsgiref.simple_server import make_server
     from ankisyncd.thread import shutdown
+    logging.basicConfig(level=logging.INFO)
 
     config = SafeConfigParser()
     config.read("ankisyncd.conf")
