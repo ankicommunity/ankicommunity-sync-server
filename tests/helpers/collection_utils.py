@@ -65,11 +65,3 @@ class CollectionUtils(object):
         collection = Collection(file_path)
 
         return collection
-
-    @staticmethod
-    def create_col_from_existing_db(db_file_path):
-        """
-        Returns a Collection object created from an existing anki db file.
-        """
-
-        return Collection(db_file_path)
