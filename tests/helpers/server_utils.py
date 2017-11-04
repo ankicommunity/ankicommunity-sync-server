@@ -41,8 +41,6 @@ def get_thread_for_hkey(server, hkey):
     return thread
 
 def get_col_wrapper_for_hkey(server, hkey):
-    print("getting col wrapper for hkey " + hkey)
-    print("all session keys: " + str(server.session_manager.sessions.keys()))
     thread = get_thread_for_hkey(server, hkey)
     col_wrapper = thread.wrapper
     return col_wrapper
