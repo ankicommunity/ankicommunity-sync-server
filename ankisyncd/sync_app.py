@@ -114,9 +114,9 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
         yet ('dirty'), and info on files it has deleted from its own media dir.
         """
 
-        self._check_zip_data(data)
-
-        processed_count = self._adopt_media_changes_from_zip(data)
+        with zipfile.ZipFile(BytesIO(data), "r") as z:
+            self._check_zip_data(z)
+            processed_count = self._adopt_media_changes_from_zip(z)
 
         # We increment our lastUsn once for each file we processed.
         # (lastUsn - processed_count) must equal the client's lastUsn.
@@ -129,18 +129,12 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
         }
 
     @staticmethod
-    def _check_zip_data(zip_data):
+    def _check_zip_data(zip_file):
         max_zip_size = 100*1024*1024
         max_meta_file_size = 100000
 
-        file_buffer = BytesIO(zip_data)
-        zip_file = zipfile.ZipFile(file_buffer, 'r')
-
         meta_file_size = zip_file.getinfo("_meta").file_size
         sum_file_sizes = sum(info.file_size for info in zip_file.infolist())
-
-        zip_file.close()
-        file_buffer.close()
 
         if meta_file_size > max_meta_file_size:
             raise ValueError("Zip file's metadata file is larger than %s "
@@ -149,14 +143,11 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
             raise ValueError("Zip file contents are larger than %s Bytes." %
                              max_zip_size)
 
-    def _adopt_media_changes_from_zip(self, zip_data):
+    def _adopt_media_changes_from_zip(self, zip_file):
         """
         Adds and removes files to/from the database and media directory
         according to the data in zip file zipData.
         """
-
-        file_buffer = BytesIO(zip_data)
-        zip_file = zipfile.ZipFile(file_buffer, 'r')
 
         # Get meta info first.
         meta = json.loads(zip_file.read("_meta").decode())
