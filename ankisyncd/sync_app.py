@@ -179,7 +179,8 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
                 file_path = os.path.join(self.col.media.dir(), filename)
 
                 # Save file to media directory.
-                open(file_path, 'wb').write(file_data)
+                with open(file_path, 'wb') as f:
+                    f.write(file_data)
                 mtime = self.col.media._mtime(file_path)
 
                 media_to_add.append((filename, csum, mtime, 0))
@@ -242,18 +243,17 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
         cnt = 0
         sz = 0
         f = BytesIO()
-        z = zipfile.ZipFile(f, "w", compression=zipfile.ZIP_DEFLATED)
 
-        for fname in files:
-            z.write(os.path.join(self.col.media.dir(), fname), str(cnt))
-            flist[str(cnt)] = fname
-            sz += os.path.getsize(os.path.join(self.col.media.dir(), fname))
-            if sz > SYNC_ZIP_SIZE or cnt > SYNC_ZIP_COUNT:
-                break
-            cnt += 1
+        with zipfile.ZipFile(f, "w", compression=zipfile.ZIP_DEFLATED) as z:
+            for fname in files:
+                z.write(os.path.join(self.col.media.dir(), fname), str(cnt))
+                flist[str(cnt)] = fname
+                sz += os.path.getsize(os.path.join(self.col.media.dir(), fname))
+                if sz > SYNC_ZIP_SIZE or cnt > SYNC_ZIP_COUNT:
+                    break
+                cnt += 1
 
-        z.writestr("_meta", json.dumps(flist))
-        z.close()
+            z.writestr("_meta", json.dumps(flist))
 
         return f.getvalue()
 
@@ -389,9 +389,8 @@ class SyncApp:
         import gzip
 
         if compression:
-            buf = gzip.GzipFile(mode="rb", fileobj=BytesIO(data))
-            data = buf.read()
-            buf.close()
+            with gzip.GzipFile(mode="rb", fileobj=BytesIO(data)) as gz:
+                data = gz.read()
 
         try:
             data = json.loads(data.decode())
@@ -423,11 +422,10 @@ class SyncApp:
             f.write(data)
 
         try:
-            test_db = anki.db.DB(temp_db_path)
-            if test_db.scalar("pragma integrity_check") != "ok":
-                raise HTTPBadRequest("Integrity check failed for uploaded "
-                                     "collection database file.")
-            test_db.close()
+            with anki.db.DB(temp_db_path) as test_db:
+                if test_db.scalar("pragma integrity_check") != "ok":
+                    raise HTTPBadRequest("Integrity check failed for uploaded "
+                                         "collection database file.")
         except sqlite.Error as e:
             raise HTTPBadRequest("Uploaded collection database file is "
                                  "corrupt.")

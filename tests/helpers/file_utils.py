@@ -26,7 +26,8 @@ def create_named_file(filename, file_contents=None):
     file_path = os.path.join(temp_file_parent_dir, filename)
 
     if file_contents is not None:
-        open(file_path, 'w').write(file_contents)
+        with open(file_path, "w") as f:
+            f.write(file_contents)
 
     return file_path
 
@@ -41,30 +42,23 @@ def create_zip_with_existing_files(file_paths):
     :return: the data of the created zip file
     """
 
-    file_buffer = BytesIO()
-    zip_file = zipfile.ZipFile(file_buffer,
-                               'w',
-                               compression=zipfile.ZIP_DEFLATED)
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as z:
+        meta = []
+        size = 0
 
-    meta = []
-    sz = 0
+        for index, path in enumerate(file_paths):
+            z.write(path, str(index))
+            normname = unicodedata.normalize("NFC", os.path.basename(path))
+            meta.append((normname, str(index)))
 
-    for count, filePath in enumerate(file_paths):
-        zip_file.write(filePath, str(count))
-        normname = unicodedata.normalize(
-            "NFC",
-            os.path.basename(filePath)
-        )
-        meta.append((normname, str(count)))
+            size += os.path.getsize(path)
+            if size >= SYNC_ZIP_SIZE:
+                break
 
-        sz += os.path.getsize(filePath)
-        if sz >= SYNC_ZIP_SIZE:
-            break
+        z.writestr("_meta", json.dumps(meta))
 
-    zip_file.writestr("_meta", json.dumps(meta))
-    zip_file.close()
-
-    return file_buffer.getvalue()
+    return buf.getvalue()
 
 
 def get_asset_path(relative_file_path):
