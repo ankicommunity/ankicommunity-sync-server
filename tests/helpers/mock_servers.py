@@ -8,7 +8,7 @@ from anki.sync import HttpSyncer, RemoteServer, RemoteMediaServer
 
 class MockServerConnection:
     """
-    Mock for HttpSyncer's con attribute, a httplib2 connection. All requests
+    Mock for HttpSyncer's client attribute, an AnkiRequestsClient. All requests
     that would normally got to the remote server will be redirected to our
     server_app_to_test object.
     """
