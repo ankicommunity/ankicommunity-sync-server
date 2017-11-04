@@ -42,7 +42,7 @@ class SqliteUserManager(SimpleUserManager):
 
     def __init__(self, auth_db_path, collection_path=None):
         SimpleUserManager.__init__(self, collection_path)
-        self.auth_db_path = auth_db_path
+        self.auth_db_path = os.path.realpath(auth_db_path)
 
     def auth_db_exists(self):
         return os.path.isfile(self.auth_db_path)

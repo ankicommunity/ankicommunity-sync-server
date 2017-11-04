@@ -617,7 +617,7 @@ class SqliteSessionManager(SimpleSessionManager):
     def __init__(self, session_db_path):
         SimpleSessionManager.__init__(self)
 
-        self.session_db_path = os.path.abspath(session_db_path)
+        self.session_db_path = os.path.realpath(session_db_path)
 
     def _conn(self):
         new = not os.path.exists(self.session_db_path)
