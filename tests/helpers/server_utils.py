@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import ConfigParser
+import configparser
 import logging
 import os
 import shutil
@@ -22,7 +22,7 @@ def create_server_paths():
     }
 
 def create_sync_app(server_paths, config_path):
-    config = ConfigParser.SafeConfigParser()
+    config = configparser.SafeConfigParser()
     config.read(config_path)
 
     # Use custom files and dirs in settings.

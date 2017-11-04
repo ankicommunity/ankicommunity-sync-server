@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from ConfigParser import SafeConfigParser
+
+from configparser import SafeConfigParser
 
 from webob.dec import wsgify
 from webob.exc import *
@@ -41,9 +42,9 @@ from anki.consts import SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
 from ankisyncd.users import SimpleUserManager, SqliteUserManager
 
 try:
-    from cStringIO import StringIO
+    from io import StringIO
 except ImportError:
-    from StringIO import StringIO
+    from io import StringIO
 
 def old_client(cv):
     if not cv:
@@ -52,7 +53,7 @@ def old_client(cv):
     note = {"alpha": 0, "beta": 0}
     client, version, platform = cv.split(',')
 
-    for name in note.keys():
+    for name in list(note.keys()):
         if name in version:
             vs = version.split(name)
             version = vs[0]
@@ -208,8 +209,8 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
         MediaManager.addFilesFromZip().
         """
 
-        if not isinstance(filename, unicode):
-            filename = unicode(filename, "utf8")
+        if not isinstance(filename, str):
+            filename = str(filename, "utf8")
 
         # Normalize name for platform.
         if anki.utils.isMac:  # global
@@ -514,12 +515,12 @@ class SyncApp(object):
             if url in SyncCollectionHandler.operations + SyncMediaHandler.operations:
                 # 'meta' passes the SYNC_VER but it isn't used in the handler
                 if url == 'meta':
-                    if session.skey == None and req.POST.has_key('s'):
+                    if session.skey == None and 's' in req.POST:
                         session.skey = req.POST['s']
-                    if data.has_key('v'):
+                    if 'v' in data:
                         session.version = data['v']
                         del data['v']
-                    if data.has_key('cv'):
+                    if 'cv' in data:
                         session.client_version = data['cv']
                         del data['cv']
 
@@ -539,7 +540,7 @@ class SyncApp(object):
                 result = self._execute_handler_method_in_thread(url, data, session)
 
                 # If it's a complex data type, we convert it to JSON
-                if type(result) not in (str, unicode):
+                if type(result) not in (str, str):
                     result = json.dumps(result)
 
                 if url == 'finish':
@@ -582,7 +583,7 @@ class SyncApp(object):
             result = self._execute_handler_method_in_thread(url, data, session)
 
             # If it's a complex data type, we convert it to JSON
-            if type(result) not in (str, unicode):
+            if type(result) not in (str, str):
                 result = json.dumps(result)
 
             return result
@@ -607,7 +608,7 @@ class SyncApp(object):
             col.save()
             return res
 
-        run_func.func_name = method_name  # More useful debugging messages.
+        run_func.__name__ = method_name  # More useful debugging messages.
 
         # Send the closure to the thread for execution.
         thread = session.get_thread()

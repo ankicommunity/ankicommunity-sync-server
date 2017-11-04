@@ -31,10 +31,10 @@ class CollectionTestBase(unittest.TestCase):
         model = self.collection.models.byName(data['model'])
 
         note = Note(self.collection, model)
-        for name, value in data['fields'].items():
+        for name, value in list(data['fields'].items()):
             note[name] = value
 
-        if data.has_key('tags'):
+        if 'tags' in data:
             note.setTagsFromStr(data['tags'])
 
         self.collection.addNote(note)

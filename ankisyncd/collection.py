@@ -50,7 +50,7 @@ class CollectionWrapper(object):
         dirname = os.path.dirname(self.path)
         try:
             os.makedirs(dirname)
-        except OSError, exc:
+        except OSError as exc:
             if exc.errno == errno.EEXIST:
                 pass
             else:
@@ -106,7 +106,7 @@ class CollectionManager(object):
 
     def shutdown(self):
         """Close all CollectionWrappers managed by this object."""
-        for path, col in self.collections.items():
+        for path, col in list(self.collections.items()):
             del self.collections[path]
             col.close()
 

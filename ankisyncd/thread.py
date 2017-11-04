@@ -1,9 +1,9 @@
-from __future__ import absolute_import
+
 
 from ankisyncd.collection import CollectionWrapper, CollectionManager
 
 from threading import Thread
-from Queue import Queue
+from queue import Queue
 
 import time, logging
 
@@ -62,7 +62,7 @@ class ThreadingCollectionWrapper(object):
                 func, args, kw, return_queue = self._queue.get(True)
 
                 if hasattr(func, 'func_name'):
-                    func_name = func.func_name
+                    func_name = func.__name__
                 else:
                     func_name = func.__class__.__name__
 
@@ -71,7 +71,7 @@ class ThreadingCollectionWrapper(object):
 
                 try:
                     ret = self.wrapper.execute(func, args, kw, return_queue)
-                except Exception, e:
+                except Exception as e:
                     logging.error('CollectionThread[%s]: Unable to %s(*%s, **%s): %s',
                         self.path, func_name, repr(args), repr(kw), e, exc_info=True)
                     # we return the Exception which will be raise'd on the other end
@@ -79,7 +79,7 @@ class ThreadingCollectionWrapper(object):
 
                 if return_queue is not None:
                     return_queue.put(ret)
-        except Exception, e:
+        except Exception as e:
             logging.error('CollectionThread[%s]: Thread crashed! Exception: %s', self.path, e, exc_info=True)
         finally:
             self.wrapper.close()
@@ -153,7 +153,7 @@ class ThreadingCollectionManager(CollectionManager):
         small memory footprint!) """
         while True:
             cur = time.time()
-            for path, thread in self.collections.items():
+            for path, thread in list(self.collections.items()):
                 if thread.running and thread.wrapper.opened() and thread.qempty() and cur - thread.last_timestamp >= self.monitor_inactivity:
                     logging.info('Monitor is closing collection on inactive CollectionThread[%s]', thread.path)
                     thread.close()
@@ -163,7 +163,7 @@ class ThreadingCollectionManager(CollectionManager):
         # TODO: stop the monitor thread!
 
         # stop all the threads
-        for path, col in self.collections.items():
+        for path, col in list(self.collections.items()):
             del self.collections[path]
             col.stop()
 
