@@ -30,7 +30,7 @@ import string
 import unicodedata
 import zipfile
 from sqlite3 import dbapi2 as sqlite
-from io import StringIO
+from io import BytesIO
 
 import ankisyncd
 
@@ -133,7 +133,7 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
         max_zip_size = 100*1024*1024
         max_meta_file_size = 100000
 
-        file_buffer = StringIO(zip_data)
+        file_buffer = BytesIO(zip_data)
         zip_file = zipfile.ZipFile(file_buffer, 'r')
 
         meta_file_size = zip_file.getinfo("_meta").file_size
@@ -155,11 +155,11 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
         according to the data in zip file zipData.
         """
 
-        file_buffer = StringIO(zip_data)
+        file_buffer = BytesIO(zip_data)
         zip_file = zipfile.ZipFile(file_buffer, 'r')
 
         # Get meta info first.
-        meta = json.loads(zip_file.read("_meta"))
+        meta = json.loads(zip_file.read("_meta").decode())
 
         # Remove media files that were removed on the client.
         media_to_remove = []
@@ -241,7 +241,7 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
         flist = {}
         cnt = 0
         sz = 0
-        f = StringIO()
+        f = BytesIO()
         z = zipfile.ZipFile(f, "w", compression=zipfile.ZIP_DEFLATED)
 
         for fname in files:
@@ -379,7 +379,7 @@ class SyncApp:
 
         import hashlib, time, random, string
         chars = string.ascii_letters + string.digits
-        val = ':'.join([username, str(int(time.time())), ''.join(random.choice(chars) for x in range(8))])
+        val = ':'.join([username, str(int(time.time())), ''.join(random.choice(chars) for x in range(8))]).encode()
         return hashlib.md5(val).hexdigest()
 
     def create_session(self, username, user_path):
@@ -389,13 +389,13 @@ class SyncApp:
         import gzip
 
         if compression:
-            buf = gzip.GzipFile(mode="rb", fileobj=StringIO(data))
+            buf = gzip.GzipFile(mode="rb", fileobj=BytesIO(data))
             data = buf.read()
             buf.close()
 
         try:
-            data = json.loads(data)
-        except ValueError:
+            data = json.loads(data.decode())
+        except (ValueError, UnicodeDecodeError):
             data = {'data': data}
 
         return data

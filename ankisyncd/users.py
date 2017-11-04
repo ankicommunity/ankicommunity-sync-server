@@ -137,7 +137,7 @@ class SqliteUserManager(SimpleUserManager):
             salt = self._extract_salt(expected_value)
 
             hashobj = hashlib.sha256()
-            hashobj.update(username + password + salt)
+            hashobj.update((username + password + salt).encode())
             actual_value = hashobj.hexdigest() + salt
 
             if actual_value == expected_value:
@@ -156,8 +156,8 @@ class SqliteUserManager(SimpleUserManager):
     @staticmethod
     def _create_pass_hash(username, password):
         salt = binascii.b2a_hex(os.urandom(8))
-        pass_hash = (hashlib.sha256(username + password + salt).hexdigest() +
-                     salt)
+        pass_hash = (hashlib.sha256((username + password).encode() + salt).hexdigest() +
+                     salt.decode())
         return pass_hash
 
     def create_auth_db(self):

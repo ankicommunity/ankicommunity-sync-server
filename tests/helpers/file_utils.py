@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from io import StringIO
+from io import BytesIO
 import json
 import logging
 import logging.config
@@ -28,7 +28,7 @@ def create_named_file(filename, file_contents=None):
     if file_contents is not None:
         open(file_path, 'w').write(file_contents)
 
-    return file_path.decode("utf-8")
+    return file_path
 
 
 def create_zip_with_existing_files(file_paths):
@@ -41,7 +41,7 @@ def create_zip_with_existing_files(file_paths):
     :return: the data of the created zip file
     """
 
-    file_buffer = StringIO()
+    file_buffer = BytesIO()
     zip_file = zipfile.ZipFile(file_buffer,
                                'w',
                                compression=zipfile.ZIP_DEFLATED)
