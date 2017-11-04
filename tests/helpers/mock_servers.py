@@ -18,15 +18,8 @@ class MockServerConnection:
 
     def post(self, url, data, headers):
         logging.debug("Posting to URI '{}'.".format(url))
-        test_response = self.test_app.post(url,
-                                           params=data.read(),
-                                           headers=headers,
-                                           status="*")
-
-        r = types.SimpleNamespace()
-        r.status_code = test_response.status_int
-        r.body = test_response.body
-        return r
+        r = self.test_app.post(url, params=data.read(), headers=headers, status="*")
+        return types.SimpleNamespace(status_code=r.status_int, body=r.body)
 
 
     def streamContent(self, r):
