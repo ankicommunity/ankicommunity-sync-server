@@ -1,5 +1,3 @@
-
-
 from ankisyncd.collection import CollectionWrapper, CollectionManager
 
 from threading import Thread
@@ -61,7 +59,7 @@ class ThreadingCollectionWrapper(object):
             while self._running:
                 func, args, kw, return_queue = self._queue.get(True)
 
-                if hasattr(func, 'func_name'):
+                if hasattr(func, '__name__'):
                     func_name = func.__name__
                 else:
                     func_name = func.__class__.__name__
@@ -153,7 +151,7 @@ class ThreadingCollectionManager(CollectionManager):
         small memory footprint!) """
         while True:
             cur = time.time()
-            for path, thread in list(self.collections.items()):
+            for path, thread in self.collections.items():
                 if thread.running and thread.wrapper.opened() and thread.qempty() and cur - thread.last_timestamp >= self.monitor_inactivity:
                     logging.info('Monitor is closing collection on inactive CollectionThread[%s]', thread.path)
                     thread.close()

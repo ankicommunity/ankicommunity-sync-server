@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from configparser import SafeConfigParser
+from configparser import ConfigParser
 
 from webob.dec import wsgify
 from webob.exc import *
@@ -30,6 +30,7 @@ import string
 import unicodedata
 import zipfile
 from sqlite3 import dbapi2 as sqlite
+from io import StringIO
 
 import ankisyncd
 
@@ -41,10 +42,6 @@ from anki.consts import SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
 
 from ankisyncd.users import SimpleUserManager, SqliteUserManager
 
-try:
-    from io import StringIO
-except ImportError:
-    from io import StringIO
 
 def old_client(cv):
     if not cv:
@@ -53,7 +50,7 @@ def old_client(cv):
     note = {"alpha": 0, "beta": 0}
     client, version, platform = cv.split(',')
 
-    for name in list(note.keys()):
+    for name in note.keys():
         if name in version:
             vs = version.split(name)
             version = vs[0]
@@ -208,9 +205,6 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
         Performs unicode normalization for file names. Logic taken from Anki's
         MediaManager.addFilesFromZip().
         """
-
-        if not isinstance(filename, str):
-            filename = str(filename, "utf8")
 
         # Normalize name for platform.
         if anki.utils.isMac:  # global
@@ -540,7 +534,7 @@ class SyncApp(object):
                 result = self._execute_handler_method_in_thread(url, data, session)
 
                 # If it's a complex data type, we convert it to JSON
-                if type(result) not in (str, str):
+                if type(result) not in (str, bytes):
                     result = json.dumps(result)
 
                 if url == 'finish':
@@ -583,7 +577,7 @@ class SyncApp(object):
             result = self._execute_handler_method_in_thread(url, data, session)
 
             # If it's a complex data type, we convert it to JSON
-            if type(result) not in (str, str):
+            if type(result) not in (str, bytes):
                 result = json.dumps(result)
 
             return result
@@ -692,7 +686,7 @@ def main():
     from ankisyncd.thread import shutdown
     logging.basicConfig(level=logging.INFO)
 
-    config = SafeConfigParser()
+    config = ConfigParser()
     config.read("ankisyncd.conf")
 
     ankiserver = SyncApp(config)

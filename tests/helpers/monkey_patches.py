@@ -69,11 +69,8 @@ def monkeypatch_db():
 
     def patched___init__(self, path, text=None, timeout=0):
         # Code taken from Anki's DB.__init__()
-        encpath = path
-        if isinstance(encpath, str):
-            encpath = path.encode("utf-8")
         # Allow more than one thread to use this connection.
-        self._db = sqlite.connect(encpath,
+        self._db = sqlite.connect(path,
                                   timeout=timeout,
                                   check_same_thread=False)
         if text:

@@ -2,7 +2,7 @@
 import unittest
 import tempfile
 import os
-from mock import MagicMock
+from unittest.mock import MagicMock
 import shutil
 
 import anki
@@ -31,7 +31,7 @@ class CollectionTestBase(unittest.TestCase):
         model = self.collection.models.byName(data['model'])
 
         note = Note(self.collection, model)
-        for name, value in list(data['fields'].items()):
+        for name, value in data['fields'].items():
             note[name] = value
 
         if 'tags' in data:

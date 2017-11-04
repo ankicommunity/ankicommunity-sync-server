@@ -22,7 +22,7 @@ def create_server_paths():
     }
 
 def create_sync_app(server_paths, config_path):
-    config = configparser.SafeConfigParser()
+    config = configparser.ConfigParser()
     config.read(config_path)
 
     # Use custom files and dirs in settings.
