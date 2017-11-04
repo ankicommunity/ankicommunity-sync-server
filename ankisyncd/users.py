@@ -6,7 +6,7 @@ import os
 import sqlite3 as sqlite
 
 
-class SimpleUserManager(object):
+class SimpleUserManager:
     """A simple user manager that always allows any user."""
 
     def __init__(self, collection_path=''):

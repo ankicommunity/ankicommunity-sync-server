@@ -4,7 +4,7 @@ import logging
 from anki.sync import HttpSyncer, RemoteServer, RemoteMediaServer
 
 
-class MockServerConnection(object):
+class MockServerConnection:
     """
     Mock for HttpSyncer's con attribute, a httplib2 connection. All requests
     that would normally got to the remote server will be redirected to our

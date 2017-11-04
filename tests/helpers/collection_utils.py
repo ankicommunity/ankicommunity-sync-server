@@ -6,7 +6,7 @@ import tempfile
 from anki import Collection
 
 
-class CollectionUtils(object):
+class CollectionUtils:
     """
     Provides utility methods for creating, inspecting and manipulating anki
     collections.

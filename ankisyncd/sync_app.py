@@ -276,7 +276,7 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
 
         return {'data': result, 'err':''}
 
-class SyncUserSession(object):
+class SyncUserSession:
     def __init__(self, name, path, collection_manager, setup_new_collection=None):
         import time
         self.skey = self._generate_session_key()
@@ -319,7 +319,7 @@ class SyncUserSession(object):
         handler.col = col
         return handler
 
-class SimpleSessionManager(object):
+class SimpleSessionManager:
     """A simple session manager that keeps the sessions in memory."""
 
     def __init__(self):
@@ -339,7 +339,7 @@ class SimpleSessionManager(object):
     def delete(self, hkey):
         del self.sessions[hkey]
 
-class SyncApp(object):
+class SyncApp:
     valid_urls = SyncCollectionHandler.operations + SyncMediaHandler.operations + ['hostKey', 'upload', 'download']
 
     def __init__(self, config):
