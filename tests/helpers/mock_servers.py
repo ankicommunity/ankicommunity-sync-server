@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+import io
 import logging
+import types
 
 from anki.sync import HttpSyncer, RemoteServer, RemoteMediaServer
 
@@ -14,23 +16,21 @@ class MockServerConnection:
     def __init__(self, server_app_to_test):
         self.test_app = server_app_to_test
 
-    def request(self, uri, method='GET', headers=None, body=None):
-        if method == 'POST':
-            logging.debug("Posting to URI '{}'.".format(uri))
-            logging.info("Posting to URI '{}'.".format(uri))
-            test_response = self.test_app.post(uri,
-                                               params=body,
-                                               headers=headers,
-                                               status="*")
+    def post(self, url, data, headers):
+        logging.debug("Posting to URI '{}'.".format(url))
+        test_response = self.test_app.post(url,
+                                           params=data.read(),
+                                           headers=headers,
+                                           status="*")
 
-            resp = test_response.headers
-            resp.update({
-                "status": str(test_response.status_int)
-            })
-            cont = test_response.body
-            return resp, cont
-        else:
-            raise Exception('Unexpected HttpSyncer.req() behavior.')
+        r = types.SimpleNamespace()
+        r.status_code = test_response.status_int
+        r.body = test_response.body
+        return r
+
+
+    def streamContent(self, r):
+            return r.body
 
 
 class MockRemoteServer(RemoteServer):
