@@ -508,7 +508,7 @@ class SyncApp:
                         del data['cv']
 
                     if old_client(session.client_version):
-                        return Response(status="501")  # client needs upgrade
+                        return Response(status=501)  # client needs upgrade
 
                     self.session_manager.save(hkey, session)
                     session = self.session_manager.load(hkey, self.create_session)
