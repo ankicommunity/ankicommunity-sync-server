@@ -499,9 +499,6 @@ class SyncApp:
             data = self._decode_data(data, compression)
         except KeyError:
             data = {}
-        except ValueError:
-            # Bad JSON
-            raise HTTPBadRequest()
 
         if req.path.startswith(self.base_url):
             url = req.path[len(self.base_url):]
