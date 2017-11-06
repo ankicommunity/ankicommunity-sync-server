@@ -22,6 +22,7 @@ import logging
 import os
 import random
 import string
+import sys
 import time
 import unicodedata
 import zipfile
@@ -688,8 +689,12 @@ def main():
     from ankisyncd.thread import shutdown
     logging.basicConfig(level=logging.INFO)
 
+    if len(sys.argv) < 2:
+        print("usage: {} configfile".format(os.path.basename(sys.argv[0])), file=sys.stderr)
+        exit(1)
+
     parser = ConfigParser()
-    parser.read("ankisyncd.conf")
+    parser.read(sys.argv[1])
     config = parser['sync_app']
 
     ankiserver = SyncApp(config)
