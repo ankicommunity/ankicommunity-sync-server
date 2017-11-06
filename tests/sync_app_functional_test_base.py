@@ -28,7 +28,7 @@ class SyncAppFunctionalTestBase(unittest.TestCase):
         self.server_paths = helpers.server_utils.create_server_paths()
 
         # Add a test user to the temp auth db the server will use.
-        self.user_manager = SqliteUserManager(self.server_paths['auth_db'],
+        self.user_manager = SqliteUserManager(self.server_paths['auth_db_path'],
                                               self.server_paths['data_root'])
         self.user_manager.add_user('testuser', 'testpassword')
 

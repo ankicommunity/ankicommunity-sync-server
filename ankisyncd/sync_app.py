@@ -330,21 +330,21 @@ class SyncApp:
     def __init__(self, config):
         from ankisyncd.thread import getCollectionManager
 
-        self.data_root = os.path.abspath(config.get("sync_app", "data_root"))
-        self.base_url  = config.get("sync_app", "base_url")
-        self.base_media_url  = config.get("sync_app", "base_media_url")
+        self.data_root = os.path.abspath(config['data_root'])
+        self.base_url  = config['base_url']
+        self.base_media_url  = config['base_media_url']
         self.setup_new_collection = None
 
         self.prehooks = {}
         self.posthooks = {}
 
-        if config.has_option("sync_app", "session_db_path"):
-            self.session_manager = SqliteSessionManager(config.get("sync_app", "session_db_path"))
+        if "session_db_path" in config:
+            self.session_manager = SqliteSessionManager(config['session_db_path'])
         else:
             self.session_manager = SimpleSessionManager()
 
-        if config.has_option("sync_app", "auth_db_path"):
-            self.user_manager = SqliteUserManager(config.get("sync_app", "auth_db_path"))
+        if "auth_db_path" in config:
+            self.user_manager = SqliteUserManager(config['auth_db_path'])
         else:
             logging.warn("auth_db_path not set, ankisyncd will accept any password")
             self.user_manager = SimpleUserManager()
@@ -688,11 +688,12 @@ def main():
     from ankisyncd.thread import shutdown
     logging.basicConfig(level=logging.INFO)
 
-    config = ConfigParser()
-    config.read("ankisyncd.conf")
+    parser = ConfigParser()
+    parser.read("ankisyncd.conf")
+    config = parser['sync_app']
 
     ankiserver = SyncApp(config)
-    httpd = make_server(config.get("sync_app", "host"), config.getint("sync_app", "port"), ankiserver)
+    httpd = make_server(config['host'], int(config['port']), ankiserver)
 
     try:
         print("Serving HTTP on {} port {}...".format(*httpd.server_address))

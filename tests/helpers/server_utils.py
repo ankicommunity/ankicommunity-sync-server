@@ -16,8 +16,8 @@ def create_server_paths():
     os.mkdir(os.path.join(dir, "data"))
 
     return {
-        "auth_db": os.path.join(dir, "auth.db"),
-        "session_db": os.path.join(dir, "session.db"),
+        "auth_db_path": os.path.join(dir, "auth.db"),
+        "session_db_path": os.path.join(dir, "session.db"),
         "data_root": os.path.join(dir, "data"),
     }
 
@@ -26,11 +26,9 @@ def create_sync_app(server_paths, config_path):
     config.read(config_path)
 
     # Use custom files and dirs in settings.
-    config.set("sync_app", "auth_db_path", server_paths["auth_db"])
-    config.set("sync_app", "session_db_path", server_paths["session_db"])
-    config.set("sync_app", "data_root", server_paths["data_root"])
+    config['sync_app'].update(server_paths)
 
-    return SyncApp(config)
+    return SyncApp(config['sync_app'])
 
 def get_session_for_hkey(server, hkey):
     return server.session_manager.load(hkey)
