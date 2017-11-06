@@ -265,7 +265,7 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
         else:
             result = "FAILED"
 
-        return {'data': result, 'err':''}
+        return {'data': result, 'err': ''}
 
 class SyncUserSession:
     def __init__(self, name, path, collection_manager, setup_new_collection=None):
