@@ -14,27 +14,24 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-from configparser import ConfigParser
-
-from webob.dec import wsgify
-from webob.exc import *
-from webob import Response
-
-import os
+import gzip
 import hashlib
+import io
 import json
 import logging
+import os
 import random
 import string
+import time
 import unicodedata
 import zipfile
+from configparser import ConfigParser
 from sqlite3 import dbapi2 as sqlite
-from io import BytesIO
 
-import ankisyncd
+from webob import Response
+from webob.dec import wsgify
+from webob.exc import *
 
-import anki
 import anki.db
 import anki.sync
 import anki.utils
@@ -114,7 +111,7 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
         yet ('dirty'), and info on files it has deleted from its own media dir.
         """
 
-        with zipfile.ZipFile(BytesIO(data), "r") as z:
+        with zipfile.ZipFile(io.BytesIO(data), "r") as z:
             self._check_zip_data(z)
             processed_count = self._adopt_media_changes_from_zip(z)
 
@@ -228,12 +225,10 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
                               "%s" % (filename, str(err)))
 
     def downloadFiles(self, files):
-        import zipfile
-
         flist = {}
         cnt = 0
         sz = 0
-        f = BytesIO()
+        f = io.BytesIO()
 
         with zipfile.ZipFile(f, "w", compression=zipfile.ZIP_DEFLATED) as z:
             for fname in files:
@@ -269,7 +264,6 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
 
 class SyncUserSession:
     def __init__(self, name, path, collection_manager, setup_new_collection=None):
-        import time
         self.skey = self._generate_session_key()
         self.name = name
         self.path = path
@@ -409,10 +403,8 @@ class SyncApp:
         return SyncUserSession(username, user_path, self.collection_manager, self.setup_new_collection)
 
     def _decode_data(self, data, compression=0):
-        import gzip
-
         if compression:
-            with gzip.GzipFile(mode="rb", fileobj=BytesIO(data)) as gz:
+            with gzip.GzipFile(mode="rb", fileobj=io.BytesIO(data)) as gz:
                 data = gz.read()
 
         try:
