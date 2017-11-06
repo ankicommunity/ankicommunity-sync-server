@@ -692,7 +692,7 @@ def main():
     config.read("ankisyncd.conf")
 
     ankiserver = SyncApp(config)
-    httpd = make_server('', config.getint("sync_app", "port"), ankiserver)
+    httpd = make_server(config.get("sync_app", "host"), config.getint("sync_app", "port"), ankiserver)
 
     try:
         print("Serving HTTP on {} port {}...".format(*httpd.server_address))
