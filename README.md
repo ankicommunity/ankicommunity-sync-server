@@ -21,17 +21,13 @@ Installing
 
         $ pip install webob
 
-2. Patch the bundled libanki:
+2. Modify ankisyncd.conf according to your needs
 
-        $ (cd anki-bundled && git apply ../libanki.patch)
-
-3. Modify ankisyncd.conf according to your needs
-
-4. Create user:
+3. Create user:
 
         $ ./ankisyncctl.py adduser <username>
 
-5. Run ankisyncd:
+4. Run ankisyncd:
 
         $ python ./ankisyncd/sync_app.py ankisyncd.conf
 
