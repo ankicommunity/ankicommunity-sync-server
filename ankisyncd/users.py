@@ -51,15 +51,15 @@ class SqliteUserManager(SimpleUserManager):
         if not self.auth_db_exists():
             raise ValueError("Cannot list users for nonexistent auth db {}."
                              .format(self.auth_db_path))
-        else:
-            conn = sqlite.connect(self.auth_db_path)
-            cursor = conn.cursor()
-            cursor.execute("SELECT user FROM auth")
-            rows = cursor.fetchall()
-            conn.commit()
-            conn.close()
 
-            return [row[0] for row in rows]
+        conn = sqlite.connect(self.auth_db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT user FROM auth")
+        rows = cursor.fetchall()
+        conn.commit()
+        conn.close()
+
+        return [row[0] for row in rows]
 
     def user_exists(self, username):
         users = self.user_list()
@@ -69,14 +69,13 @@ class SqliteUserManager(SimpleUserManager):
         if not self.auth_db_exists():
             raise ValueError("Cannot remove user from nonexistent auth db {}."
                              .format(self.auth_db_path))
-        else:
-            conn = sqlite.connect(self.auth_db_path)
-            cursor = conn.cursor()
-            logging.info("Removing user '{}' from auth db."
-                         .format(username))
-            cursor.execute("DELETE FROM auth WHERE user=?", (username,))
-            conn.commit()
-            conn.close()
+
+        conn = sqlite.connect(self.auth_db_path)
+        cursor = conn.cursor()
+        logging.info("Removing user '{}' from auth db".format(username))
+        cursor.execute("DELETE FROM auth WHERE user=?", (username,))
+        conn.commit()
+        conn.close()
 
     def add_user(self, username, password):
         self._add_user_to_auth_db(username, password)
@@ -102,21 +101,21 @@ class SqliteUserManager(SimpleUserManager):
 
     def set_password_for_user(self, username, new_password):
         if not self.auth_db_exists():
-            raise ValueError("Cannot remove user from nonexistent auth db {}."
+            raise ValueError("Cannot remove user from nonexistent auth db {}"
                              .format(self.auth_db_path))
         elif not self.user_exists(username):
-            raise ValueError("Cannot remove nonexistent user {}."
+            raise ValueError("Cannot remove nonexistent user {}"
                              .format(username))
-        else:
-            hash = self._create_pass_hash(username, new_password)
 
-            conn = sqlite.connect(self.auth_db_path)
-            cursor = conn.cursor()
-            cursor.execute("UPDATE auth SET hash=? WHERE user=?", (hash, username))
-            conn.commit()
-            conn.close()
+        hash = self._create_pass_hash(username, new_password)
 
-            logging.info("Changed password for user {}.".format(username))
+        conn = sqlite.connect(self.auth_db_path)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE auth SET hash=? WHERE user=?", (hash, username))
+        conn.commit()
+        conn.close()
+
+        logging.info("Changed password for user {}".format(username))
 
     def authenticate(self, username, password):
         """Returns True if this username is allowed to connect with this password. False otherwise."""
@@ -132,22 +131,20 @@ class SqliteUserManager(SimpleUserManager):
             logging.info("Authentication failed for nonexistent user {}."
                          .format(username))
             return False
+
+        expected_value = str(db_hash[0])
+        salt = self._extract_salt(expected_value)
+
+        hashobj = hashlib.sha256()
+        hashobj.update((username + password + salt).encode())
+        actual_value = hashobj.hexdigest() + salt
+
+        if actual_value == expected_value:
+            logging.info("Authentication succeeded for user {}".format(username))
+            return True
         else:
-            expected_value = str(db_hash[0])
-            salt = self._extract_salt(expected_value)
-
-            hashobj = hashlib.sha256()
-            hashobj.update((username + password + salt).encode())
-            actual_value = hashobj.hexdigest() + salt
-
-            if actual_value == expected_value:
-                logging.info("Authentication succeeded for user {}."
-                             .format(username))
-                return True
-            else:
-                logging.info("Authentication failed for user {}."
-                             .format(username))
-                return False
+            logging.info("Authentication failed for user {}".format(username))
+            return False
 
     @staticmethod
     def _extract_salt(hash):

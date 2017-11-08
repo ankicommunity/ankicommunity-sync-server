@@ -161,18 +161,18 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
         for i in zip_file.infolist():
             if i.filename == "_meta":  # Ignore previously retrieved metadata.
                 continue
-            else:
-                file_data = zip_file.read(i)
-                csum = anki.utils.checksum(file_data)
-                filename = self._normalize_filename(meta[int(i.filename)][0])
-                file_path = os.path.join(self.col.media.dir(), filename)
 
-                # Save file to media directory.
-                with open(file_path, 'wb') as f:
-                    f.write(file_data)
-                mtime = self.col.media._mtime(file_path)
+            file_data = zip_file.read(i)
+            csum = anki.utils.checksum(file_data)
+            filename = self._normalize_filename(meta[int(i.filename)][0])
+            file_path = os.path.join(self.col.media.dir(), filename)
 
-                media_to_add.append((filename, csum, mtime, 0))
+            # Save file to media directory.
+            with open(file_path, 'wb') as f:
+                f.write(file_data)
+            mtime = self.col.media._mtime(file_path)
+
+            media_to_add.append((filename, csum, mtime, 0))
 
         # We count all files we are to remove, even if we don't have them in
         # our media directory and our db doesn't know about them.

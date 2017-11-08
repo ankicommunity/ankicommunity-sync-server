@@ -51,9 +51,7 @@ class CollectionWrapper:
         try:
             os.makedirs(dirname)
         except OSError as exc:
-            if exc.errno == errno.EEXIST:
-                pass
-            else:
+            if exc.errno != errno.EEXIST:
                 raise
 
         col = anki.storage.Collection(self.path, server=True)
