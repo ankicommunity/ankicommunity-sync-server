@@ -47,12 +47,7 @@ class CollectionWrapper:
         """Creates a new collection and runs any special setup."""
 
         # mkdir -p the path, because it might not exist
-        dirname = os.path.dirname(self.path)
-        try:
-            os.makedirs(dirname)
-        except OSError as exc:
-            if exc.errno != errno.EEXIST:
-                raise
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
 
         col = anki.storage.Collection(self.path, server=True)
 
