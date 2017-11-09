@@ -36,7 +36,7 @@ from webob.exc import *
 import anki.db
 import anki.sync
 import anki.utils
-from anki.consts import SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
+from anki.consts import SYNC_VER, SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
 
 from ankisyncd.users import SimpleUserManager, SqliteUserManager
 
@@ -521,8 +521,11 @@ class SyncApp:
                         session.client_version = data['cv']
                         del data['cv']
 
-                    if old_client(session.client_version):
+                    if session.version < SYNC_VER or old_client(session.client_version):
                         return Response(status=501)  # client needs upgrade
+
+                    if session.version > SYNC_VER:
+                        return Response(status=500, body="Your client is using unsupported sync protocol ({}, supported version: {})".format(session.version, SYNC_VER))
 
                     self.session_manager.save(hkey, session)
                     session = self.session_manager.load(hkey, self.create_session)
