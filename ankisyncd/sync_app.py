@@ -71,7 +71,7 @@ def old_client(cv):
 
 
 class SyncCollectionHandler(anki.sync.Syncer):
-    operations = ['meta', 'applyChanges', 'start', 'chunk', 'applyChunk', 'sanityCheck2', 'finish']
+    operations = ['meta', 'applyChanges', 'start', 'applyGraves', 'chunk', 'applyChunk', 'sanityCheck2', 'finish']
 
     def __init__(self, col):
         # So that 'server' (the 3rd argument) can't get set
@@ -95,13 +95,19 @@ class SyncCollectionHandler(anki.sync.Syncer):
     def usnLim(self):
         return "usn >= %d" % self.minUsn
 
-    def start(self, minUsn, lnewer, graves):
+    # ankidesktop >=2.1rc2 sends graves in applyGraves, but still expects
+    # server-side deletions to be returned by start
+    def start(self, minUsn, lnewer, graves={"cards": [], "notes": [], "decks": []}):
         self.maxUsn = self.col._usn
         self.minUsn = minUsn
         self.lnewer = not lnewer
         lgraves = self.removed()
         self.remove(graves)
         return lgraves
+
+    def applyGraves(self, chunk):
+        print(f"applyGraves chunk: {chunk}")
+        self.remove(chunk)
 
     def applyChanges(self, changes):
         self.rchg = changes
