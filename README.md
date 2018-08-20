@@ -11,8 +11,8 @@ This is a personal Anki server, which you can sync against instead of
 AnkiWeb. It was originally developed to support the flashcard functionality
 on Bibliobird, a web application for language learning.
 
-This version has been modified from [dsnopek's Anki Sync Server][] to remove
-the REST API, which makes it possible to drop some dependencies.
+This version is a fork of [jdoe0/ankisyncd](https://github.com/jdoe0/ankisyncd).
+It supports Python 3 and Anki 2.1.
 
 Installing
 ----------
