@@ -91,6 +91,9 @@ class SyncCollectionHandler(anki.sync.Syncer):
             'cont': True,
         }
 
+    def usnLim(self):
+        return "usn >= %d" % self.minUsn
+
 class SyncMediaHandler(anki.sync.MediaSyncer):
     operations = ['begin', 'mediaChanges', 'mediaSanity', 'uploadChanges', 'downloadFiles']
 
