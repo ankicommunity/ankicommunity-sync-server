@@ -1,4 +1,5 @@
 import functools
+import os
 import sys
 
 def __mediapatch():
@@ -29,4 +30,5 @@ def __mediapatch():
     MediaManager.close = noserver(MediaManager.close)
 
 sys.path.insert(0, "/usr/share/anki")
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "anki-bundled"))
 __mediapatch()
