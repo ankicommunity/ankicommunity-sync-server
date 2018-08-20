@@ -6,7 +6,8 @@ import getpass
 from ankisyncd.users import SqliteUserManager
 
 DATAPREFIX = os.path.join(os.path.expanduser("~"), ".local", "share")
-DATADIR = os.path.join(DATAPREFIX, "ankisyncd")
+#DATADIR = os.path.join(DATAPREFIX, "ankisyncd")
+DATADIR = "."
 AUTHDBPATH = os.path.join(DATADIR, "auth.db")
 COLLECTIONPATH = os.path.join(DATADIR, "collections")
 
