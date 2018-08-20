@@ -42,33 +42,6 @@ from anki.consts import REM_CARD, REM_NOTE
 from ankisyncd.users import SimpleUserManager, SqliteUserManager
 
 
-def old_client(cv):
-    if not cv:
-        return False
-
-    note = {"alpha": 0, "beta": 0}
-    client, version, platform = cv.split(',')
-
-    for name in note.keys():
-        if name in version:
-            vs = version.split(name)
-            version = vs[0]
-            note[name] = int(vs[-1])
-
-    version_int = [int(x) for x in version.split('.')]
-
-    if client == 'ankidesktop':
-        return version_int < [2, 0, 27]
-    elif client == 'ankidroid':
-        if version_int == [2, 3]:
-           if note["alpha"]:
-              return note["alpha"] < 4
-        else:
-           return version_int < [2, 2, 3]
-    else:  # unknown client, assume current version
-        return False
-
-
 
 class SyncCollectionHandler(anki.sync.Syncer):
     operations = ['meta', 'applyChanges', 'start', 'applyGraves', 'chunk', 'applyChunk', 'sanityCheck2', 'finish']
@@ -77,7 +50,39 @@ class SyncCollectionHandler(anki.sync.Syncer):
         # So that 'server' (the 3rd argument) can't get set
         anki.sync.Syncer.__init__(self, col)
 
-    def meta(self):
+    @staticmethod
+    def _old_client(cv):
+        if not cv:
+            return False
+
+        note = {"alpha": 0, "beta": 0, "rc": 0}
+        client, version, platform = cv.split(',')
+
+        for name in note.keys():
+            if name in version:
+                vs = version.split(name)
+                version = vs[0]
+                note[name] = int(vs[-1])
+
+        version_int = [int(x) for x in version.split('.')]
+
+        if client == 'ankidesktop':
+            return version_int < [2, 0, 27]
+        elif client == 'ankidroid':
+            if version_int == [2, 3]:
+               if note["alpha"]:
+                  return note["alpha"] < 4
+            else:
+               return version_int < [2, 2, 3]
+        else:  # unknown client, assume current version
+            return False
+
+    def meta(self, v=None, cv=None):
+        if self._old_client(cv):
+            return Response(status=501)  # client needs upgrade
+        if v > SYNC_VER:
+            return {"cont": False, "msg": "Your client is using unsupported sync protocol ({}, supported version: {})".format(v, SYNC_VER)}
+
         # Make sure the media database is open!
         if self.col.media.db is None:
             self.col.media.connect()
@@ -583,16 +588,8 @@ class SyncApp:
                         session.skey = req.POST['s']
                     if 'v' in data:
                         session.version = data['v']
-                        del data['v']
                     if 'cv' in data:
                         session.client_version = data['cv']
-                        del data['cv']
-
-                    if session.version < SYNC_VER or old_client(session.client_version):
-                        return Response(status=501)  # client needs upgrade
-
-                    if session.version > SYNC_VER:
-                        return Response(status=500, body="Your client is using unsupported sync protocol ({}, supported version: {})".format(session.version, SYNC_VER))
 
                     self.session_manager.save(hkey, session)
                     session = self.session_manager.load(hkey, self.create_session)
@@ -605,7 +602,7 @@ class SyncApp:
                 result = self._execute_handler_method_in_thread(url, data, session)
 
                 # If it's a complex data type, we convert it to JSON
-                if type(result) not in (str, bytes):
+                if type(result) not in (str, bytes, Response):
                     result = json.dumps(result)
 
                 if url in self.posthooks:
