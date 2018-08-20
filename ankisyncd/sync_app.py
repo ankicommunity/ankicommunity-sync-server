@@ -37,6 +37,7 @@ import anki.db
 import anki.sync
 import anki.utils
 from anki.consts import SYNC_VER, SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
+from anki.consts import REM_CARD, REM_NOTE
 
 from ankisyncd.users import SimpleUserManager, SqliteUserManager
 
@@ -93,6 +94,63 @@ class SyncCollectionHandler(anki.sync.Syncer):
 
     def usnLim(self):
         return "usn >= %d" % self.minUsn
+
+    def start(self, minUsn, lnewer, graves):
+        self.maxUsn = self.col._usn
+        self.minUsn = minUsn
+        self.lnewer = not lnewer
+        lgraves = self.removed()
+        self.remove(graves)
+        return lgraves
+
+    def applyChanges(self, changes):
+        self.rchg = changes
+        lchg = self.changes()
+        # merge our side before returning
+        self.mergeChanges(lchg, self.rchg)
+        return lchg
+
+    def sanityCheck2(self, client):
+        server = self.sanityCheck()
+        if client != server:
+            return dict(status="bad", c=client, s=server)
+        return dict(status="ok")
+
+    def finish(self, mod=None):
+        return anki.sync.Syncer.finish(self, anki.utils.intTime(1000))
+
+    # Syncer.removed() doesn't use self.usnLim() in queries, so we have to
+    # replace "usn=-1" by hand
+    def removed(self):
+        cards = []
+        notes = []
+        decks = []
+
+        curs = self.col.db.execute(
+            "select oid, type from graves where usn >= ?", self.minUsn)
+
+        for oid, type in curs:
+            if type == REM_CARD:
+                cards.append(oid)
+            elif type == REM_NOTE:
+                notes.append(oid)
+            else:
+                decks.append(oid)
+
+        return dict(cards=cards, notes=notes, decks=decks)
+
+    def getModels(self):
+        return [m for m in self.col.models.all() if m['usn'] >= self.minUsn]
+
+    def getDecks(self):
+        return [
+            [g for g in self.col.decks.all() if g['usn'] >= self.minUsn],
+            [g for g in self.col.decks.allConf() if g['usn'] >= self.minUsn]
+        ]
+
+    def getTags(self):
+        return [t for t, usn in self.col.tags.allItems()
+                if usn >= self.minUsn]
 
 class SyncMediaHandler(anki.sync.MediaSyncer):
     operations = ['begin', 'mediaChanges', 'mediaSanity', 'uploadChanges', 'downloadFiles']
