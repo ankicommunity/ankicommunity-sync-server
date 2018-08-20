@@ -34,8 +34,20 @@ Installing
 Setting up Anki
 ---------------
 
+### Anki 2.1
+
+Create a new directory in `~/Anki/addons21` (name it something like ankisyncd),
+create a file named `__init__.py` containing the code below and put it in
+`~/Anki/addons21/ankisyncd`.
+
+    import anki.sync
+
+    anki.sync.SYNC_BASE = 'http://127.0.0.1:27701/%s'
+
+### Anki 2.0
+
 To make Anki use ankisyncd as its sync server, create a file (name it something
-like ankisyncd.py) containing the code below and put it in ~/Anki/addons.
+like ankisyncd.py) containing the code below and put it in `~/Anki/addons`.
 
     import anki.sync
 
