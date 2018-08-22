@@ -113,7 +113,6 @@ class SyncCollectionHandler(anki.sync.Syncer):
         return lgraves
 
     def applyGraves(self, chunk):
-        print(f"applyGraves chunk: {chunk}")
         self.remove(chunk)
 
     def applyChanges(self, changes):
