@@ -29,7 +29,7 @@ Installing
 
 4. Run ankisyncd:
 
-        $ python ./ankisyncd/sync_app.py ankisyncd.conf
+        $ python -m ankisyncd ankisyncd.conf
 
 Setting up Anki
 ---------------
