@@ -25,7 +25,7 @@ Installing
    `anki-bundled` from this repo:
 
         $ git submodule update --init
-        $ cd anki
+        $ cd anki-bundled
         $ pip install -r requirements.txt
 
 1. Install the dependencies:
