@@ -17,6 +17,14 @@ It supports Python 3 and Anki 2.1.
 Installing
 ----------
 
+0. Install Anki. The server currently works well with 2.1.1. If for some reason
+   you can't get this version easily on your system, you can use `anki-bundled`
+   from this repo:
+
+        $ git submodule update --init
+        $ cd anki
+        $ pip install -r requirements.txt
+
 1. Install the dependencies:
 
         $ pip install webob
