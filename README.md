@@ -14,6 +14,9 @@ on Bibliobird, a web application for language learning.
 This version is a fork of [jdoe0/ankisyncd](https://github.com/jdoe0/ankisyncd).
 It supports Python 3 and Anki 2.1.
 
+[Anki]: https://apps.ankiweb.net/
+[dsnopek's Anki Sync Server]: https://github.com/dsnopek/anki-sync-server
+
 Installing
 ----------
 
@@ -29,23 +32,8 @@ Installing
         $ pip install -r requirements.txt
 
    Keep in mind `pyaudio`, a dependency of Anki, requires Python 3 and PortAudio
-   headers to be present before running `pip`. `ankisyncd` doesn't use the audio
-   recording feature of Anki, so if you don't want to install PortAudio, you can
-   edit `anki-bundled/anki/sound.py` and `anki-bundled/requirements.txt` to
-   exclude `pyaudio`:
-
-   `ed` version:
-
-        $ echo '/# Packaged commands/,$d;w' | tr ';' '\n' | ed anki/sound.py
-        $ echo '/^pyaudio/d;w' | tr ';' '\n' | ed requirements.txt
-
-   `sed -i` version:
-
-        $ sed -i '/# Packaged commands/,$d' anki/sound.py
-        $ sed -i '/^pyaudio/d' requirements.txt
-
-    Manual version: remove every line past "# Packaged commands" in anki/sound.py,
-    remove every line starting with "pyaudio" in requirements.txt
+   headers to be present before running `pip`. If you can't or don't want to
+   install these, you can try [patching Anki](#running-ankisyncd-without-pyaudio).
 
 1. Install the dependencies:
 
@@ -86,5 +74,22 @@ and put it in `~/Anki/addons`.
     anki.sync.SYNC_BASE = addr
     anki.sync.SYNC_MEDIA_BASE = addr + "msync/"
 
-[Anki]: https://apps.ankiweb.net/
-[dsnopek's Anki Sync Server]: https://github.com/dsnopek/anki-sync-server
+Running `ankisyncd` without `pyaudio`
+-------------------------------------
+
+`ankisyncd` doesn't use the audio recording feature of Anki, so if you don't
+want to install PortAudio, you can edit `anki-bundled/anki/sound.py` and
+`anki-bundled/requirements.txt` to exclude `pyaudio`:
+
+`ed` version:
+
+    $ echo '/# Packaged commands/,$d;w' | tr ';' '\n' | ed anki/sound.py
+    $ echo '/^pyaudio/d;w' | tr ';' '\n' | ed requirements.txt
+
+`sed -i` version:
+
+    $ sed -i '/# Packaged commands/,$d' anki/sound.py
+    $ sed -i '/^pyaudio/d' requirements.txt
+
+Manual version: remove every line past "# Packaged commands" in anki/sound.py,
+remove every line starting with "pyaudio" in requirements.txt
