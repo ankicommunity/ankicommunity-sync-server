@@ -28,6 +28,25 @@ Installing
         $ cd anki-bundled
         $ pip install -r requirements.txt
 
+   Keep in mind `pyaudio`, a dependency of Anki, requires Python 3 and PortAudio
+   headers to be present before running `pip`. `ankisyncd` doesn't use the audio
+   recording feature of Anki, so if you don't want to install PortAudio, you can
+   edit `anki-bundled/anki/sound.py` and `anki-bundled/requirements.txt` to
+   exclude `pyaudio`:
+
+   `ed` version:
+
+        $ echo '/# Packaged commands/,$d;w' | tr ';' '\n' | ed anki/sound.py
+        $ echo '/^pyaudio/d;w' | tr ';' '\n' | ed requirements.txt
+
+   `sed -i` version:
+
+        $ sed -i '/# Packaged commands/,$d' anki/sound.py
+        $ sed -i '/^pyaudio/d' requirements.txt
+
+    Manual version: remove every line past "# Packaged commands" in anki/sound.py,
+    remove every line starting with "pyaudio" in requirements.txt
+
 1. Install the dependencies:
 
         $ pip install webob
