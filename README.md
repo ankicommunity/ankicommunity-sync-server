@@ -72,20 +72,19 @@ create a file named `__init__.py` containing the code below and put it in
 
     import anki.sync
 
-    anki.sync.SYNC_BASE = 'http://127.0.0.1:27701/%s'
+    addr = "http://127.0.0.1:27701/" # put your server address here
+    anki.sync.SYNC_BASE = addr + "%s"
 
 ### Anki 2.0
 
-To make Anki use ankisyncd as its sync server, create a file (name it something
-like ankisyncd.py) containing the code below and put it in `~/Anki/addons`.
+Create a file (name it something like ankisyncd.py) containing the code below
+and put it in `~/Anki/addons`.
 
     import anki.sync
 
-    anki.sync.SYNC_BASE = 'http://127.0.0.1:27701/'
-    anki.sync.SYNC_MEDIA_BASE = 'http://127.0.0.1:27701/msync/'
-
-Replace 127.0.0.1 with the IP address or the domain name of your server if
-ankisyncd is not running on the same machine as Anki.
+    addr = "http://127.0.0.1:27701/" # put your server address here
+    anki.sync.SYNC_BASE = addr
+    anki.sync.SYNC_MEDIA_BASE = addr + "msync/"
 
 [Anki]: https://apps.ankiweb.net/
 [dsnopek's Anki Sync Server]: https://github.com/dsnopek/anki-sync-server
