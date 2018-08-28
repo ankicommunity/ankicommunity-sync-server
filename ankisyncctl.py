@@ -11,7 +11,7 @@ AUTHDBPATH = config['auth_db_path']
 COLLECTIONPATH = config['data_root']
 
 def usage():
-    print("usage: "+sys.argv[0]+" <command> [<args>]")
+    print("usage: {} <command> [<args>]".format(sys.argv[0]))
     print()
     print("Commands:")
     print("  adduser <username> - add a new user")
