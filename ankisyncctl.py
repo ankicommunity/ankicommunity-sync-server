@@ -3,13 +3,12 @@ import os
 import sys
 import getpass
 
+import ankisyncd.config
 from ankisyncd.users import SqliteUserManager
 
-DATAPREFIX = os.path.join(os.path.expanduser("~"), ".local", "share")
-#DATADIR = os.path.join(DATAPREFIX, "ankisyncd")
-DATADIR = "."
-AUTHDBPATH = os.path.join(DATADIR, "auth.db")
-COLLECTIONPATH = os.path.join(DATADIR, "collections")
+config = ankisyncd.config.load()
+AUTHDBPATH = config['auth_db_path']
+COLLECTIONPATH = config['data_root']
 
 def usage():
     print("usage: "+sys.argv[0]+" <command> [<args>]")

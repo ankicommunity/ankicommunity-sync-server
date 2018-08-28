@@ -47,7 +47,7 @@ Installing
 
 4. Run ankisyncd:
 
-        $ python -m ankisyncd ankisyncd.conf
+        $ python -m ankisyncd
 
 Setting up Anki
 ---------------

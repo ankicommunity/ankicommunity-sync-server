@@ -42,7 +42,6 @@ from anki.consts import REM_CARD, REM_NOTE
 from ankisyncd.users import SimpleUserManager, SqliteUserManager
 
 
-
 class SyncCollectionHandler(anki.sync.Syncer):
     operations = ['meta', 'applyChanges', 'start', 'applyGraves', 'chunk', 'applyChunk', 'sanityCheck2', 'finish']
 
@@ -755,15 +754,14 @@ def make_app(global_conf, **local_conf):
 def main():
     from wsgiref.simple_server import make_server
     from ankisyncd.thread import shutdown
+    import ankisyncd.config
     logging.basicConfig(level=logging.INFO)
 
-    if len(sys.argv) < 2:
-        print("usage: {} configfile".format(os.path.basename(sys.argv[0])), file=sys.stderr)
-        exit(1)
-
-    parser = ConfigParser()
-    parser.read(sys.argv[1])
-    config = parser['sync_app']
+    if len(sys.argv) > 1:
+        # backwards compat
+        config = ankisyncd.config.load(sys.argv[1])
+    else:
+        config = ankisyncd.config.load()
 
     ankiserver = SyncApp(config)
     httpd = make_server(config['host'], int(config['port']), ankiserver)
