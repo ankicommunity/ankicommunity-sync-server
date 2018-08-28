@@ -1,18 +1,19 @@
 import configparser
 import logging
-import os.path
+import os
+from os.path import dirname, realpath
+
+paths = [
+    "/etc/ankisyncd/ankisyncd.conf",
+    os.environ.get("XDG_CONFIG_HOME") and
+        (os.path.join(os.environ['XDG_CONFIG_HOME'], "ankisyncd", "ankisyncd.conf")) or
+        os.path.join(os.path.expanduser("~"), ".config", "ankisyncd", "ankisyncd.conf"),
+    os.path.join(dirname(dirname(realpath(__file__))), "ankisyncd.conf"),
+]
 
 
 def load(path=None):
-    dirname = os.path.dirname
-    realpath = os.path.realpath
-    choices = [
-        "/etc/ankisyncd/ankisyncd.conf",
-        os.environ.get("XDG_CONFIG_DIR") and
-            (os.path.join(os.environ['XDG_CONFIG_DIR'], "ankisyncd", "ankisyncd.conf")) or
-            os.path.join(os.path.expanduser("~"), ".config", "ankisyncd", "ankisyncd.conf"),
-        os.path.join(dirname(dirname(realpath(__file__))), "ankisyncd.conf"),
-    ]
+    choices = paths
     parser = configparser.ConfigParser()
     if path:
         choices = [path]
