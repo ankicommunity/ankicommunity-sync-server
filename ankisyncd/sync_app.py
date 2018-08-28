@@ -767,10 +767,10 @@ def main():
     httpd = make_server(config['host'], int(config['port']), ankiserver)
 
     try:
-        print("Serving HTTP on {} port {}...".format(*httpd.server_address))
+        logging.info("Serving HTTP on {} port {}...".format(*httpd.server_address))
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("Exiting...")
+        logging.info("Exiting...")
     finally:
         shutdown()
 
