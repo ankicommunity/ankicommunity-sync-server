@@ -36,7 +36,7 @@ def deluser(username):
             user_manager.del_user(username)
         except ValueError as error:
             print("Could not delete user {}: {}"
-                  .format(username, error.message), file=sys.stderr)
+                  .format(username, error), file=sys.stderr)
     elif not username:
         usage()
     else:
@@ -50,8 +50,7 @@ def lsuser():
         for username in users:
             print(username)
     except ValueError as error:
-        print("Could not list users: {}".format(AUTHDBPATH, error.message),
-              file=sys.stderr)
+        print("Could not list users: {}".format(error), file=sys.stderr)
 
 def passwd(username):
     if os.path.isfile(AUTHDBPATH):
@@ -62,7 +61,7 @@ def passwd(username):
             user_manager.set_password_for_user(username, password)
         except ValueError as error:
             print("Could not set password for user {}: {}"
-                  .format(username, error.message), file=sys.stderr)
+                  .format(username, error), file=sys.stderr)
     else:
         print("{}: Database file does not exist".format(sys.argv[0]),
               file=sys.stderr)
