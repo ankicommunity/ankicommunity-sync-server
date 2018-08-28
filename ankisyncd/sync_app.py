@@ -752,10 +752,10 @@ def make_app(global_conf, **local_conf):
     return SyncApp(**local_conf)
 
 def main():
+    logging.basicConfig(level=logging.INFO)
     from wsgiref.simple_server import make_server
     from ankisyncd.thread import shutdown
     import ankisyncd.config
-    logging.basicConfig(level=logging.INFO)
 
     if len(sys.argv) > 1:
         # backwards compat
