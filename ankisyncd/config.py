@@ -3,7 +3,7 @@ import logging
 import os.path
 
 
-def location():
+def load(path=None):
     dirname = os.path.dirname
     realpath = os.path.realpath
     choices = [
@@ -13,17 +13,16 @@ def location():
             os.path.join(os.path.expanduser("~"), ".config", "ankisyncd", "ankisyncd.conf"),
         os.path.join(dirname(dirname(realpath(__file__))), "ankisyncd.conf"),
     ]
+    parser = configparser.ConfigParser()
+    if path:
+        choices = [path]
     for path in choices:
         logging.debug("config.location: trying", path)
-        if os.path.isfile(path):
-            logging.debug("config.location: choosing", path)
-            return path
-
-    logging.error("No config found, looked in", ", ".join(choices))
-
-
-def load(path=location()):
-    logging.info("Loading config from {}".format(path))
-    parser = configparser.ConfigParser()
-    parser.read(path)
-    return parser['sync_app']
+        try:
+            parser.read(path)
+            conf = parser['sync_app']
+            logging.info("Loaded config from {}".format(path))
+            return conf
+        except KeyError:
+            pass
+    raise Exception("No config found, looked for {}".format(", ".join(choices)))
