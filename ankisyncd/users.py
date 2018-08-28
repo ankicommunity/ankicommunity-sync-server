@@ -49,8 +49,7 @@ class SqliteUserManager(SimpleUserManager):
 
     def user_list(self):
         if not self.auth_db_exists():
-            raise ValueError("Cannot list users for nonexistent auth db {}."
-                             .format(self.auth_db_path))
+            raise ValueError("Auth DB {} doesn't exist".format(self.auth_db_path))
 
         conn = sqlite.connect(self.auth_db_path)
         cursor = conn.cursor()
@@ -67,8 +66,7 @@ class SqliteUserManager(SimpleUserManager):
 
     def del_user(self, username):
         if not self.auth_db_exists():
-            raise ValueError("Cannot remove user from nonexistent auth db {}."
-                             .format(self.auth_db_path))
+            raise ValueError("Auth DB {} doesn't exist".format(self.auth_db_path))
 
         conn = sqlite.connect(self.auth_db_path)
         cursor = conn.cursor()
@@ -101,11 +99,9 @@ class SqliteUserManager(SimpleUserManager):
 
     def set_password_for_user(self, username, new_password):
         if not self.auth_db_exists():
-            raise ValueError("Cannot remove user from nonexistent auth db {}"
-                             .format(self.auth_db_path))
+            raise ValueError("Auth DB {} doesn't exist".format(self.auth_db_path))
         elif not self.user_exists(username):
-            raise ValueError("Cannot remove nonexistent user {}"
-                             .format(username))
+            raise ValueError("User {} doesn't exist".format(username))
 
         hash = self._create_pass_hash(username, new_password)
 
