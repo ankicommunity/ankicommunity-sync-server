@@ -4,11 +4,12 @@ import sqlite3
 import tempfile
 import unittest
 
+from anki.consts import SYNC_VER
+
 from ankisyncd.sync_app import SyncCollectionHandler
 from ankisyncd.sync_app import SyncUserSession
 from ankisyncd.sync_app import SimpleSessionManager
 from ankisyncd.sync_app import SqliteSessionManager
-from ankisyncd.sync_app import old_client
 
 from collection_test_base import CollectionTestBase
 
@@ -46,15 +47,15 @@ class SyncCollectionHandlerTest(CollectionTestBase):
         )
 
         for cv in old:
-            if not old_client(cv):
+            if not SyncCollectionHandler._old_client(cv):
                 raise AssertionError("old_client(\"%s\") is False" % cv)
 
         for cv in current:
-            if old_client(cv):
+            if SyncCollectionHandler._old_client(cv):
                 raise AssertionError("old_client(\"%s\") is True" % cv)
 
     def test_meta(self):
-        meta = self.syncCollectionHandler.meta()
+        meta = self.syncCollectionHandler.meta(v=SYNC_VER)
         self.assertEqual(meta['scm'], self.collection.scm)
         self.assertTrue((type(meta['ts']) == int) and meta['ts'] > 0)
         self.assertEqual(meta['mod'], self.collection.mod)
