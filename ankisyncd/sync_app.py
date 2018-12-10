@@ -21,6 +21,7 @@ import json
 import logging
 import os
 import random
+import re
 import string
 import sys
 import time
@@ -63,7 +64,9 @@ class SyncCollectionHandler(anki.sync.Syncer):
                 version = vs[0]
                 note[name] = int(vs[-1])
 
-        version_int = [int(x) for x in version.split('.')]
+        # convert the version string, ignoring non-numeric suffixes like in beta versions of Anki
+        version_nosuffix = re.sub(r'[^0-9.].*$', '', version)
+        version_int = [int(x) for x in version_nosuffix.split('.')]
 
         if client == 'ankidesktop':
             return version_int < [2, 0, 27]
