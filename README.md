@@ -20,12 +20,12 @@ It supports Python 3 and Anki 2.1.
 Installing
 ----------
 
-0. Install Anki. The currently supported version range is 2.1.1〜2.1.7. Running
-   the server with other versions might work, but things might break, so do it
-   at your own risk. Anki 2.0.x definitely isn't going to work, as it's written
-   in Python 2, whereas `ankisyncd` runs only on Python 3.5 and later. If for
-   some reason you can't get the supported Anki version easily on your system,
-   you can use `anki-bundled` from this repo:
+0. Install Anki. The currently supported version range is 2.1.1〜2.1.7. (Keep in
+   mind this range only applies to the Anki used by the server, clients can be
+   as old as 2.0.27 and still work.) Running the server with other versions might
+   work as long as they're not 2.0.x, but things might break, so do it at your
+   own risk. If for some reason you can't get the supported Anki version easily
+   on your system, you can use `anki-bundled` from this repo:
 
         $ git submodule update --init
         $ cd anki-bundled
