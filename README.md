@@ -20,7 +20,7 @@ It supports Python 3 and Anki 2.1.
 Installing
 ----------
 
-0. Install Anki. The currently supported version range is 2.1.1〜2.1.3. Running
+0. Install Anki. The currently supported version range is 2.1.1〜2.1.7. Running
    the server with other versions might work, but things might break, so do it
    at your own risk. Anki 2.0.x definitely isn't going to work, as it's written
    in Python 2, whereas `ankisyncd` runs only on Python 3.5 and later. If for
