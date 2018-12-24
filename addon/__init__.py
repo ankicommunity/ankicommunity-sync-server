@@ -5,7 +5,6 @@ import aqt
 import anki.consts
 import anki.sync
 
-ORIG_SYNC_BASE = anki.consts.SYNC_BASE
 DEFAULT_ADDR = "http://localhost:27701/"
 config = aqt.mw.addonManager.getConfig(__name__)
 
@@ -44,9 +43,9 @@ def updateserver(self, text):
 	if config['enabled']:
 		addr = text or self.customServerAddr.placeholderText()
 		config['addr'] = addr
-		anki.consts.SYNC_BASE = addr + "%s"
+		anki.sync.SYNC_BASE = addr + "%s"
 	else:
-		anki.consts.SYNC_BASE = ORIG_SYNC_BASE
+		anki.sync.SYNC_BASE = anki.consts.SYNC_BASE
 	aqt.mw.addonManager.writeConfig(__name__, config)
 
 def updateui(self, state):
@@ -54,5 +53,5 @@ def updateui(self, state):
 	self.customServerAddr.setEnabled(state == Qt.Checked)
 
 if config['enabled']:
-	anki.consts.SYNC_BASE = config['addr'] + "%s"
+	anki.sync.SYNC_BASE = config['addr'] + "%s"
 aqt.preferences.Preferences.__init__ = wrap(aqt.preferences.Preferences.__init__, addui, "after")
