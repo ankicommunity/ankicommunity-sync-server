@@ -56,7 +56,7 @@ def updateui(self, state):
 
 def setserver():
 	aqt.mw.pm.profile['hostNum'] = None
-	anki.sync.SYNC_BASE = config['addr'] + "%s"
+	anki.sync.SYNC_BASE = "%s" + config['addr']
 
 addHook("profileLoaded", setserver)
 aqt.preferences.Preferences.__init__ = wrap(aqt.preferences.Preferences.__init__, addui, "after")

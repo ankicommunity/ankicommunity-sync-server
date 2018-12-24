@@ -61,7 +61,7 @@ create a file named `__init__.py` containing the code below and put it in
     import anki.sync, anki.hooks, aqt
 
     addr = "http://127.0.0.1:27701/" # put your server address here
-    anki.sync.SYNC_BASE = addr + "%s"
+    anki.sync.SYNC_BASE = "%s" + addr
     def resetHostNum():
         aqt.mw.pm.profile['hostNum'] = None
     anki.hooks.addHook("profileLoaded", resetHostNum)
