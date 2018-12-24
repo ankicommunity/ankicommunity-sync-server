@@ -58,10 +58,13 @@ Create a new directory in `~/Anki/addons21` (name it something like ankisyncd),
 create a file named `__init__.py` containing the code below and put it in
 `~/Anki/addons21/ankisyncd`.
 
-    import anki.sync
+    import anki.sync, anki.hooks, aqt
 
     addr = "http://127.0.0.1:27701/" # put your server address here
     anki.sync.SYNC_BASE = addr + "%s"
+    def resetHostNum():
+        aqt.mw.pm.profile['hostNum'] = None
+    anki.hooks.addHook("profileLoaded", resetHostNum)
 
 ### Anki 2.0
 

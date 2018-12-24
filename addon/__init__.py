@@ -1,12 +1,14 @@
 from PyQt5.Qt import Qt, QCheckBox, QLabel, QHBoxLayout, QLineEdit
 from aqt.forms import preferences
-from anki.hooks import wrap
+from anki.hooks import wrap, addHook
 import aqt
 import anki.consts
 import anki.sync
 
 DEFAULT_ADDR = "http://localhost:27701/"
 config = aqt.mw.addonManager.getConfig(__name__)
+
+# TODO: force the user to log out before changing any of the settings
 
 def addui(self, _):
 	self = self.form
@@ -43,7 +45,7 @@ def updateserver(self, text):
 	if config['enabled']:
 		addr = text or self.customServerAddr.placeholderText()
 		config['addr'] = addr
-		anki.sync.SYNC_BASE = addr + "%s"
+		setserver()
 	else:
 		anki.sync.SYNC_BASE = anki.consts.SYNC_BASE
 	aqt.mw.addonManager.writeConfig(__name__, config)
@@ -52,6 +54,9 @@ def updateui(self, state):
 	self.serverAddrLabel.setEnabled(state == Qt.Checked)
 	self.customServerAddr.setEnabled(state == Qt.Checked)
 
-if config['enabled']:
+def setserver():
+	aqt.mw.pm.profile['hostNum'] = None
 	anki.sync.SYNC_BASE = config['addr'] + "%s"
+
+addHook("profileLoaded", setserver)
 aqt.preferences.Preferences.__init__ = wrap(aqt.preferences.Preferences.__init__, addui, "after")
