@@ -55,8 +55,9 @@ def updateui(self, state):
 	self.customServerAddr.setEnabled(state == Qt.Checked)
 
 def setserver():
-	aqt.mw.pm.profile['hostNum'] = None
-	anki.sync.SYNC_BASE = "%s" + config['addr']
+	if config['enabled']:
+		aqt.mw.pm.profile['hostNum'] = None
+		anki.sync.SYNC_BASE = "%s" + config['addr']
 
 addHook("profileLoaded", setserver)
 aqt.preferences.Preferences.__init__ = wrap(aqt.preferences.Preferences.__init__, addui, "after")
