@@ -54,9 +54,9 @@ Setting up Anki
 
 ### Anki 2.1
 
-Create a new directory in `~/Anki/addons21` (name it something like ankisyncd),
-create a file named `__init__.py` containing the code below and put it in
-`~/Anki/addons21/ankisyncd`.
+Create a new directory in [the add-ons folder][addons21] (name it something
+like ankisyncd), create a file named `__init__.py` containing the code below
+and put it in the `ankisyncd` directory.
 
     import anki.sync, anki.hooks, aqt
 
@@ -76,6 +76,8 @@ and put it in `~/Anki/addons`.
     addr = "http://127.0.0.1:27701/" # put your server address here
     anki.sync.SYNC_BASE = addr
     anki.sync.SYNC_MEDIA_BASE = addr + "msync/"
+
+[addons21]: https://apps.ankiweb.net/docs/addons.html#_add_on_folders
 
 Running `ankisyncd` without `pyaudio`
 -------------------------------------
