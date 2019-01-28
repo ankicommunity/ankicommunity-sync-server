@@ -42,6 +42,7 @@ from anki.consts import REM_CARD, REM_NOTE
 
 from ankisyncd.users import get_user_manager
 from ankisyncd.sessions import get_session_manager
+from ankisyncd.full_sync import get_full_sync_manager
 
 logger = logging.getLogger("ankisyncd")
 
@@ -399,6 +400,7 @@ class SyncApp:
 
         self.user_manager = get_user_manager(config)
         self.session_manager = get_session_manager(config)
+        self.full_sync_manager = get_full_sync_manager(config)
         self.collection_manager = getCollectionManager()
 
         # make sure the base_url has a trailing slash
@@ -482,37 +484,13 @@ class SyncApp:
     def operation_upload(self, col, data, session):
         # Verify integrity of the received database file before replacing our
         # existing db.
-        temp_db_path = session.get_collection_path() + ".tmp"
-        with open(temp_db_path, 'wb') as f:
-            f.write(data)
 
-        try:
-            with anki.db.DB(temp_db_path) as test_db:
-                if test_db.scalar("pragma integrity_check") != "ok":
-                    raise HTTPBadRequest("Integrity check failed for uploaded "
-                                         "collection database file.")
-        except sqlite.Error as e:
-            raise HTTPBadRequest("Uploaded collection database file is "
-                                 "corrupt.")
-
-        # Overwrite existing db.
-        col.close()
-        try:
-            os.rename(temp_db_path, session.get_collection_path())
-        finally:
-            col.reopen()
-            col.load()
-
-        return "OK"
+        return self.full_sync_manager.upload(col, data, session)
 
     def operation_download(self, col, session):
-        col.close()
-        try:
-            data = open(session.get_collection_path(), 'rb').read()
-        finally:
-            col.reopen()
-            col.load()
-        return data
+        # returns user data (not media) as a sqlite3 database for replacing their
+        # local copy in Anki
+        return self.full_sync_manager.download(col, session)
 
     @wsgify
     def __call__(self, req):
