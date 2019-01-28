@@ -8,8 +8,6 @@ from anki.consts import SYNC_VER
 
 from ankisyncd.sync_app import SyncCollectionHandler
 from ankisyncd.sync_app import SyncUserSession
-from ankisyncd.sync_app import SimpleSessionManager
-from ankisyncd.sync_app import SqliteSessionManager
 
 from collection_test_base import CollectionTestBase
 
@@ -65,69 +63,6 @@ class SyncCollectionHandlerTest(CollectionTestBase):
         self.assertEqual(meta['musn'], self.collection.media.lastUsn())
         self.assertEqual(meta['msg'], '')
         self.assertEqual(meta['cont'], True)
-
-
-class SimpleSessionManagerTest(unittest.TestCase):
-    test_hkey = '1234567890'
-    sdir = tempfile.mkdtemp(suffix="_session")
-    os.rmdir(sdir)
-    test_session = SyncUserSession('testName', sdir, None, None)
-
-    def setUp(self):
-        self.sessionManager = SimpleSessionManager()
-
-    def tearDown(self):
-        self.sessionManager = None
-
-    def test_save(self):
-        self.sessionManager.save(self.test_hkey, self.test_session)
-        self.assertEqual(self.sessionManager.sessions[self.test_hkey].name,
-                         self.test_session.name)
-        self.assertEqual(self.sessionManager.sessions[self.test_hkey].path,
-                         self.test_session.path)
-
-    def test_delete(self):
-        self.sessionManager.save(self.test_hkey, self.test_session)
-        self.assertTrue(self.test_hkey in self.sessionManager.sessions)
-
-        self.sessionManager.delete(self.test_hkey)
-
-        self.assertTrue(self.test_hkey not in self.sessionManager.sessions)
-
-    def test_load(self):
-        self.sessionManager.save(self.test_hkey, self.test_session)
-        self.assertTrue(self.test_hkey in self.sessionManager.sessions)
-
-        loaded_session = self.sessionManager.load(self.test_hkey)
-        self.assertEqual(loaded_session.name, self.test_session.name)
-        self.assertEqual(loaded_session.path, self.test_session.path)
-
-
-class SqliteSessionManagerTest(SimpleSessionManagerTest):
-    file_descriptor, _test_sess_db_path = tempfile.mkstemp(suffix=".db")
-    os.close(file_descriptor)
-    os.unlink(_test_sess_db_path)
-
-    def setUp(self):
-        self.sessionManager = SqliteSessionManager(self._test_sess_db_path)
-
-    def tearDown(self):
-        if os.path.exists(self._test_sess_db_path):
-            os.remove(self._test_sess_db_path)
-
-    def test_save(self):
-        SimpleSessionManagerTest.test_save(self)
-        self.assertTrue(os.path.exists(self._test_sess_db_path))
-
-        conn = sqlite3.connect(self._test_sess_db_path)
-        cursor = conn.cursor()
-        cursor.execute("SELECT user, path FROM session WHERE hkey=?",
-                       (self.test_hkey,))
-        res = cursor.fetchone()
-        conn.close()
-
-        self.assertEqual(res[0], self.test_session.name)
-        self.assertEqual(res[1], self.test_session.path)
 
 
 class SyncAppTest(unittest.TestCase):
