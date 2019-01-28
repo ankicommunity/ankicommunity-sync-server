@@ -3,8 +3,54 @@ import os
 import shutil
 import tempfile
 import unittest
+import configparser
 
 from ankisyncd.users import SimpleUserManager, SqliteUserManager
+from ankisyncd.users import get_user_manager
+
+import helpers.server_utils
+
+class FakeUserManager(SimpleUserManager):
+    def __init__(self, config):
+        pass
+
+class BadUserManager:
+    pass
+
+class UserManagerFactoryTest(unittest.TestCase):
+    def test_get_user_manager(self):
+        # Get absolute path to development ini file.
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        ini_file_path = os.path.join(script_dir,
+                                     "assets",
+                                     "test.conf")
+
+        # Create temporary files and dirs the server will use.
+        server_paths = helpers.server_utils.create_server_paths()
+
+        config = configparser.ConfigParser()
+        config.read(ini_file_path)
+
+        # Use custom files and dirs in settings. Should be SqliteUserManager
+        config['sync_app'].update(server_paths)
+        self.assertTrue(type(get_user_manager(config['sync_app']) == SqliteUserManager))
+
+        # No value defaults to SimpleUserManager
+        config.remove_option("sync_app", "auth_db_path")
+        self.assertTrue(type(get_user_manager(config['sync_app'])) == SimpleUserManager)
+
+        # A conf-specified UserManager is loaded
+        config.set("sync_app", "user_manager", 'test_users.FakeUserManager')
+        self.assertTrue(type(get_user_manager(config['sync_app'])) == FakeUserManager)
+
+        # Should fail at load time if the class doesn't inherit from  SimpleUserManager
+        config.set("sync_app", "user_manager", 'test_users.BadUserManager')
+        with self.assertRaises(TypeError):
+            um = get_user_manager(config['sync_app'])
+
+        # Add the auth_db_path back, it should take precedence over BadUserManager
+        config['sync_app'].update(server_paths)
+        self.assertTrue(type(get_user_manager(config['sync_app']) == SqliteUserManager))
 
 
 class SimpleUserManagerTest(unittest.TestCase):

@@ -4,11 +4,10 @@ import sys
 import getpass
 
 import ankisyncd.config
-from ankisyncd.users import SqliteUserManager
+from ankisyncd.users import get_user_manager
+
 
 config = ankisyncd.config.load()
-AUTHDBPATH = config['auth_db_path']
-COLLECTIONPATH = config['data_root']
 
 def usage():
     print("usage: {} <command> [<args>]".format(sys.argv[0]))
@@ -22,18 +21,18 @@ def usage():
 def adduser(username):
     password = getpass.getpass("Enter password for {}: ".format(username))
 
-    user_manager = SqliteUserManager(AUTHDBPATH, COLLECTIONPATH)
+    user_manager = get_user_manager(config)
     user_manager.add_user(username, password)
 
 def deluser(username):
-    user_manager = SqliteUserManager(AUTHDBPATH, COLLECTIONPATH)
+    user_manager = get_user_manager(config)
     try:
         user_manager.del_user(username)
     except ValueError as error:
         print("Could not delete user {}: {}".format(username, error), file=sys.stderr)
 
 def lsuser():
-    user_manager = SqliteUserManager(AUTHDBPATH, COLLECTIONPATH)
+    user_manager = get_user_manager(config)
     try:
         users = user_manager.user_list()
         for username in users:
@@ -42,7 +41,7 @@ def lsuser():
         print("Could not list users: {}".format(error), file=sys.stderr)
 
 def passwd(username):
-    user_manager = SqliteUserManager(AUTHDBPATH, COLLECTIONPATH)
+    user_manager = get_user_manager(config)
 
     if username not in user_manager.user_list():
         print("User {} doesn't exist".format(username))

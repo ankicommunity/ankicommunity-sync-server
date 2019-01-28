@@ -40,7 +40,7 @@ import anki.utils
 from anki.consts import SYNC_VER, SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
 from anki.consts import REM_CARD, REM_NOTE
 
-from ankisyncd.users import SimpleUserManager, SqliteUserManager
+from ankisyncd.users import get_user_manager
 
 logger = logging.getLogger("ankisyncd")
 
@@ -421,12 +421,7 @@ class SyncApp:
         else:
             self.session_manager = SimpleSessionManager()
 
-        if "auth_db_path" in config:
-            self.user_manager = SqliteUserManager(config['auth_db_path'])
-        else:
-            logger.warn("auth_db_path not set, ankisyncd will accept any password")
-            self.user_manager = SimpleUserManager()
-
+        self.user_manager = get_user_manager(config)
         self.collection_manager = getCollectionManager()
 
         # make sure the base_url has a trailing slash
