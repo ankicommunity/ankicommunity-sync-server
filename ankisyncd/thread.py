@@ -1,4 +1,4 @@
-from ankisyncd.collection import CollectionWrapper, CollectionManager
+from ankisyncd.collection import CollectionManager, get_collection_wrapper
 
 from threading import Thread
 from queue import Queue
@@ -29,12 +29,12 @@ def short_repr(obj, logger=logging.getLogger(), maxlen=80):
     return repr(o)
 
 class ThreadingCollectionWrapper:
-    """Provides the same interface as CollectionWrapper, but it creates a new Thread to 
+    """Provides the same interface as CollectionWrapper, but it creates a new Thread to
     interact with the collection."""
 
-    def __init__(self, path, setup_new_collection=None):
+    def __init__(self, config, path, setup_new_collection=None):
         self.path = path
-        self.wrapper = CollectionWrapper(path, setup_new_collection)
+        self.wrapper = get_collection_wrapper(config, path, setup_new_collection)
         self.logger = logging.getLogger("ankisyncd." + str(self))
 
         self._queue = Queue()
@@ -156,8 +156,8 @@ class ThreadingCollectionManager(CollectionManager):
 
     collection_wrapper = ThreadingCollectionWrapper
 
-    def __init__(self):
-        super(ThreadingCollectionManager, self).__init__()
+    def __init__(self, config):
+        super(ThreadingCollectionManager, self).__init__(config)
 
         self.monitor_frequency = 15
         self.monitor_inactivity = 90
@@ -202,11 +202,11 @@ class ThreadingCollectionManager(CollectionManager):
 
 collection_manager = None
 
-def getCollectionManager():
+def get_collection_manager(config):
     """Return the global ThreadingCollectionManager for this process."""
     global collection_manager
     if collection_manager is None:
-        collection_manager = ThreadingCollectionManager()
+        collection_manager = ThreadingCollectionManager(config)
     return collection_manager
 
 def shutdown():

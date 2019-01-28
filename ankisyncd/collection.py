@@ -2,6 +2,10 @@ import anki
 import anki.storage
 
 import os, errno
+import logging
+
+logger = logging.getLogger("ankisyncd.collection")
+
 
 class CollectionWrapper:
     """A simple wrapper around an anki.storage.Collection object.
@@ -9,12 +13,12 @@ class CollectionWrapper:
     This allows us to manage and refer to the collection, whether it's open or not. It
     also provides a special "continuation passing" interface for executing functions
     on the collection, which makes it easy to switch to a threading mode.
-    
+
     See ThreadingCollectionWrapper for a version that maintains a seperate thread for
     interacting with the collection.
     """
 
-    def __init__(self, path, setup_new_collection=None):
+    def __init__(self, _config, path, setup_new_collection=None):
         self.path = os.path.realpath(path)
         self.username = os.path.basename(os.path.dirname(self.path))
         self.setup_new_collection = setup_new_collection
@@ -50,7 +54,7 @@ class CollectionWrapper:
         # mkdir -p the path, because it might not exist
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
 
-        col = anki.storage.Collection(self.path)
+        col = self._get_collection()
 
         # Do any special setup
         if self.setup_new_collection is not None:
@@ -58,11 +62,14 @@ class CollectionWrapper:
 
         return col
 
+    def _get_collection(self):
+        return anki.storage.Collection(self.path)
+
     def open(self):
         """Open the collection, or create it if it doesn't exist."""
         if self.__col is None:
             if os.path.exists(self.path):
-                self.__col = anki.storage.Collection(self.path)
+                self.__col = self._get_collection()
             else:
                 self.__col = self.__create_collection()
 
@@ -83,8 +90,9 @@ class CollectionManager:
 
     collection_wrapper = CollectionWrapper
 
-    def __init__(self):
+    def __init__(self, config):
         self.collections = {}
+        self.config = config
 
     def get_collection(self, path, setup_new_collection=None):
         """Gets a CollectionWrapper for the given path."""
@@ -94,7 +102,7 @@ class CollectionManager:
         try:
             col = self.collections[path]
         except KeyError:
-            col = self.collections[path] = self.collection_wrapper(path, setup_new_collection)
+            col = self.collections[path] = self.collection_wrapper(self.config, path, setup_new_collection)
 
         return col
 
@@ -104,3 +112,19 @@ class CollectionManager:
             del self.collections[path]
             col.close()
 
+def get_collection_wrapper(config, path, setup_new_collection = None):
+    if "collection_wrapper" in config and config["collection_wrapper"]:
+        logger.info("Found collection_wrapper in config, using {} for "
+                     "user data persistence".format(config['collection_wrapper']))
+        import importlib
+        import inspect
+        module_name, class_name = config['collection_wrapper'].rsplit('.', 1)
+        module = importlib.import_module(module_name.strip())
+        class_ = getattr(module, class_name.strip())
+
+        if not CollectionWrapper in inspect.getmro(class_):
+            raise TypeError('''"collection_wrapper" found in the conf file but it doesn''t
+                            inherit from CollectionWrapper''')
+        return class_(config, path, setup_new_collection)
+    else:
+        return CollectionWrapper(config, path, setup_new_collection)
