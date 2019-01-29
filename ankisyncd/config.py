@@ -11,6 +11,16 @@ paths = [
     os.path.join(dirname(dirname(realpath(__file__))), "ankisyncd.conf"),
 ]
 
+# Get values from ENV and update the config. To use this prepend `ANKISYNCD_`
+# to the uppercase form of the key. E.g, `ANKISYNCD_SESSION_MANAGER` to set
+# `session_manager`
+def load_from_env(conf):
+    logging.debug("Loading/overriding config values from ENV")
+    for env in os.environ:
+        if env.startswith('ANKISYNCD_'):
+            config_key = env[10:].lower()
+            conf[config_key] = os.getenv(env)
+            logging.info("Setting {} from ENV".format(config_key))
 
 def load(path=None):
     choices = paths
@@ -23,6 +33,7 @@ def load(path=None):
             parser.read(path)
             conf = parser['sync_app']
             logging.info("Loaded config from {}".format(path))
+            load_from_env(conf)
             return conf
         except KeyError:
             pass

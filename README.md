@@ -143,3 +143,12 @@ remove every line starting with "pyaudio" in requirements.txt
 
     $ sed -i '/# Packaged commands/,$d' anki/sound.py
     $ sed -i '/^pyaudio/d' requirements.txt
+
+ENVVAR configuration overrides
+==============================
+
+Configuration values can be set via environment variables using `ANKISYNCD_` prepended
+to the uppercase form of the configuration value. E.g. the environment variable,
+`ANKISYNCD_AUTH_DB_PATH` will set the configuration value `auth_db_path`
+
+Environment variables override the values set in the `ankisyncd.conf`.
