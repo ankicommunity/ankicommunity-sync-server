@@ -160,10 +160,20 @@ remove every line starting with "pyaudio" in requirements.txt
     $ sed -i '/^pyaudio/d' requirements.txt
 
 ENVVAR configuration overrides
-==============================
+------------------------------
 
 Configuration values can be set via environment variables using `ANKISYNCD_` prepended
 to the uppercase form of the configuration value. E.g. the environment variable,
 `ANKISYNCD_AUTH_DB_PATH` will set the configuration value `auth_db_path`
 
 Environment variables override the values set in the `ankisyncd.conf`.
+
+Support for other database backends
+-----------------------------------
+
+sqlite3 is used by default for user data, authentication and session persistence.
+
+`ankisyncd` supports loading classes defined via config that manage most
+persistence requirements (the media DB and files are being worked on). All that is
+required is to extend one of the existing manager classes and then reference those
+classes in the config file. See ankisyncd.conf for example config.
