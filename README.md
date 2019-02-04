@@ -49,6 +49,11 @@ Installing
 
         $ python -m ankisyncd
 
+Installing (Docker)
+-------------------
+
+Follow [these instructions](https://github.com/kuklinistvan/docker-anki-sync-server#usage).
+
 Setting up Anki
 ---------------
 
