@@ -61,11 +61,12 @@ class SyncCollectionHandler(anki.sync.Syncer):
         for name in note.keys():
             if name in version:
                 vs = version.split(name)
-                # remove potential suffix separators like "-" in "2.1.6-beta2"
-                version = re.sub("[^0-9]$", "", vs[0])
+                version = vs[0]
                 note[name] = int(vs[-1])
 
-        version_int = [int(x) for x in version.split('.')]
+        # convert the version string, ignoring non-numeric suffixes like in beta versions of Anki
+        version_nosuffix = re.sub(r'[^0-9.].*$', '', version)
+        version_int = [int(x) for x in version_nosuffix.split('.')]
 
         if client == 'ankidesktop':
             return version_int < [2, 0, 27]

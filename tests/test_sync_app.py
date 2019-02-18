@@ -39,6 +39,7 @@ class SyncCollectionHandlerTest(CollectionTestBase):
             ','.join(('ankidesktop', '2.0.32', 'lin::')),
             ','.join(('ankidesktop', '2.1.0', 'lin::')),
             ','.join(('ankidesktop', '2.1.6-beta2', 'lin::')),
+            ','.join(('ankidesktop', '2.1.9 (dev)', 'lin::')),
             ','.join(('ankidroid', '2.2.3', '')),
             ','.join(('ankidroid', '2.3alpha4', '')),
             ','.join(('ankidroid', '2.3alpha5', '')),
