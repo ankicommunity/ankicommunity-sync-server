@@ -20,7 +20,8 @@ It supports Python 3 and Anki 2.1.
 Installing
 ----------
 
-0. Install Anki. The currently supported version range is 2.1.1〜2.1.7. (Keep in
+0. Install Anki. The currently supported version range is 2.1.1〜2.1.10, with the
+   exception of 2.1.9<sup id="readme-fn-01b">[1](#readme-fn-01)</sup>. (Keep in
    mind this range only applies to the Anki used by the server, clients can be
    as old as 2.0.27 and still work.) Running the server with other versions might
    work as long as they're not 2.0.x, but things might break, so do it at your
@@ -48,6 +49,18 @@ Installing
 4. Run ankisyncd:
 
         $ python -m ankisyncd
+
+---
+
+<span id="readme-fn-01"></span>
+1. 2.1.9 is not supported due to [commit `95ccbfdd3679`][] introducing the
+   dependency on the `aqt` module, which depends on PyQt5. The server should
+   still work fine if you have PyQt5 installed. This has been fixed in
+   [commit `a389b8b4a0e2`][], which is a part of the 2.1.10 release.
+[↑](#readme-fn-01b)
+
+[commit `95ccbfdd3679`]: https://github.com/dae/anki/commit/95ccbfdd3679dd46f22847c539c7fddb8fa904ea
+[commit `a389b8b4a0e2`]: https://github.com/dae/anki/commit/a389b8b4a0e209023c4533a7ee335096a704079c
 
 Installing (Docker)
 -------------------
