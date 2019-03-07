@@ -84,6 +84,21 @@ and put it in `~/Anki/addons`.
 
 [addons21]: https://apps.ankiweb.net/docs/addons.html#_add_on_folders
 
+### AnkiDroid
+
+Advanced → Custom sync server
+
+Unless you have set up a reverse proxy to handle encrypted connections, use
+`http` as the protocol. The port will be either the default, 27701, or
+whatever you have specified in `ankisyncd.conf` (or, if using a reverse proxy,
+whatever port you configured to accept the front-end connection).
+
+**Do not use trailing slashes.**
+
+Even though the AnkiDroid interface will request an email address, this is not
+required; it will simply be the username you configured with `ankisyncctl.py
+adduser`.
+
 Running `ankisyncd` without `pyaudio`
 -------------------------------------
 
