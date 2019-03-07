@@ -116,8 +116,23 @@ Running `ankisyncd` without `pyaudio`
 -------------------------------------
 
 `ankisyncd` doesn't use the audio recording feature of Anki, so if you don't
-want to install PortAudio, you can edit `anki-bundled/anki/sound.py` and
-`anki-bundled/requirements.txt` to exclude `pyaudio`:
+want to install PortAudio, you can edit some files in the `anki-bundled`
+directory to exclude `pyaudio`:
+
+### Anki ≥2.1.9
+
+Just remove "pyaudio" from requirements.txt and you're done. This change has
+been introduced in [commit `ca710ab3f1c1`][].
+
+[commit `ca710ab3f1c1`]: https://github.com/dae/anki/commit/ca710ab3f1c1174469a3b48f1257c0fc0ce624bf
+
+### Older versions
+
+First go to `anki-bundled`, then follow one of the instructions below. They all
+do the same thing, you can pick whichever one you're most comfortable with.
+
+Manual version: remove every line past "# Packaged commands" in anki/sound.py,
+remove every line starting with "pyaudio" in requirements.txt
 
 `ed` version:
 
@@ -128,6 +143,3 @@ want to install PortAudio, you can edit `anki-bundled/anki/sound.py` and
 
     $ sed -i '/# Packaged commands/,$d' anki/sound.py
     $ sed -i '/^pyaudio/d' requirements.txt
-
-Manual version: remove every line past "# Packaged commands" in anki/sound.py,
-remove every line starting with "pyaudio" in requirements.txt
