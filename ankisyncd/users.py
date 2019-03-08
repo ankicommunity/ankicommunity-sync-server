@@ -5,6 +5,8 @@ import logging
 import os
 import sqlite3 as sqlite
 
+logger = logging.getLogger("ankisyncd.users")
+
 
 class SimpleUserManager:
     """A simple user manager that always allows any user."""
@@ -32,7 +34,7 @@ class SimpleUserManager:
     def _create_user_dir(self, username):
         user_dir_path = os.path.join(self.collection_path, username)
         if not os.path.isdir(user_dir_path):
-            logging.info("Creating collection directory for user '{}' at {}"
+            logger.info("Creating collection directory for user '{}' at {}"
                          .format(username, user_dir_path))
             os.makedirs(user_dir_path)
 
@@ -70,7 +72,7 @@ class SqliteUserManager(SimpleUserManager):
 
         conn = sqlite.connect(self.auth_db_path)
         cursor = conn.cursor()
-        logging.info("Removing user '{}' from auth db".format(username))
+        logger.info("Removing user '{}' from auth db".format(username))
         cursor.execute("DELETE FROM auth WHERE user=?", (username,))
         conn.commit()
         conn.close()
@@ -91,7 +93,7 @@ class SqliteUserManager(SimpleUserManager):
 
         conn = sqlite.connect(self.auth_db_path)
         cursor = conn.cursor()
-        logging.info("Adding user '{}' to auth db.".format(username))
+        logger.info("Adding user '{}' to auth db.".format(username))
         cursor.execute("INSERT INTO auth VALUES (?, ?)",
                        (username, pass_hash))
         conn.commit()
@@ -111,7 +113,7 @@ class SqliteUserManager(SimpleUserManager):
         conn.commit()
         conn.close()
 
-        logging.info("Changed password for user {}".format(username))
+        logger.info("Changed password for user {}".format(username))
 
     def authenticate(self, username, password):
         """Returns True if this username is allowed to connect with this password. False otherwise."""
@@ -124,7 +126,7 @@ class SqliteUserManager(SimpleUserManager):
         conn.close()
 
         if db_hash is None:
-            logging.info("Authentication failed for nonexistent user {}."
+            logger.info("Authentication failed for nonexistent user {}."
                          .format(username))
             return False
 
@@ -136,10 +138,10 @@ class SqliteUserManager(SimpleUserManager):
         actual_value = hashobj.hexdigest() + salt
 
         if actual_value == expected_value:
-            logging.info("Authentication succeeded for user {}".format(username))
+            logger.info("Authentication succeeded for user {}".format(username))
             return True
         else:
-            logging.info("Authentication failed for user {}".format(username))
+            logger.info("Authentication failed for user {}".format(username))
             return False
 
     @staticmethod
@@ -156,7 +158,7 @@ class SqliteUserManager(SimpleUserManager):
     def create_auth_db(self):
         conn = sqlite.connect(self.auth_db_path)
         cursor = conn.cursor()
-        logging.info("Creating auth db at {}."
+        logger.info("Creating auth db at {}."
                      .format(self.auth_db_path))
         cursor.execute("""CREATE TABLE IF NOT EXISTS auth
                           (user VARCHAR PRIMARY KEY, hash VARCHAR)""")

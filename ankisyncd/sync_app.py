@@ -42,6 +42,8 @@ from anki.consts import REM_CARD, REM_NOTE
 
 from ankisyncd.users import SimpleUserManager, SqliteUserManager
 
+logger = logging.getLogger("ankisyncd")
+
 
 class SyncCollectionHandler(anki.sync.Syncer):
     operations = ['meta', 'applyChanges', 'start', 'applyGraves', 'chunk', 'applyChunk', 'sanityCheck2', 'finish']
@@ -292,12 +294,12 @@ class SyncMediaHandler(anki.sync.MediaSyncer):
                                       [(f, ) for f in filenames])
 
         # Remove the files from our media directory if it is present.
-        logging.debug('Removing %d files from media dir.' % len(filenames))
+        logger.debug('Removing %d files from media dir.' % len(filenames))
         for filename in filenames:
             try:
                 os.remove(os.path.join(self.col.media.dir(), filename))
             except OSError as err:
-                logging.error("Error when removing file '%s' from media dir: "
+                logger.error("Error when removing file '%s' from media dir: "
                               "%s" % (filename, str(err)))
 
     def downloadFiles(self, files):
@@ -422,7 +424,7 @@ class SyncApp:
         if "auth_db_path" in config:
             self.user_manager = SqliteUserManager(config['auth_db_path'])
         else:
-            logging.warn("auth_db_path not set, ankisyncd will accept any password")
+            logger.warn("auth_db_path not set, ankisyncd will accept any password")
             self.user_manager = SimpleUserManager()
 
         self.collection_manager = getCollectionManager()
@@ -770,10 +772,10 @@ def main():
     httpd = make_server(config['host'], int(config['port']), ankiserver)
 
     try:
-        logging.info("Serving HTTP on {} port {}...".format(*httpd.server_address))
+        logger.info("Serving HTTP on {} port {}...".format(*httpd.server_address))
         httpd.serve_forever()
     except KeyboardInterrupt:
-        logging.info("Exiting...")
+        logger.info("Exiting...")
     finally:
         shutdown()
 

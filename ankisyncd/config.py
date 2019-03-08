@@ -3,6 +3,8 @@ import logging
 import os
 from os.path import dirname, realpath
 
+logger = logging.getLogger("ankisyncd")
+
 paths = [
     "/etc/ankisyncd/ankisyncd.conf",
     os.environ.get("XDG_CONFIG_HOME") and
@@ -15,12 +17,12 @@ paths = [
 # to the uppercase form of the key. E.g, `ANKISYNCD_SESSION_MANAGER` to set
 # `session_manager`
 def load_from_env(conf):
-    logging.debug("Loading/overriding config values from ENV")
+    logger.debug("Loading/overriding config values from ENV")
     for env in os.environ:
         if env.startswith('ANKISYNCD_'):
             config_key = env[10:].lower()
             conf[config_key] = os.getenv(env)
-            logging.info("Setting {} from ENV".format(config_key))
+            logger.info("Setting {} from ENV".format(config_key))
 
 def load(path=None):
     choices = paths
@@ -28,11 +30,11 @@ def load(path=None):
     if path:
         choices = [path]
     for path in choices:
-        logging.debug("config.location: trying", path)
+        logger.debug("config.location: trying", path)
         try:
             parser.read(path)
             conf = parser['sync_app']
-            logging.info("Loaded config from {}".format(path))
+            logger.info("Loaded config from {}".format(path))
             load_from_env(conf)
             return conf
         except KeyError:
