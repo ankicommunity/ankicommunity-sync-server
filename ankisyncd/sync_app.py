@@ -757,7 +757,7 @@ def make_app(global_conf, **local_conf):
     return SyncApp(**local_conf)
 
 def main():
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO, format="[%(asctime)s]:%(levelname)s:%(name)s:%(message)s")
     from wsgiref.simple_server import make_server, WSGIRequestHandler
     from ankisyncd.thread import shutdown
     import ankisyncd.config
