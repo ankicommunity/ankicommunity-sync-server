@@ -8,8 +8,9 @@ Linux and macOS) which can sync to a web version (AnkiWeb) and mobile
 versions for Android and iOS.
 
 This is a personal Anki server, which you can sync against instead of
-AnkiWeb. It was originally developed to support the flashcard functionality
-on Bibliobird, a web application for language learning.
+AnkiWeb. It was originally developed by [David Snopek](https://github.com/dsnopek)
+to support the flashcard functionality on Bibliobird, a web application for
+language learning.
 
 This version is a fork of [jdoe0/ankisyncd](https://github.com/jdoe0/ankisyncd).
 It supports Python 3 and Anki 2.1.
