@@ -3,7 +3,7 @@ from ankisyncd.collection import CollectionWrapper, CollectionManager
 from threading import Thread
 from queue import Queue
 
-import time, logging, os.path
+import time, logging
 
 class ThreadingCollectionWrapper:
     """Provides the same interface as CollectionWrapper, but it creates a new Thread to 
@@ -12,8 +12,6 @@ class ThreadingCollectionWrapper:
     def __init__(self, path, setup_new_collection=None):
         self.path = path
         self.wrapper = CollectionWrapper(path, setup_new_collection)
-        # FIXME: this might not work for other collection wrappers, introduce self.wrapper.name?
-        self._name = os.path.basename(os.path.dirname(self.wrapper.path))
         self.logger = logging.getLogger("ankisyncd." + str(self))
 
         self._queue = Queue()
@@ -24,7 +22,7 @@ class ThreadingCollectionWrapper:
         self.start()
 
     def __str__(self):
-        return "CollectionThread[{}]".format(self._name) # TODO: self.wrapper.name?
+        return "CollectionThread[{}]".format(self.wrapper.username)
 
     @property
     def running(self):

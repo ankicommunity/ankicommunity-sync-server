@@ -16,6 +16,7 @@ class CollectionWrapper:
 
     def __init__(self, path, setup_new_collection=None):
         self.path = os.path.realpath(path)
+        self.username = os.path.basename(os.path.dirname(self.path))
         self.setup_new_collection = setup_new_collection
         self.__col = None
 
