@@ -667,7 +667,7 @@ class SyncApp:
         self.col.
         """
 
-        def run_func(col):
+        def run_func(col, **keyword_args):
             # Retrieve the correct handler method.
             handler = session.get_handler_for_operation(method_name, col)
             handler_method = getattr(handler, method_name)
@@ -681,7 +681,7 @@ class SyncApp:
 
         # Send the closure to the thread for execution.
         thread = session.get_thread()
-        result = thread.execute(run_func)
+        result = thread.execute(run_func, kw=keyword_args)
 
         return result
 
