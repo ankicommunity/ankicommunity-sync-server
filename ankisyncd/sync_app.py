@@ -758,9 +758,18 @@ def make_app(global_conf, **local_conf):
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    from wsgiref.simple_server import make_server
+    from wsgiref.simple_server import make_server, WSGIRequestHandler
     from ankisyncd.thread import shutdown
     import ankisyncd.config
+
+    class RequestHandler(WSGIRequestHandler):
+        logger = logging.getLogger("ankisyncd.http")
+
+        def log_error(self, format, *args):
+            self.logger.error("%s %s", self.address_string(), format%args)
+
+        def log_message(self, format, *args):
+            self.logger.info("%s %s", self.address_string(), format%args)
 
     if len(sys.argv) > 1:
         # backwards compat
@@ -769,7 +778,7 @@ def main():
         config = ankisyncd.config.load()
 
     ankiserver = SyncApp(config)
-    httpd = make_server(config['host'], int(config['port']), ankiserver)
+    httpd = make_server(config['host'], int(config['port']), ankiserver, handler_class=RequestHandler)
 
     try:
         logger.info("Serving HTTP on {} port {}...".format(*httpd.server_address))
