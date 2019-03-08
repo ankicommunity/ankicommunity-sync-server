@@ -27,14 +27,15 @@ def addui(self, _):
 	self.customServerAddr.setPlaceholderText(DEFAULT_ADDR)
 	cshl.addWidget(self.customServerAddr)
 
-	if config["enabled"]:
+	pconfig = getprofileconfig()
+	if pconfig["enabled"]:
 		self.useCustomServer.setCheckState(Qt.Checked)
-	if config["addr"]:
-		self.customServerAddr.setText(config['addr'])
+	if pconfig["addr"]:
+		self.customServerAddr.setText(pconfig["addr"])
 
 	self.customServerAddr.textChanged.connect(lambda text: updateserver(self, text))
 	def onchecked(state):
-		config["enabled"] = state == Qt.Checked
+		pconfig["enabled"] = state == Qt.Checked
 		updateui(self, state)
 		updateserver(self, self.customServerAddr.text())
 	self.useCustomServer.stateChanged.connect(onchecked)
@@ -42,12 +43,11 @@ def addui(self, _):
 	updateui(self, self.useCustomServer.checkState())
 
 def updateserver(self, text):
-	if config['enabled']:
+	pconfig = getprofileconfig()
+	if pconfig['enabled']:
 		addr = text or self.customServerAddr.placeholderText()
-		config['addr'] = addr
-		setserver()
-	else:
-		anki.sync.SYNC_BASE = anki.consts.SYNC_BASE
+		pconfig['addr'] = addr
+	setserver()
 	aqt.mw.addonManager.writeConfig(__name__, config)
 
 def updateui(self, state):
@@ -55,9 +55,22 @@ def updateui(self, state):
 	self.customServerAddr.setEnabled(state == Qt.Checked)
 
 def setserver():
-	if config['enabled']:
+	pconfig = getprofileconfig()
+	if pconfig['enabled']:
 		aqt.mw.pm.profile['hostNum'] = None
-		anki.sync.SYNC_BASE = "%s" + config['addr']
+		anki.sync.SYNC_BASE = "%s" + pconfig['addr']
+	else:
+		anki.sync.SYNC_BASE = anki.consts.SYNC_BASE
+
+def getprofileconfig():
+	if aqt.mw.pm.name not in config["profiles"]:
+		# inherit global settings if present (used in earlier versions of the addon)
+		config["profiles"][aqt.mw.pm.name] = {
+			"enabled": config.get("enabled", False),
+			"addr": config.get("addr", DEFAULT_ADDR),
+		}
+		aqt.mw.addonManager.writeConfig(__name__, config)
+	return config["profiles"][aqt.mw.pm.name]
 
 addHook("profileLoaded", setserver)
 aqt.preferences.Preferences.__init__ = wrap(aqt.preferences.Preferences.__init__, addui, "after")
