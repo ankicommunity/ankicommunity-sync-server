@@ -5,6 +5,29 @@ from queue import Queue
 
 import time, logging
 
+def short_repr(obj, logger=logging.getLogger(), maxlen=80):
+    """Like repr, but shortens strings and bytestrings if logger's logging level
+    is above DEBUG. Currently shallow and very limited, only implemented for
+    dicts and lists."""
+    if logger.isEnabledFor(logging.DEBUG):
+        return repr(obj)
+
+    def shorten(s):
+        if isinstance(s, (bytes, str)) and len(s) > maxlen:
+            return s[:maxlen] + ("..." if isinstance(s, str) else b"...")
+        else:
+            return s
+
+    o = obj.copy()
+    if isinstance(o, dict):
+        for k in o:
+            o[k] = shorten(o[k])
+    elif isinstance(o, list):
+        for k in range(len(o)):
+            o[k] = shorten(o[k])
+
+    return repr(o)
+
 class ThreadingCollectionWrapper:
     """Provides the same interface as CollectionWrapper, but it creates a new Thread to 
     interact with the collection."""
@@ -68,7 +91,7 @@ class ThreadingCollectionWrapper:
                 else:
                     func_name = func.__class__.__name__
 
-                self.logger.info("Running %s(*%s, **%s)", func_name, repr(args), repr(kw))
+                self.logger.info("Running %s(*%s, **%s)", func_name, short_repr(args, self.logger), short_repr(kw, self.logger))
                 self.last_timestamp = time.time()
 
                 try:
