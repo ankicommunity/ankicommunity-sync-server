@@ -17,6 +17,20 @@ It supports Python 3 and Anki 2.1.
 [Anki]: https://apps.ankiweb.net/
 [dsnopek's Anki Sync Server]: https://github.com/dsnopek/anki-sync-server
 
+<details open><summary>Contents</summary>
+
+ - [Installing](#installing)
+ - [Installing (Docker)](#installing-docker)
+ - [Setting up Anki](#setting-up-anki)
+   - [Anki 2.1](#anki-21)
+   - [Anki 2.0](#anki-20)
+   - [AnkiDroid](#ankidroid)
+ - [Running `ankisyncd` without `pyaudio`](#running-ankisyncd-without-pyaudio)
+   - [Anki ≥2.1.9](#anki-219)
+   - [Older versions](#older-versions)
+ - [ENVVAR configuration overrides](#envvar-configuration-overrides)
+</details>
+
 Installing
 ----------
 
