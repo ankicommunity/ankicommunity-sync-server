@@ -35,6 +35,18 @@ class SqliteSessionManager(SimpleSessionManager):
         SimpleSessionManager.__init__(self)
 
         self.session_db_path = os.path.realpath(session_db_path)
+        self._ensure_schema_up_to_date()
+
+    def _ensure_schema_up_to_date(self):
+        conn = self._conn()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM sqlite_master "
+                       "WHERE sql LIKE '%user VARCHAR PRIMARY KEY%' "
+                       "AND tbl_name = 'session'")
+        res = cursor.fetchone()
+        conn.close()
+        if res is not None:
+            raise Exception("Outdated database schema, run utils/migrate_user_tables.py")
 
     def _conn(self):
         new = not os.path.exists(self.session_db_path)

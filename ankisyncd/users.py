@@ -44,7 +44,20 @@ class SqliteUserManager(SimpleUserManager):
 
     def __init__(self, auth_db_path, collection_path=None):
         SimpleUserManager.__init__(self, collection_path)
+
         self.auth_db_path = os.path.realpath(auth_db_path)
+        self._ensure_schema_up_to_date()
+
+    def _ensure_schema_up_to_date(self):
+        conn = self._conn()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM sqlite_master "
+                       "WHERE sql LIKE '%user VARCHAR PRIMARY KEY%' "
+                       "AND tbl_name = 'auth'")
+        res = cursor.fetchone()
+        conn.close()
+        if res is not None:
+            raise Exception("Outdated database schema, run utils/migrate_user_tables.py")
 
     # Default to using sqlite3 but overridable for sub-classes using other
     # DB API 2 driver variants
