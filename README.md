@@ -30,6 +30,7 @@ It supports Python 3 and Anki 2.1.
    - [Anki ≥2.1.9](#anki-219)
    - [Older versions](#older-versions)
  - [ENVVAR configuration overrides](#envvar-configuration-overrides)
+ - [Support for other database backends](#support-for-other-database-backends)
 </details>
 
 Installing
