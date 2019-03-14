@@ -36,7 +36,7 @@ It supports Python 3 and Anki 2.1.
 Installing
 ----------
 
-0. Install Anki. The currently supported version range is 2.1.1〜2.1.10, with the
+0. Install Anki. The currently supported version range is 2.1.1〜2.1.11, with the
    exception of 2.1.9<sup id="readme-fn-01b">[1](#readme-fn-01)</sup>. (Keep in
    mind this range only applies to the Anki used by the server, clients can be
    as old as 2.0.27 and still work.) Running the server with other versions might
