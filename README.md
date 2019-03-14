@@ -48,9 +48,9 @@ Installing
         $ cd anki-bundled
         $ pip install -r requirements.txt
 
-   Keep in mind `pyaudio`, a dependency of Anki, requires Python 3 and PortAudio
-   headers to be present before running `pip`. If you can't or don't want to
-   install these, you can try [patching Anki](#running-ankisyncd-without-pyaudio).
+   Keep in mind `pyaudio`, a dependency of Anki, requires development headers for
+   Python 3 and PortAudio to be present before running `pip`. If you can't or
+   don't want to install these, you can try [patching Anki](#running-ankisyncd-without-pyaudio).
 
 1. Install the dependencies:
 
