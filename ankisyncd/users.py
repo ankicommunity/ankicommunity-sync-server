@@ -49,6 +49,9 @@ class SqliteUserManager(SimpleUserManager):
         self._ensure_schema_up_to_date()
 
     def _ensure_schema_up_to_date(self):
+        if not self.auth_db_exists():
+            return True
+
         conn = self._conn()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM sqlite_master "

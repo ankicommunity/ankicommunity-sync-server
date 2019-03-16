@@ -38,6 +38,9 @@ class SqliteSessionManager(SimpleSessionManager):
         self._ensure_schema_up_to_date()
 
     def _ensure_schema_up_to_date(self):
+        if not os.path.exists(self.session_db_path):
+            return True
+
         conn = self._conn()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM sqlite_master "
