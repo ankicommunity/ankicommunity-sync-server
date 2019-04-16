@@ -25,7 +25,7 @@ class FullSyncManager:
         # Overwrite existing db.
         col.close()
         try:
-            os.rename(temp_db_path, session.get_collection_path())
+            os.replace(temp_db_path, session.get_collection_path())
         finally:
             col.reopen()
             col.load()
