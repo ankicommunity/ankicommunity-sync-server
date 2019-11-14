@@ -8,7 +8,8 @@ mediamanager_orig_funcs = {
     "findChanges": None,
     "mediaChangesZip": None,
     "addFilesFromZip": None,
-    "syncDelete": None
+    "syncDelete": None,
+    "_logChanges": None,
 }
 
 db_orig_funcs = {
@@ -28,6 +29,7 @@ def monkeypatch_mediamanager():
         mediamanager_orig_funcs["mediaChangesZip"] = MediaManager.mediaChangesZip
         mediamanager_orig_funcs["addFilesFromZip"] = MediaManager.addFilesFromZip
         mediamanager_orig_funcs["syncDelete"] = MediaManager.syncDelete
+        mediamanager_orig_funcs["_logChanges"] = MediaManager._logChanges
 
         def wrapper(instance, *args):
             old_cwd = os.getcwd()
@@ -43,6 +45,7 @@ def monkeypatch_mediamanager():
     MediaManager.mediaChangesZip = make_cwd_safe(MediaManager.mediaChangesZip)
     MediaManager.addFilesFromZip = make_cwd_safe(MediaManager.addFilesFromZip)
     MediaManager.syncDelete = make_cwd_safe(MediaManager.syncDelete)
+    MediaManager._logChanges = make_cwd_safe(MediaManager._logChanges)
 
 
 def unpatch_mediamanager():
@@ -52,11 +55,13 @@ def unpatch_mediamanager():
     MediaManager.mediaChangesZip = mediamanager_orig_funcs["mediaChangesZip"]
     MediaManager.addFilesFromZip = mediamanager_orig_funcs["addFilesFromZip"]
     MediaManager.syncDelete = mediamanager_orig_funcs["syncDelete"]
+    MediaManager._logChanges = mediamanager_orig_funcs["_logChanges"]
 
     mediamanager_orig_funcs["findChanges"] = None
     mediamanager_orig_funcs["mediaChangesZip"] = None
     mediamanager_orig_funcs["mediaChangesZip"] = None
     mediamanager_orig_funcs["mediaChangesZip"] = None
+    mediamanager_orig_funcs["_logChanges"] = None
 
 
 def monkeypatch_db():

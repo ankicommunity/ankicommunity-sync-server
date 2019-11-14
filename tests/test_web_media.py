@@ -355,3 +355,46 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
             dbpath
         ))
         os.unlink(dbpath)
+
+    def test_sync_mediaChanges(self):
+        client = self.client_syncer
+        client2 = self.create_client_syncer(self.colutils.create_empty_col(), self.hkey, self.server_test_app)
+        server = helpers.server_utils.get_syncer_for_hkey(self.server_app, self.hkey, 'media')
+        self.assertEqual(server.mediaChanges(lastUsn=client.col.media.lastUsn())['data'], [])
+
+        helpers.server_utils.add_files_to_mediasyncer(client, [
+            helpers.file_utils.create_named_file("a", "lastUsn a"),
+            helpers.file_utils.create_named_file("b", "lastUsn b"),
+            helpers.file_utils.create_named_file("c", "lastUsn c"),
+        ], update_db=True)
+        self.assertEqual(client.sync(), "OK")
+        self.assertEqual(server.mediaChanges(lastUsn=client.col.media.lastUsn())['data'], [])
+
+        self.assertEqual(client2.sync(), "OK")
+        os.remove(os.path.join(client2.col.media.dir(), "c"))
+        client2.col.media._logChanges()
+        self.assertEqual(client2.sync(), "OK")
+        server.col.media._logChanges()
+        self.assertEqual(server.mediaChanges(lastUsn=client.col.media.lastUsn())['data'], [['c', 4, None]])
+        self.assertEqual(client.sync(), "OK")
+        self.assertEqual(server.mediaChanges(lastUsn=client.col.media.lastUsn())['data'], [])
+
+        helpers.server_utils.add_files_to_mediasyncer(client, [
+            helpers.file_utils.create_named_file("d", "lastUsn d"),
+        ], update_db=True)
+        client.col.media._logChanges()
+        self.assertEqual(client.sync(), "OK")
+        self.assertEqual(server.mediaChanges(lastUsn=client2.col.media.lastUsn())['data'], [['d', 5, server.col.media._checksum(os.path.join(server.col.media.dir(), "d"))]])
+        self.assertEqual(client2.sync(), "OK")
+        self.assertEqual(server.mediaChanges(lastUsn=client2.col.media.lastUsn())['data'], [])
+
+        dpath = os.path.join(client.col.media.dir(), "d")
+        with open(dpath, "a") as f:
+                f.write("\nsome change")
+        # files with the same mtime and name are considered equivalent by anki.media.MediaManager._changes
+        os.utime(dpath, (315529200, 315529200))
+        client.col.media._logChanges()
+        self.assertEqual(client.sync(), "OK")
+        self.assertEqual(server.mediaChanges(lastUsn=client2.col.media.lastUsn())['data'], [['d', 6, server.col.media._checksum(os.path.join(server.col.media.dir(), "d"))]])
+        self.assertEqual(client2.sync(), "OK")
+        self.assertEqual(server.mediaChanges(lastUsn=client2.col.media.lastUsn())['data'], [])
