@@ -171,7 +171,7 @@ class SyncCollectionHandler(anki.sync.Syncer):
         return [t for t, usn in self.col.tags.allItems()
                 if usn >= self.minUsn]
 
-class SyncMediaHandler(anki.sync.MediaSyncer):
+class SyncMediaHandler:
     operations = ['begin', 'mediaChanges', 'mediaSanity', 'uploadChanges', 'downloadFiles']
 
     def __init__(self, col):
