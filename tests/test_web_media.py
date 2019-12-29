@@ -8,6 +8,7 @@ import shutil
 import helpers.file_utils
 import helpers.server_utils
 import helpers.db_utils
+import anki.utils
 from anki.sync import MediaSyncer
 from helpers.mock_servers import MockRemoteMediaServer
 from helpers.monkey_patches import monkeypatch_mediamanager, unpatch_mediamanager
@@ -40,6 +41,11 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         media_syncer = MediaSyncer(col=collection,
                                    server=mock_remote_server)
         return media_syncer
+
+    @staticmethod
+    def file_checksum(fname):
+        with open(fname, "rb") as f:
+            return anki.utils.checksum(f.read())
 
     def media_dbs_differ(self, left_db_path, right_db_path, compare_timestamps=False):
         """
@@ -103,10 +109,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         temp_file_path = helpers.file_utils.create_named_file("foo.jpg", "hello")
 
         # Add the test file to the server's collection.
-        helpers.server_utils.add_files_to_mediasyncer(server,
-                                                  [temp_file_path],
-                                                  update_db=True,
-                                                  bump_last_usn=True)
+        helpers.server_utils.add_files_to_server_mediadb(server.col.media, [temp_file_path])
 
         # Syncing should work.
         self.assertEqual(client.sync(), 'OK')
@@ -135,10 +138,9 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         temp_file_path = helpers.file_utils.create_named_file("foo.jpg", "hello")
 
         # Add the test file to the client's media collection.
-        helpers.server_utils.add_files_to_mediasyncer(client,
+        helpers.server_utils.add_files_to_client_mediadb(client.col.media,
                                                   [temp_file_path],
-                                                  update_db=True,
-                                                  bump_last_usn=False)
+                                                  update_db=True)
 
         # Syncing should work.
         self.assertEqual(client.sync(), 'OK')
@@ -151,11 +153,12 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         # Further syncing should do nothing.
         self.assertEqual(client.sync(), 'noChanges')
 
-        # Except for timestamps, the media databases of client and server
-        # should be identical.
-        self.assertFalse(
-            self.media_dbs_differ(client.col.media.db._path, server.col.media.db._path)
+        # The media data of client and server should be identical.
+        self.assertEqual(
+            list(client.col.media.db.execute("SELECT fname, csum FROM media")),
+            list(server.col.media.db.execute("SELECT fname, csum FROM media"))
         )
+        self.assertEqual(client.col.media.lastUsn(), server.col.media.lastUsn())
 
     def test_sync_different_files(self):
         """
@@ -174,13 +177,10 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         file_for_client = helpers.file_utils.create_named_file("foo.jpg", "hello")
         file_for_server = helpers.file_utils.create_named_file("bar.jpg", "goodbye")
 
-        helpers.server_utils.add_files_to_mediasyncer(client,
+        helpers.server_utils.add_files_to_client_mediadb(client.col.media,
                                                   [file_for_client],
                                                   update_db=True)
-        helpers.server_utils.add_files_to_mediasyncer(server,
-                                                  [file_for_server],
-                                                  update_db=True,
-                                                  bump_last_usn=True)
+        helpers.server_utils.add_files_to_server_mediadb(server.col.media, [file_for_server])
 
         # Syncing should work.
         self.assertEqual(client.sync(), 'OK')
@@ -222,13 +222,10 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         file_for_client = helpers.file_utils.create_named_file("foo.jpg", "hello")
         file_for_server = helpers.file_utils.create_named_file("foo.jpg", "goodbye")
 
-        helpers.server_utils.add_files_to_mediasyncer(client,
+        helpers.server_utils.add_files_to_client_mediadb(client.col.media,
                                                   [file_for_client],
                                                   update_db=True)
-        helpers.server_utils.add_files_to_mediasyncer(server,
-                                                  [file_for_server],
-                                                  update_db=True,
-                                                  bump_last_usn=True)
+        helpers.server_utils.add_files_to_server_mediadb(server.col.media, [file_for_server])
 
         # Syncing should work.
         self.assertEqual(client.sync(), 'OK')
@@ -267,10 +264,9 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         temp_file_path = helpers.file_utils.create_named_file("foo.jpg", "hello")
 
         # Add the test file to client's media collection.
-        helpers.server_utils.add_files_to_mediasyncer(client,
+        helpers.server_utils.add_files_to_client_mediadb(client.col.media,
                                                   [temp_file_path],
-                                                  update_db=True,
-                                                  bump_last_usn=False)
+                                                  update_db=True)
 
         # Syncing client should work.
         self.assertEqual(client.sync(), 'OK')
@@ -314,7 +310,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         # findChanges(), only during syncs.
         support_file = helpers.file_utils.get_asset_path('blue.jpg')
         self.assertTrue(os.path.isfile(support_file))
-        helpers.server_utils.add_files_to_mediasyncer(client,
+        helpers.server_utils.add_files_to_client_mediadb(client.col.media,
                                                   [support_file],
                                                   update_db=False)
 
@@ -362,7 +358,7 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         server = helpers.server_utils.get_syncer_for_hkey(self.server_app, self.hkey, 'media')
         self.assertEqual(server.mediaChanges(lastUsn=client.col.media.lastUsn())['data'], [])
 
-        helpers.server_utils.add_files_to_mediasyncer(client, [
+        helpers.server_utils.add_files_to_client_mediadb(client.col.media, [
             helpers.file_utils.create_named_file("a", "lastUsn a"),
             helpers.file_utils.create_named_file("b", "lastUsn b"),
             helpers.file_utils.create_named_file("c", "lastUsn c"),
@@ -374,17 +370,18 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         os.remove(os.path.join(client2.col.media.dir(), "c"))
         client2.col.media._logChanges()
         self.assertEqual(client2.sync(), "OK")
-        server.col.media._logChanges()
         self.assertEqual(server.mediaChanges(lastUsn=client.col.media.lastUsn())['data'], [['c', 4, None]])
         self.assertEqual(client.sync(), "OK")
         self.assertEqual(server.mediaChanges(lastUsn=client.col.media.lastUsn())['data'], [])
 
-        helpers.server_utils.add_files_to_mediasyncer(client, [
+        helpers.server_utils.add_files_to_client_mediadb(client.col.media, [
             helpers.file_utils.create_named_file("d", "lastUsn d"),
         ], update_db=True)
         client.col.media._logChanges()
         self.assertEqual(client.sync(), "OK")
-        self.assertEqual(server.mediaChanges(lastUsn=client2.col.media.lastUsn())['data'], [['d', 5, server.col.media._checksum(os.path.join(server.col.media.dir(), "d"))]])
+
+        self.assertEqual(server.mediaChanges(lastUsn=client2.col.media.lastUsn())['data'], [['d', 5, self.file_checksum(os.path.join(server.col.media.dir(), "d"))]])
+
         self.assertEqual(client2.sync(), "OK")
         self.assertEqual(server.mediaChanges(lastUsn=client2.col.media.lastUsn())['data'], [])
 
@@ -395,6 +392,6 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         os.utime(dpath, (315529200, 315529200))
         client.col.media._logChanges()
         self.assertEqual(client.sync(), "OK")
-        self.assertEqual(server.mediaChanges(lastUsn=client2.col.media.lastUsn())['data'], [['d', 6, server.col.media._checksum(os.path.join(server.col.media.dir(), "d"))]])
+        self.assertEqual(server.mediaChanges(lastUsn=client2.col.media.lastUsn())['data'], [['d', 6, self.file_checksum(os.path.join(server.col.media.dir(), "d"))]])
         self.assertEqual(client2.sync(), "OK")
         self.assertEqual(server.mediaChanges(lastUsn=client2.col.media.lastUsn())['data'], [])

@@ -1,6 +1,8 @@
 import anki
 import anki.storage
 
+import ankisyncd.media
+
 import os, errno
 import logging
 
@@ -63,7 +65,13 @@ class CollectionWrapper:
         return col
 
     def _get_collection(self):
-        return anki.storage.Collection(self.path)
+        col = anki.storage.Collection(self.path)
+
+        # Ugly hack, replace default media manager with our custom one
+        col.media.close()
+        col.media = ankisyncd.media.ServerMediaManager(col)
+
+        return col
 
     def open(self):
         """Open the collection, or create it if it doesn't exist."""

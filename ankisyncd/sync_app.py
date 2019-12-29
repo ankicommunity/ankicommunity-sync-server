@@ -175,7 +175,7 @@ class SyncMediaHandler:
     operations = ['begin', 'mediaChanges', 'mediaSanity', 'uploadChanges', 'downloadFiles']
 
     def __init__(self, col):
-        anki.sync.MediaSyncer.__init__(self, col)
+        self.col = col
 
     def begin(self, skey):
         return {
@@ -195,11 +195,6 @@ class SyncMediaHandler:
         with zipfile.ZipFile(io.BytesIO(data), "r") as z:
             self._check_zip_data(z)
             processed_count = self._adopt_media_changes_from_zip(z)
-
-        # We increment our lastUsn once for each file we processed.
-        # (lastUsn - processed_count) must equal the client's lastUsn.
-        our_last_usn = self.col.media.lastUsn()
-        self.col.media.setLastUsn(our_last_usn + processed_count)
 
         return {
             'data': [processed_count, self.col.media.lastUsn()],
@@ -238,6 +233,8 @@ class SyncMediaHandler:
 
         # Add media files that were added on the client.
         media_to_add = []
+        usn = self.col.media.lastUsn()
+        oldUsn = usn
         for i in zip_file.infolist():
             if i.filename == "_meta":  # Ignore previously retrieved metadata.
                 continue
@@ -250,9 +247,9 @@ class SyncMediaHandler:
             # Save file to media directory.
             with open(file_path, 'wb') as f:
                 f.write(file_data)
-            mtime = self.col.media._mtime(file_path)
 
-            media_to_add.append((filename, csum, mtime, 0))
+            usn += 1
+            media_to_add.append((filename, usn, csum))
 
         # We count all files we are to remove, even if we don't have them in
         # our media directory and our db doesn't know about them.
@@ -265,8 +262,10 @@ class SyncMediaHandler:
 
         if media_to_add:
             self.col.media.db.executemany(
-                "INSERT OR REPLACE INTO media VALUES (?,?,?,?)", media_to_add)
+                "INSERT OR REPLACE INTO media VALUES (?,?,?)", media_to_add)
+            self.col.media.db.commit()
 
+        assert self.col.media.lastUsn() == oldUsn + processed_count  # TODO: move to some unit test
         return processed_count
 
     @staticmethod
@@ -289,18 +288,11 @@ class SyncMediaHandler:
         Marks all files in list filenames as deleted and removes them from the
         media directory.
         """
-
-        # Mark the files as deleted in our db.
-        self.col.media.db.executemany("UPDATE media " +
-                                      "SET csum = NULL " +
-                                      " WHERE fname = ?",
-                                      [(f, ) for f in filenames])
-
-        # Remove the files from our media directory if it is present.
         logger.debug('Removing %d files from media dir.' % len(filenames))
         for filename in filenames:
             try:
-                os.remove(os.path.join(self.col.media.dir(), filename))
+                self.col.media.syncDelete(filename)
+                self.col.media.db.commit()
             except OSError as err:
                 logger.error("Error when removing file '%s' from media dir: "
                               "%s" % (filename, str(err)))
@@ -330,7 +322,7 @@ class SyncMediaHandler:
         fname = csum = None
 
         if lastUsn < usn or lastUsn == 0:
-            for fname,mtime,csum, in self.col.media.db.execute("select fname,mtime,csum from media"):
+            for fname,usn,csum, in self.col.media.db.execute("select fname,usn,csum from media"):
                 result.append([fname, usn, csum])
 
         return {'data': result, 'err': ''}

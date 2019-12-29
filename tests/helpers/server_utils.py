@@ -5,6 +5,8 @@ import os
 import shutil
 import tempfile
 
+import anki.utils
+
 from ankisyncd.sync_app import SyncApp, SyncCollectionHandler, SyncMediaHandler
 
 
@@ -65,21 +67,24 @@ def get_syncer_for_hkey(server, hkey, syncer_type='collection'):
 
     return session.get_handler_for_operation(handler_method, col)
 
-def add_files_to_mediasyncer(media_syncer, filepaths,
-                             update_db=False, bump_last_usn=False):
-    """
-    If bumpLastUsn is True, the media syncer's lastUsn will be incremented
-    once for each added file. Use this when adding files to the server.
-    """
-
+def add_files_to_client_mediadb(media, filepaths, update_db=False):
     for filepath in filepaths:
-        logging.debug("Adding file '{}' to mediaSyncer".format(filepath))
+        logging.debug("Adding file '{}' to client media DB".format(filepath))
         # Import file into media dir.
-        media_syncer.col.media.addFile(filepath)
-        if bump_last_usn:
-            # Need to bump lastUsn once for each file.
-            media_manager = media_syncer.col.media
-            media_manager.setLastUsn(media_syncer.col.media.lastUsn() + 1)
+        media.addFile(filepath)
 
     if update_db:
-        media_syncer.col.media.findChanges()  # Write changes to db.
+        media.findChanges()  # Write changes to db.
+
+def add_files_to_server_mediadb(media, filepaths):
+    for filepath in filepaths:
+        logging.debug("Adding file '{}' to server media DB".format(filepath))
+        fname = os.path.basename(filepath)
+        with open(filepath, 'rb') as infile:
+            data = infile.read()
+            csum = anki.utils.checksum(data)
+
+            with open(os.path.join(media.dir(), fname), 'wb') as f:
+                f.write(data)
+            media.db.execute("INSERT INTO media VALUES (?, ?, ?)", fname, media.lastUsn() + 1, csum)
+            media.db.commit()
