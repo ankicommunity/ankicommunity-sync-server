@@ -318,11 +318,11 @@ class SyncMediaHandler:
 
     def mediaChanges(self, lastUsn):
         result = []
-        usn = self.col.media.lastUsn()
+        server_lastUsn = self.col.media.lastUsn()
         fname = csum = None
 
-        if lastUsn < usn or lastUsn == 0:
-            for fname,usn,csum, in self.col.media.db.execute("select fname,usn,csum from media"):
+        if lastUsn < server_lastUsn or lastUsn == 0:
+            for fname,usn,csum, in self.col.media.db.execute("select fname,usn,csum from media order by usn desc limit ?", server_lastUsn - lastUsn):
                 result.append([fname, usn, csum])
 
         return {'data': result, 'err': ''}
