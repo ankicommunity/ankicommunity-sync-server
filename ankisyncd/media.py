@@ -47,7 +47,7 @@ class ServerMediaManager:
         return self._dir
 
     def lastUsn(self):
-        return self.db.scalar("SELECT usn FROM media ORDER BY usn DESC LIMIT 1") or 0
+        return self.db.scalar("SELECT max(usn) FROM media") or 0
 
     def mediaCount(self):
         return self.db.scalar("SELECT count() FROM media WHERE csum IS NOT NULL")
