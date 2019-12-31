@@ -2,11 +2,14 @@
 # License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
 # Original source: https://raw.githubusercontent.com/dae/anki/62481ddc1aa78430cb8114cbf00a7739824318a8/anki/media.py
 
+import logging
 import re
 import os
 import os.path
 
 import anki.db
+
+logger = logging.getLogger("ankisyncd.media")
 
 
 class ServerMediaManager:
@@ -16,7 +19,6 @@ class ServerMediaManager:
 
     def connect(self):
         path = self.dir() + ".server.db"
-        # TODO: migrate old db
         create = not os.path.exists(path)
         self.db = anki.db.DB(path)
         if create:
@@ -28,6 +30,15 @@ class ServerMediaManager:
                    );
                 CREATE INDEX idx_media_usn ON media (usn);"""
             )
+            oldpath = self.dir() + ".db2"
+            if os.path.exists(oldpath):
+                logger.info("Found client media database, migrating contents")
+                self.db.execute("ATTACH ? AS old", oldpath)
+                self.db.execute(
+                    "INSERT INTO media SELECT fname, lastUsn, csum FROM old.media, old.meta"
+                )
+                self.db.commit()
+                self.db.execute("DETACH old")
 
     def close(self):
         self.db.close()
