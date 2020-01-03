@@ -137,8 +137,9 @@ class SyncCollectionHandler(anki.sync.Syncer):
     def finish(self, mod=None):
         return anki.sync.Syncer.finish(self, anki.utils.intTime(1000))
 
-    # Syncer.removed() doesn't use self.usnLim() in queries, so we have to
-    # replace "usn=-1" by hand
+    # This function had to be put here in its entirety because Syncer.removed()
+    # doesn't use self.usnLim() (which we override in this class) in queries.
+    # "usn=-1" has been replaced with "usn >= ?", self.minUsn by hand.
     def removed(self):
         cards = []
         notes = []
