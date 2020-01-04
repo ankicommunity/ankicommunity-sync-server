@@ -642,6 +642,8 @@ def make_app(global_conf, **local_conf):
 
 def main():
     logging.basicConfig(level=logging.INFO, format="[%(asctime)s]:%(levelname)s:%(name)s:%(message)s")
+    import ankisyncd
+    logger.info("ankisyncd {} ({})".format(ankisyncd._get_version(), ankisyncd._homepage))
     from wsgiref.simple_server import make_server, WSGIRequestHandler
     from ankisyncd.thread import shutdown
     import ankisyncd.config
