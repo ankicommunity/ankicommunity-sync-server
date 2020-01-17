@@ -110,7 +110,9 @@ class SyncCollectionHandler(anki.sync.Syncer):
 
     # ankidesktop >=2.1rc2 sends graves in applyGraves, but still expects
     # server-side deletions to be returned by start
-    def start(self, minUsn, lnewer, graves={"cards": [], "notes": [], "decks": []}):
+    def start(self, minUsn, lnewer, graves={"cards": [], "notes": [], "decks": []}, offset=None):
+        if offset is not None:
+            raise NotImplementedError('You are using the experimental V2 scheduler, which is not supported by the server.')
         self.maxUsn = self.col._usn
         self.minUsn = minUsn
         self.lnewer = not lnewer
