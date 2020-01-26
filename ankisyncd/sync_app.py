@@ -327,6 +327,10 @@ class SyncMediaHandler:
             for fname,usn,csum, in self.col.media.db.execute("select fname,usn,csum from media order by usn desc limit ?", server_lastUsn - lastUsn):
                 result.append([fname, usn, csum])
 
+        # anki assumes server_lastUsn == result[-1][1]
+        # ref: anki/sync.py:720 (commit cca3fcb2418880d0430a5c5c2e6b81ba260065b7)
+        result.reverse()
+
         return {'data': result, 'err': ''}
 
     def mediaSanity(self, local=None):
