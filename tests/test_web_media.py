@@ -395,3 +395,41 @@ class SyncAppFunctionalMediaTest(SyncAppFunctionalTestBase):
         self.assertEqual(server.mediaChanges(lastUsn=client2.col.media.lastUsn())['data'], [['d', 6, self.file_checksum(os.path.join(server.col.media.dir(), "d"))]])
         self.assertEqual(client2.sync(), "OK")
         self.assertEqual(server.mediaChanges(lastUsn=client2.col.media.lastUsn())['data'], [])
+
+    def test_sync_rename(self):
+        """
+        Adds 3 media files to the client's media directory, syncs and then
+        renames them and syncs again. After syncing, both the client and the
+        server should only have the renamed files.
+        """
+        client = self.client_syncer
+        client2 = self.create_client_syncer(self.colutils.create_empty_col(), self.hkey, self.server_test_app)
+        server = helpers.server_utils.get_syncer_for_hkey(self.server_app, self.hkey, 'media')
+        self.assertEqual(server.mediaChanges(lastUsn=client.col.media.lastUsn())['data'], [])
+
+        helpers.server_utils.add_files_to_client_mediadb(client.col.media, [
+            helpers.file_utils.create_named_file("a.wav", "lastUsn a"),
+            helpers.file_utils.create_named_file("b.wav", "lastUsn b"),
+            helpers.file_utils.create_named_file("c.wav", "lastUsn c"),
+        ], update_db=True)
+        self.assertEqual(client.sync(), "OK")
+
+        for fname in os.listdir(client.col.media.dir()):
+            os.rename(
+                os.path.join(client.col.media.dir(), fname),
+                os.path.join(client.col.media.dir(), fname[:1] + ".mp3")
+            )
+        client.col.media._logChanges()
+        self.assertEqual(client.sync(), "OK")
+        self.assertEqual(
+             set(os.listdir(server.col.media.dir())),
+             {"a.mp3", "b.mp3", "c.mp3"},
+        )
+        self.assertEqual(
+             set(os.listdir(client.col.media.dir())),
+             set(os.listdir(server.col.media.dir())),
+        )
+        self.assertEqual(
+            list(client.col.media.db.execute("SELECT fname, csum FROM media ORDER BY fname")),
+            list(server.col.media.db.execute("SELECT fname, csum FROM media ORDER BY fname")),
+        )
