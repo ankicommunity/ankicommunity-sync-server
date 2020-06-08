@@ -111,7 +111,7 @@ and put it in `~/Anki/addons`.
     anki.sync.SYNC_BASE = addr
     anki.sync.SYNC_MEDIA_BASE = addr + "msync/"
 
-[addons21]: https://apps.ankiweb.net/docs/addons.html#_add_on_folders
+[addons21]: https://addon-docs.ankiweb.net/#/getting-started?id=add-on-folders
 
 ### AnkiDroid
 
