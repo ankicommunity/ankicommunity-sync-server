@@ -72,6 +72,7 @@ traitlets==4.3.3
 urllib3==1.25.10
 wcwidth==0.2.5
 webencodings==0.5.1
+webob==1.8.6
 widgetsnbextension==3.5.1
 zipp==3.1.0; python_version < "3.8"
 -e src/.

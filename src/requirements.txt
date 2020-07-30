@@ -12,4 +12,5 @@ requests==2.24.0
 send2trash==1.5.0
 soupsieve==1.9.6
 urllib3==1.25.10
+webob==1.8.6
 zipp==3.1.0; python_version < "3.8"
