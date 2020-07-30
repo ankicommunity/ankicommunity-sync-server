@@ -1,6 +1,8 @@
 ankisyncd
 =========
 
+[![Documentation Status](https://readthedocs.org/projects/anki-sync-server/badge/?version=latest)](https://anki-sync-server.readthedocs.io/?badge=latest)
+
 [Anki][] is a powerful open source flashcard application, which helps you
 quickly and easily memorize facts over the long term utilizing a spaced
 repetition algorithm. Anki's main form is a desktop application (for Windows,
