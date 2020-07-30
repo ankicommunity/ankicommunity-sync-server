@@ -1,0 +1,72 @@
+appnope==0.1.0; sys_platform == "darwin" or platform_system == "Darwin" or python_version >= "3.3" and sys_platform == "darwin"
+attrs==19.3.0
+backcall==0.2.0
+bleach==3.1.5
+certifi==2020.6.20
+chardet==3.0.4
+click==7.1.2
+colorama==0.4.3; python_version >= "3.3" and sys_platform == "win32" or sys_platform == "win32"
+decorator==4.4.2
+defusedxml==0.6.0
+entrypoints==0.3
+future==0.18.2
+idna==2.10
+importlib-metadata==1.7.0; python_version < "3.8"
+ipykernel==5.3.4
+ipython==7.16.1
+ipython-genutils==0.2.0
+ipywidgets==7.5.1
+jedi==0.17.2
+jinja2==2.11.2
+joblib==0.16.0; python_version > "2.7"
+json5==0.9.5
+jsonschema==3.2.0
+jupyter==1.0.0
+jupyter-client==6.1.6
+jupyter-console==6.1.0
+jupyter-core==4.6.3
+jupyterlab==2.2.2
+jupyterlab-server==1.2.0
+livereload==2.6.2
+lunr==0.5.8
+markdown==3.2.2
+markupsafe==1.1.1
+mistune==0.8.4
+mkdocs==1.1.2
+nbconvert==5.6.1
+nbformat==5.0.7
+nltk==3.5; python_version > "2.7"
+notebook==6.0.3
+packaging==20.4
+pandocfilters==1.4.2
+parso==0.7.1
+pexpect==4.8.0; python_version >= "3.3" and sys_platform != "win32" or sys_platform != "win32"
+pickleshare==0.7.5
+prometheus-client==0.8.0
+prompt-toolkit==3.0.5
+ptyprocess==0.6.0; sys_platform != "win32" or os_name != "nt" or python_version >= "3.3" and sys_platform != "win32"
+pygments==2.6.1
+pyparsing==2.4.7
+pyrsistent==0.16.0
+python-dateutil==2.8.1
+pywin32==228; sys_platform == "win32"
+pywinpty==0.5.7; os_name == "nt"
+pyyaml==5.3.1
+pyzmq==19.0.1
+qtconsole==4.7.5
+qtpy==1.9.0
+regex==2020.7.14; python_version > "2.7"
+requests==2.24.0
+send2trash==1.5.0
+six==1.15.0
+terminado==0.8.3
+testpath==0.4.4
+tornado==6.0.4
+tqdm==4.48.0; python_version > "2.7"
+traitlets==4.3.3
+urllib3==1.25.10
+wcwidth==0.2.5
+webencodings==0.5.1
+widgetsnbextension==3.5.1
+zipp==3.1.0; python_version < "3.8"
+-e src/.
