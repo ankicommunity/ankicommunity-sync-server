@@ -17,6 +17,10 @@ help:
 docs: print-env
 	@${MKDOCS} ${MKDOCS_OPTION} -f docs/mkdocs.yml
 
+.PHONY: notebooks #: Run jupyter notebooks.
+notebooks:
+	@${JUPYTER} ${JUPYTER_OPTION}
+
 %:
 	@test -f scripts/${*}.sh
 	@${SHELL} scripts/${*}.sh
