@@ -1,6 +1,7 @@
 appnope==0.1.0; sys_platform == "darwin" or platform_system == "Darwin" or python_version >= "3.3" and sys_platform == "darwin"
 attrs==19.3.0
 backcall==0.2.0
+beautifulsoup4==4.9.1
 bleach==3.1.5
 certifi==2020.6.20
 chardet==3.0.4
@@ -8,6 +9,7 @@ click==7.1.2
 colorama==0.4.3; python_version >= "3.3" and sys_platform == "win32" or sys_platform == "win32"
 decorator==4.4.2
 defusedxml==0.6.0
+distro==1.5.0
 entrypoints==0.3
 future==0.18.2
 idna==2.10
@@ -44,7 +46,9 @@ pexpect==4.8.0; python_version >= "3.3" and sys_platform != "win32" or sys_platf
 pickleshare==0.7.5
 prometheus-client==0.8.0
 prompt-toolkit==3.0.5
+psutil==5.7.2
 ptyprocess==0.6.0; sys_platform != "win32" or os_name != "nt" or python_version >= "3.3" and sys_platform != "win32"
+pyaudio==0.2.11
 pygments==2.6.1
 pyparsing==2.4.7
 pyrsistent==0.16.0
@@ -59,6 +63,7 @@ regex==2020.7.14; python_version > "2.7"
 requests==2.24.0
 send2trash==1.5.0
 six==1.15.0
+soupsieve==1.9.6
 terminado==0.8.3
 testpath==0.4.4
 tornado==6.0.4
