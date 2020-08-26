@@ -2,6 +2,7 @@
 
 import os
 from sqlite3 import dbapi2 as sqlite
+import sys
 
 import anki.db
 
@@ -28,7 +29,6 @@ class FullSyncManager:
             os.replace(temp_db_path, session.get_collection_path())
         finally:
             col.reopen()
-            col.load()
 
         return "OK"
 
@@ -39,7 +39,6 @@ class FullSyncManager:
             data = open(session.get_collection_path(), 'rb').read()
         finally:
             col.reopen()
-            col.load()
         return data
 
 
