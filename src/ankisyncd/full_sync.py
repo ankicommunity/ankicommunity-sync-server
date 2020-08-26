@@ -29,6 +29,8 @@ class FullSyncManager:
             os.replace(temp_db_path, session.get_collection_path())
         finally:
             col.reopen()
+            # Reopen the media database
+            col.media.connect()
 
         return "OK"
 

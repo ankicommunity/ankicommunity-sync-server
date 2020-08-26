@@ -32,7 +32,7 @@ class SqliteSessionManager(SimpleSessionManager):
     everytime the SyncApp is restarted."""
 
     def __init__(self, session_db_path):
-        SimpleSessionManager.__init__(self)
+        super().__init__()
 
         self.session_db_path = os.path.realpath(session_db_path)
         self._ensure_schema_up_to_date()

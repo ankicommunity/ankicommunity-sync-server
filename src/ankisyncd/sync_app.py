@@ -93,8 +93,7 @@ class SyncCollectionHandler(Syncer):
             return {"cont": False, "msg": "Your client doesn't support the v{} scheduler.".format(self.col.schedVer())}
 
         # Make sure the media database is open!
-        if self.col.media.db is None:
-            self.col.media.connect()
+        self.col.media.connect()
 
         return {
             'mod': self.col.mod,
@@ -267,9 +266,7 @@ class SyncMediaHandler:
             self._remove_media_files(media_to_remove)
 
         if media_to_add:
-            self.col.media.db.executemany(
-                "INSERT OR REPLACE INTO media VALUES (?,?,?)", media_to_add)
-            self.col.media.db.commit()
+            self.col.media.addMedia(media_to_add)
 
         assert self.col.media.lastUsn() == oldUsn + processed_count  # TODO: move to some unit test
         return processed_count
@@ -325,10 +322,9 @@ class SyncMediaHandler:
     def mediaChanges(self, lastUsn):
         result = []
         server_lastUsn = self.col.media.lastUsn()
-        fname = csum = None
 
         if lastUsn < server_lastUsn or lastUsn == 0:
-            for fname,usn,csum, in self.col.media.db.execute("select fname,usn,csum from media order by usn desc limit ?", server_lastUsn - lastUsn):
+            for fname,usn,csum, in self.col.media.changes(lastUsn):
                 result.append([fname, usn, csum])
 
         # anki assumes server_lastUsn == result[-1][1]
