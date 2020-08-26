@@ -499,7 +499,7 @@ class SyncApp:
     def __call__(self, req):
         # Get and verify the session
         try:
-            hkey = req.POST['k']
+            hkey = req.params['k']
         except KeyError:
             hkey = None
 
