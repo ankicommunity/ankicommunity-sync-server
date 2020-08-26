@@ -50,9 +50,10 @@ logger = logging.getLogger("ankisyncd")
 class SyncCollectionHandler(Syncer):
     operations = ['meta', 'applyChanges', 'start', 'applyGraves', 'chunk', 'applyChunk', 'sanityCheck2', 'finish']
 
-    def __init__(self, col):
+    def __init__(self, col, session):
         # So that 'server' (the 3rd argument) can't get set
         super().__init__(self, col)
+        self.session = session
 
     @staticmethod
     def _old_client(cv):
@@ -96,13 +97,15 @@ class SyncCollectionHandler(Syncer):
             self.col.media.connect()
 
         return {
-            'scm': self.col.scm,
-            'ts': anki.utils.intTime(),
             'mod': self.col.mod,
+            'scm': self.col.scm,
             'usn': self.col._usn,
+            'ts': anki.utils.intTime(),
             'musn': self.col.media.lastUsn(),
+            'uname': self.session.name,
             'msg': '',
             'cont': True,
+            'hostNum': 0,
         }
 
     def usnLim(self):
@@ -176,8 +179,9 @@ class SyncCollectionHandler(Syncer):
 class SyncMediaHandler:
     operations = ['begin', 'mediaChanges', 'mediaSanity', 'uploadChanges', 'downloadFiles']
 
-    def __init__(self, col):
+    def __init__(self, col, session):
         self.col = col
+        self.session = session
 
     def begin(self, skey):
         return {
@@ -376,7 +380,7 @@ class SyncUserSession:
             raise Exception("no handler for {}".format(operation))
 
         if getattr(self, attr) is None:
-            setattr(self, attr, handler_class(col))
+            setattr(self, attr, handler_class(col, self))
         handler = getattr(self, attr)
         # The col object may actually be new now! This happens when we close a collection
         # for inactivity and then later re-open it (creating a new Collection object).
