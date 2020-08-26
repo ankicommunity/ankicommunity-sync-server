@@ -35,24 +35,24 @@ from webob.dec import wsgify
 from webob.exc import *
 
 import anki.db
-import anki.sync
 import anki.utils
-from anki.consts import SYNC_VER, SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
 from anki.consts import REM_CARD, REM_NOTE
 
 from ankisyncd.users import get_user_manager
 from ankisyncd.sessions import get_session_manager
 from ankisyncd.full_sync import get_full_sync_manager
 
+from .sync import Syncer, SYNC_VER, SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
+
 logger = logging.getLogger("ankisyncd")
 
 
-class SyncCollectionHandler(anki.sync.Syncer):
+class SyncCollectionHandler(Syncer):
     operations = ['meta', 'applyChanges', 'start', 'applyGraves', 'chunk', 'applyChunk', 'sanityCheck2', 'finish']
 
     def __init__(self, col):
         # So that 'server' (the 3rd argument) can't get set
-        anki.sync.Syncer.__init__(self, col)
+        super().__init__(self, col)
 
     @staticmethod
     def _old_client(cv):
@@ -137,7 +137,7 @@ class SyncCollectionHandler(anki.sync.Syncer):
         return dict(status="ok")
 
     def finish(self, mod=None):
-        return anki.sync.Syncer.finish(self, anki.utils.intTime(1000))
+        return super().finish(self, anki.utils.intTime(1000))
 
     # This function had to be put here in its entirety because Syncer.removed()
     # doesn't use self.usnLim() (which we override in this class) in queries.
