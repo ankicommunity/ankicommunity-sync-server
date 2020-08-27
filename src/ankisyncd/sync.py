@@ -14,6 +14,7 @@ import os
 from anki.db import DB, DBError
 from anki.utils import ids2str, intTime, platDesc, checksum, devMode
 from anki.consts import *
+from anki.config import ConfigManager
 from anki.utils import versionWithBuild
 from anki.hooks import runHook
 import anki
@@ -205,7 +206,7 @@ class Syncer(object):
                 return "model had usn = -1"
         if found:
             self.col.models.save()
-#        self.col.sched.reset()
+        self.col.sched.reset()
         # check for missing parent decks
         #self.col.sched.deckDueList()
         # return summary of deck
@@ -420,7 +421,10 @@ from notes where %s""" % d)
         return self.col.conf
 
     def mergeConf(self, conf):
-        self.col.conf = conf
+        newConf = ConfigManager(self.col)
+        for key, value in conf.items():
+            newConf[key] = value
+        self.col.conf = newConf
 
 # Wrapper for requests that tracks upload/download progress
 ##########################################################################
