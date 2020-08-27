@@ -239,32 +239,26 @@ class Syncer(object):
         self.tablesLeft = ["revlog", "cards", "notes"]
         self.cursor = None
 
-    def cursorForTable(self, table):
+    def queryTable(self, table):
         lim = self.usnLim()
-        with open("/dev/stdout", "w") as f:
-            f.write(str(type(self.col.db)))
-        x = self.col.db.execute
-        d = (self.maxUsn, lim)
         if table == "revlog":
-            return x("""
-select id, cid, %d, ease, ivl, lastIvl, factor, time, type
-from revlog where %s""" % d)
+            return self.col.db.execute("""
+select id, cid, ?, ease, ivl, lastIvl, factor, time, type
+from revlog where ?""", self.maxUsn, lim)
         elif table == "cards":
-            return x("""
-select id, nid, did, ord, mod, %d, type, queue, due, ivl, factor, reps,
-lapses, left, odue, odid, flags, data from cards where %s""" % d)
+            return self.col.db.execute("""
+select id, nid, did, ord, mod, ?, type, queue, due, ivl, factor, reps,
+lapses, left, odue, odid, flags, data from cards where ?""", self.maxUsn, lim)
         else:
-            return x("""
-select id, guid, mid, mod, %d, tags, flds, '', '', flags, data
-from notes where %s""" % d)
+            return self.col.db.execute("""
+select id, guid, mid, mod, ?, tags, flds, '', '', flags, data
+from notes where ?""", self.maxUsn, lim)
 
     def chunk(self):
         buf = dict(done=False)
         while self.tablesLeft:
             curTable = self.tablesLeft.pop()
-            if not self.cursor:
-                self.cursor = self.cursorForTable(curTable)
-            buf[curTable] = self.cursor 
+            buf[curTable] = self.queryTable(curTable)
         if not self.tablesLeft:
             buf['done'] = True
         return buf
