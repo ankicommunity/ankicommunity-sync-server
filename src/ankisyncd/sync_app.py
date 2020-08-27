@@ -132,14 +132,18 @@ class SyncCollectionHandler(Syncer):
         self.mergeChanges(lchg, self.rchg)
         return lchg
 
-    def sanityCheck2(self, client):
+    def sanityCheck2(self, client, full=None):
         server = self.sanityCheck()
         if client != server:
+            logger.info(
+                f"sanity check failed with server: {server} client: {client}"
+            )
+
             return dict(status="bad", c=client, s=server)
         return dict(status="ok")
 
     def finish(self, mod=None):
-        return super().finish(self, anki.utils.intTime(1000))
+        return super().finish(anki.utils.intTime(1000))
 
     # This function had to be put here in its entirety because Syncer.removed()
     # doesn't use self.usnLim() (which we override in this class) in queries.
@@ -295,7 +299,6 @@ class SyncMediaHandler:
         for filename in filenames:
             try:
                 self.col.media.syncDelete(filename)
-                self.col.media.db.commit()
             except OSError as err:
                 logger.error("Error when removing file '%s' from media dir: "
                               "%s" % (filename, str(err)))
