@@ -8,6 +8,8 @@ import shutil
 import anki
 import anki.storage
 
+from ankisyncd.collection import CollectionManager
+
 
 class CollectionTestBase(unittest.TestCase):
     """Parent class for tests that need a collection set up and torn down."""
@@ -15,7 +17,9 @@ class CollectionTestBase(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
         self.collection_path = os.path.join(self.temp_dir, 'collection.anki2');
-        self.collection = anki.storage.Collection(self.collection_path)
+        cm = CollectionManager({})
+        collectionWrapper = cm.get_collection(self.collection_path)
+        self.collection = collectionWrapper._get_collection()
         self.mock_app = MagicMock()
 
     def tearDown(self):
