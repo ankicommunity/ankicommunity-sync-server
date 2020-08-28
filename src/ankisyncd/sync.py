@@ -697,7 +697,7 @@ class MediaSyncer(object):
         lastUsn = self.col.media.lastUsn()
         ret = self.server.begin()
         srvUsn = ret['usn']
-        if lastUsn == srvUsn and not self.col.media.haveDirty():
+        if lastUsn == srvUsn:
             return "noChanges"
 
         # loop through and process changes from server
