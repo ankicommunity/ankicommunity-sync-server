@@ -5,7 +5,6 @@ import tempfile
 
 from anki import Collection
 
-
 class CollectionUtils:
     """
     Provides utility methods for creating, inspecting and manipulating anki
@@ -26,7 +25,7 @@ class CollectionUtils:
 
         file_path = os.path.join(self.tempdir, "collection.anki2")
         master_col = Collection(file_path)
-        master_col.db.close()
+        master_col.close()
         self.master_db_path = file_path
 
     def __enter__(self):
