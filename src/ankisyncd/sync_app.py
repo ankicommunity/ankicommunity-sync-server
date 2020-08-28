@@ -52,7 +52,7 @@ class SyncCollectionHandler(Syncer):
 
     def __init__(self, col, session):
         # So that 'server' (the 3rd argument) can't get set
-        super().__init__(self, col)
+        super().__init__(col)
         self.session = session
 
     @staticmethod
