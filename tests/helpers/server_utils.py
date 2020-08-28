@@ -86,5 +86,6 @@ def add_files_to_server_mediadb(media, filepaths):
 
             with open(os.path.join(media.dir(), fname), 'wb') as f:
                 f.write(data)
-            media.db.execute("INSERT INTO media VALUES (?, ?, ?)", fname, media.lastUsn() + 1, csum)
-            media.db.commit()
+            media.addMedia(
+                ((fname, media.lastUsn() + 1, csum),)
+            )
