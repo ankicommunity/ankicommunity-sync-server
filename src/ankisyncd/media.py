@@ -8,11 +8,13 @@ import os
 import os.path
 
 import anki.db
+from anki.media import MediaManager
 
 logger = logging.getLogger("ankisyncd.media")
 
-class ServerMediaManager(object):
-    def __init__(self, col):
+class ServerMediaManager(MediaManager):
+    def __init__(self, col, server=True):
+        super().__init__(col, server)
         self._dir = re.sub(r"(?i)\.(anki2)$", ".media", col.path)
         self.connect()
 
