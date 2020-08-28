@@ -187,7 +187,7 @@ class Syncer(object):
             self.col.crt = rchg['crt']
         self.prepareToChunk()
 
-    def sanityCheck(self):
+    def sanityCheck(self, full):
         if not self.col.basicCheck():
             return "failed basic check"
         for t in "cards", "notes", "revlog", "graves":
@@ -244,21 +244,24 @@ class Syncer(object):
         if table == "revlog":
             return self.col.db.execute("""
 select id, cid, ?, ease, ivl, lastIvl, factor, time, type
-from revlog where ?""", self.maxUsn, lim)
+from revlog where %s""" % lim, self.maxUsn)
         elif table == "cards":
             return self.col.db.execute("""
 select id, nid, did, ord, mod, ?, type, queue, due, ivl, factor, reps,
-lapses, left, odue, odid, flags, data from cards where ?""", self.maxUsn, lim)
+lapses, left, odue, odid, flags, data from cards where %s""" % lim, self.maxUsn)
         else:
             return self.col.db.execute("""
 select id, guid, mid, mod, ?, tags, flds, '', '', flags, data
-from notes where ?""", self.maxUsn, lim)
+from notes where %s""" % lim, self.maxUsn)
 
     def chunk(self):
         buf = dict(done=False)
         while self.tablesLeft:
             curTable = self.tablesLeft.pop()
             buf[curTable] = self.queryTable(curTable)
+            self.col.db.execute(
+                f"update {curTable} set usn=? where usn=-1", self.maxUsn
+            )
         if not self.tablesLeft:
             buf['done'] = True
         return buf
@@ -417,8 +420,7 @@ from notes where ?""", self.maxUsn, lim)
     def mergeConf(self, conf):
         newConf = ConfigManager(self.col)
         for key, value in conf.items():
-            newConf[key] = value
-        self.col.conf = newConf
+            self.col.set_config(key, value)
 
 # Wrapper for requests that tracks upload/download progress
 ##########################################################################

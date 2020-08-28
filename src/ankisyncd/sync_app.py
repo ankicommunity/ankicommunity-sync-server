@@ -133,7 +133,7 @@ class SyncCollectionHandler(Syncer):
         return lchg
 
     def sanityCheck2(self, client, full=None):
-        server = self.sanityCheck()
+        server = self.sanityCheck(full)
         if client != server:
             logger.info(
                 f"sanity check failed with server: {server} client: {client}"
