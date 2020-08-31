@@ -1,5 +1,5 @@
 ankisyncd
-=========
+11;rgb:2323/2727/2929=========
 
 [![Documentation Status](https://readthedocs.org/projects/anki-sync-server/badge/?version=latest)](https://anki-sync-server.readthedocs.io/?badge=latest)
 [![Gitter](https://badges.gitter.im/ankicommunity/community.svg)](https://gitter.im/ankicommunity/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
@@ -52,20 +52,31 @@ Installing
         $ ./ankisyncctl.py adduser <username>
 
 4. Setup a proxy to unchunk the requests.
-Webob does not support the header "Transfer-Encoding: chunked" used by Anki and
-therefore ankisyncd sees chunked requests as empty. To solve this problem setup
-Nginx (or any other webserver of your choice) and configure it to "unchunk" the
-requests to ankisyncd:
 
+    Webob does not support the header "Transfer-Encoding: chunked" used by Anki
+    and therefore ankisyncd sees chunked requests as empty. To solve this problem
+    setup Nginx (or any other webserver of your choice) and configure it to
+    "unchunk" the requests for ankisyncd.
+
+    For example, if you use Nginx  on the same machine as ankisyncd, you first
+    have to change the port in `ankisyncd.conf` to something other than `27701`.
+    Then configure Nginx to listen on port `27701` and forward the unchunked
+    requests to ankisyncd.
+
+    An example configuration with ankisyncd running on the same machine as Nginx
+    and listening on port `27702` may look like:
+
+    ```
     server {
         listen      27701;
         server_name default;
 
         location / {
             proxy_http_version 1.0;
-            proxy_pass         http://ankisyncd:27701/;
+            proxy_pass         http://localhost:27702/;
         }
     }
+    ```
 
 5. Run ankisyncd:
 
