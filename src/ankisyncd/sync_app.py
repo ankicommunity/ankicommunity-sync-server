@@ -38,11 +38,10 @@ import anki.db
 import anki.utils
 from anki.consts import REM_CARD, REM_NOTE
 
-from ankisyncd.users import get_user_manager
-from ankisyncd.sessions import get_session_manager
 from ankisyncd.full_sync import get_full_sync_manager
-
-from .sync import Syncer, SYNC_VER, SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
+from ankisyncd.sessions import get_session_manager
+from ankisyncd.sync import Syncer, SYNC_VER, SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
+from ankisyncd.users import get_user_manager
 
 logger = logging.getLogger("ankisyncd")
 
