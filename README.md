@@ -1,5 +1,5 @@
 ankisyncd
-11;rgb:2323/2727/2929=========
+=========
 
 [![Documentation Status](https://readthedocs.org/projects/anki-sync-server/badge/?version=latest)](https://anki-sync-server.readthedocs.io/?badge=latest)
 [![Gitter](https://badges.gitter.im/ankicommunity/community.svg)](https://gitter.im/ankicommunity/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
