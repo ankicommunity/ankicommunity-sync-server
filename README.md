@@ -29,9 +29,6 @@ It supports Python 3 and Anki 2.1.
    - [Anki 2.1](#anki-21)
    - [Anki 2.0](#anki-20)
    - [AnkiDroid](#ankidroid)
- - [Running `ankisyncd` without `pyaudio`](#running-ankisyncd-without-pyaudio)
-   - [Anki ≥2.1.9](#anki-219)
-   - [Older versions](#older-versions)
  - [ENVVAR configuration overrides](#envvar-configuration-overrides)
  - [Support for other database backends](#support-for-other-database-backends)
 </details>
@@ -141,13 +138,6 @@ whatever port you configured to accept the front-end connection).
 Even though the AnkiDroid interface will request an email address, this is not
 required; it will simply be the username you configured with `ankisyncctl.py
 adduser`.
-
-Running `ankisyncd` without `pyaudio`
--------------------------------------
-
-`ankisyncd` doesn't use the audio recording feature of Anki, so if you don't
-want to install PortAudio, you can edit some files in the `anki-bundled`
-directory to exclude `pyaudio`:
 
 ENVVAR configuration overrides
 ------------------------------
