@@ -38,12 +38,10 @@ It supports Python 3 and Anki 2.1.
 
 Installing
 ----------
-
-0. Install the current version of Anki.
    
 1. Install the dependencies:
 
-        $ pip install webob
+        $ pip install -r src/requirements.txt
 
 2. Modify ankisyncd.conf according to your needs
 
