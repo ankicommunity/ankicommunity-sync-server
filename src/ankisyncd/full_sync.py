@@ -13,7 +13,7 @@ from anki.collection import Collection
 logger = logging.getLogger("ankisyncd.media")
 logger.setLevel(1)
 
-class FullSyncManager(object):
+class FullSyncManager:
     def test_db(self, db: DB):
         """
         :param anki.db.DB db: the database uploaded from the client.
