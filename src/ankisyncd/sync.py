@@ -16,7 +16,6 @@ from anki.utils import ids2str, intTime, platDesc, checksum, devMode
 from anki.consts import *
 from anki.config import ConfigManager
 from anki.utils import versionWithBuild
-from anki.hooks import runHook
 import anki
 from anki.lang import ngettext
 
@@ -50,7 +49,6 @@ class Syncer(object):
         self.col.save()
 
         # step 1: login & metadata
-        runHook("sync", "login")
         meta = self.server.meta()
         self.col.log("rmeta", meta)
         if not meta:
@@ -90,7 +88,6 @@ class Syncer(object):
             self.col.log("basic check")
             return "basicCheckFailed"
         # step 2: startup and deletions
-        runHook("sync", "meta")
         rrem = self.server.start(minUsn=self.minUsn, lnewer=self.lnewer)
 
         # apply deletions to server
@@ -107,25 +104,20 @@ class Syncer(object):
         rchg = self.server.applyChanges(changes=lchg)
         self.mergeChanges(lchg, rchg)
         # step 3: stream large tables from server
-        runHook("sync", "server")
-        while 1:
-            runHook("sync", "stream")
+        while True:
             chunk = self.server.chunk()
             self.col.log("server chunk", chunk)
             self.applyChunk(chunk=chunk)
             if chunk['done']:
                 break
         # step 4: stream to server
-        runHook("sync", "client")
-        while 1:
-            runHook("sync", "stream")
+        while True:
             chunk = self.chunk()
             self.col.log("client chunk", chunk)
             self.server.applyChunk(chunk=chunk)
             if chunk['done']:
                 break
         # step 5: sanity check
-        runHook("sync", "sanity")
         c = self.sanityCheck()
         ret = self.server.sanityCheck2(client=c)
         if ret['status'] != "ok":
@@ -135,7 +127,6 @@ class Syncer(object):
             self.col.save()
             return "sanityCheckFailed"
         # finalize
-        runHook("sync", "finalize")
         mod = self.server.finish()
         self.finish(mod)
         return "success"
@@ -449,7 +440,6 @@ class AnkiRequestsClient(object):
 
         buf = io.BytesIO()
         for chunk in resp.iter_content(chunk_size=HTTP_BUF_SIZE):
-            runHook("httpRecv", len(chunk))
             buf.write(chunk)
         return buf.getvalue()
 
@@ -467,7 +457,7 @@ if os.environ.get("ANKI_NOVERIFYSSL"):
 class _MonitoringFile(io.BufferedReader):
     def read(self, size=-1):
         data = io.BufferedReader.read(self, HTTP_BUF_SIZE)
-        runHook("httpSend", len(data))
+
         return data
 
 # HTTP syncing tools
@@ -632,13 +622,11 @@ class FullSyncer(HttpSyncer):
         self.col = col
 
     def download(self):
-        runHook("sync", "download")
         localNotEmpty = self.col.db.scalar("select 1 from cards")
         self.col.close()
         cont = self.req("download")
         tpath = self.col.path + ".tmp"
         if cont == "upgradeRequired":
-            runHook("sync", "upgradeRequired")
             return
         open(tpath, "wb").write(cont)
         # check the received file is ok
@@ -657,7 +645,6 @@ class FullSyncer(HttpSyncer):
 
     def upload(self):
         "True if upload successful."
-        runHook("sync", "upload")
         # make sure it's ok before we try to upload
         if self.col.db.scalar("pragma integrity_check") != "ok":
             return False
