@@ -1,4 +1,3 @@
-import anki
 import anki.storage
 
 import ankisyncd.media

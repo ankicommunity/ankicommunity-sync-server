@@ -35,24 +35,24 @@ from webob.dec import wsgify
 from webob.exc import *
 
 import anki.db
-import anki.sync
 import anki.utils
-from anki.consts import SYNC_VER, SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
 from anki.consts import REM_CARD, REM_NOTE
 
-from ankisyncd.users import get_user_manager
-from ankisyncd.sessions import get_session_manager
 from ankisyncd.full_sync import get_full_sync_manager
+from ankisyncd.sessions import get_session_manager
+from ankisyncd.sync import Syncer, SYNC_VER, SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
+from ankisyncd.users import get_user_manager
 
 logger = logging.getLogger("ankisyncd")
 
 
-class SyncCollectionHandler(anki.sync.Syncer):
+class SyncCollectionHandler(Syncer):
     operations = ['meta', 'applyChanges', 'start', 'applyGraves', 'chunk', 'applyChunk', 'sanityCheck2', 'finish']
 
-    def __init__(self, col):
+    def __init__(self, col, session):
         # So that 'server' (the 3rd argument) can't get set
-        anki.sync.Syncer.__init__(self, col)
+        super().__init__(col)
+        self.session = session
 
     @staticmethod
     def _old_client(cv):
@@ -92,17 +92,18 @@ class SyncCollectionHandler(anki.sync.Syncer):
             return {"cont": False, "msg": "Your client doesn't support the v{} scheduler.".format(self.col.schedVer())}
 
         # Make sure the media database is open!
-        if self.col.media.db is None:
-            self.col.media.connect()
+        self.col.media.connect()
 
         return {
-            'scm': self.col.scm,
-            'ts': anki.utils.intTime(),
             'mod': self.col.mod,
+            'scm': self.col.scm,
             'usn': self.col._usn,
+            'ts': anki.utils.intTime(),
             'musn': self.col.media.lastUsn(),
+            'uname': self.session.name,
             'msg': '',
             'cont': True,
+            'hostNum': 0,
         }
 
     def usnLim(self):
@@ -130,14 +131,18 @@ class SyncCollectionHandler(anki.sync.Syncer):
         self.mergeChanges(lchg, self.rchg)
         return lchg
 
-    def sanityCheck2(self, client):
-        server = self.sanityCheck()
+    def sanityCheck2(self, client, full=None):
+        server = self.sanityCheck(full)
         if client != server:
+            logger.info(
+                f"sanity check failed with server: {server} client: {client}"
+            )
+
             return dict(status="bad", c=client, s=server)
         return dict(status="ok")
 
     def finish(self, mod=None):
-        return anki.sync.Syncer.finish(self, anki.utils.intTime(1000))
+        return super().finish(anki.utils.intTime(1000))
 
     # This function had to be put here in its entirety because Syncer.removed()
     # doesn't use self.usnLim() (which we override in this class) in queries.
@@ -176,8 +181,9 @@ class SyncCollectionHandler(anki.sync.Syncer):
 class SyncMediaHandler:
     operations = ['begin', 'mediaChanges', 'mediaSanity', 'uploadChanges', 'downloadFiles']
 
-    def __init__(self, col):
+    def __init__(self, col, session):
         self.col = col
+        self.session = session
 
     def begin(self, skey):
         return {
@@ -263,9 +269,7 @@ class SyncMediaHandler:
             self._remove_media_files(media_to_remove)
 
         if media_to_add:
-            self.col.media.db.executemany(
-                "INSERT OR REPLACE INTO media VALUES (?,?,?)", media_to_add)
-            self.col.media.db.commit()
+            self.col.media.addMedia(media_to_add)
 
         assert self.col.media.lastUsn() == oldUsn + processed_count  # TODO: move to some unit test
         return processed_count
@@ -294,7 +298,6 @@ class SyncMediaHandler:
         for filename in filenames:
             try:
                 self.col.media.syncDelete(filename)
-                self.col.media.db.commit()
             except OSError as err:
                 logger.error("Error when removing file '%s' from media dir: "
                               "%s" % (filename, str(err)))
@@ -321,10 +324,9 @@ class SyncMediaHandler:
     def mediaChanges(self, lastUsn):
         result = []
         server_lastUsn = self.col.media.lastUsn()
-        fname = csum = None
 
         if lastUsn < server_lastUsn or lastUsn == 0:
-            for fname,usn,csum, in self.col.media.db.execute("select fname,usn,csum from media order by usn desc limit ?", server_lastUsn - lastUsn):
+            for fname,usn,csum, in self.col.media.changes(lastUsn):
                 result.append([fname, usn, csum])
 
         # anki assumes server_lastUsn == result[-1][1]
@@ -376,7 +378,7 @@ class SyncUserSession:
             raise Exception("no handler for {}".format(operation))
 
         if getattr(self, attr) is None:
-            setattr(self, attr, handler_class(col))
+            setattr(self, attr, handler_class(col, self))
         handler = getattr(self, attr)
         # The col object may actually be new now! This happens when we close a collection
         # for inactivity and then later re-open it (creating a new Collection object).
@@ -394,9 +396,6 @@ class SyncApp:
         self.base_media_url  = config['base_media_url']
         self.setup_new_collection = None
 
-        self.prehooks = {}
-        self.posthooks = {}
-
         self.user_manager = get_user_manager(config)
         self.session_manager = get_session_manager(config)
         self.full_sync_manager = get_full_sync_manager(config)
@@ -407,39 +406,6 @@ class SyncApp:
             self.base_url += '/'
         if not self.base_media_url.endswith('/'):
             self.base_media_url += '/'
-
-    # backwards compat
-    @property
-    def hook_pre_sync(self):
-        return self.prehooks.get("start")
-
-    @hook_pre_sync.setter
-    def hook_pre_sync(self, value):
-        self.prehooks['start'] = value
-
-    @property
-    def hook_post_sync(self):
-        return self.posthooks.get("finish")
-
-    @hook_post_sync.setter
-    def hook_post_sync(self, value):
-        self.posthooks['finish'] = value
-
-    @property
-    def hook_upload(self):
-        return self.prehooks.get("upload")
-
-    @hook_upload.setter
-    def hook_upload(self, value):
-        self.prehooks['upload'] = value
-
-    @property
-    def hook_download(self):
-        return self.posthooks.get("download")
-
-    @hook_download.setter
-    def hook_download(self, value):
-        self.posthooks['download'] = value
 
     def generateHostKey(self, username):
         """Generates a new host key to be used by the given username to identify their session.
@@ -495,7 +461,7 @@ class SyncApp:
     def __call__(self, req):
         # Get and verify the session
         try:
-            hkey = req.POST['k']
+            hkey = req.params['k']
         except KeyError:
             hkey = None
 
@@ -547,39 +513,22 @@ class SyncApp:
 
                     self.session_manager.save(hkey, session)
                     session = self.session_manager.load(hkey, self.create_session)
-
                 thread = session.get_thread()
-
-                if url in self.prehooks:
-                    thread.execute(self.prehooks[url], [session])
-
                 result = self._execute_handler_method_in_thread(url, data, session)
-
                 # If it's a complex data type, we convert it to JSON
                 if type(result) not in (str, bytes, Response):
                     result = json.dumps(result)
-
-                if url in self.posthooks:
-                    thread.execute(self.posthooks[url], [session])
 
                 return result
 
             elif url == 'upload':
                 thread = session.get_thread()
-                if url in self.prehooks:
-                    thread.execute(self.prehooks[url], [session])
                 result = thread.execute(self.operation_upload, [data['data'], session])
-                if url in self.posthooks:
-                    thread.execute(self.posthooks[url], [session])
                 return result
 
             elif url == 'download':
                 thread = session.get_thread()
-                if url in self.prehooks:
-                    thread.execute(self.prehooks[url], [session])
                 result = thread.execute(self.operation_download, [session])
-                if url in self.posthooks:
-                    thread.execute(self.posthooks[url], [session])
                 return result
 
             # This was one of our operations but it didn't get handled... Oops!
