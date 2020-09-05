@@ -35,7 +35,7 @@ It supports Python 3 and Anki 2.1.
 
 Installing
 ----------
-   
+
 1. Install the dependencies:
 
         $ pip install -r src/requirements.txt
@@ -134,6 +134,8 @@ Unless you have set up a reverse proxy to handle encrypted connections, use
 `http` as the protocol. The port will be either the default, 27701, or
 whatever you have specified in `ankisyncd.conf` (or, if using a reverse proxy,
 whatever port you configured to accept the front-end connection).
+
+Use the same base url for both the `Sync url` and the `Media sync url`. Do **not** append `/sync` and `/msync` as the default setup does.
 
 Even though the AnkiDroid interface will request an email address, this is not
 required; it will simply be the username you configured with `ankisyncctl.py
