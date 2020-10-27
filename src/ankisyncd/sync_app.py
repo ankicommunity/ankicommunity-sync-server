@@ -113,7 +113,7 @@ class SyncCollectionHandler(Syncer):
     # server-side deletions to be returned by start
     def start(self, minUsn, lnewer, graves={"cards": [], "notes": [], "decks": []}, offset=None):
         if offset is not None:
-            raise NotImplementedError('You are using the experimental V2 scheduler, which is not supported by the server.')
+            pass
         self.maxUsn = self.col._usn
         self.minUsn = minUsn
         self.lnewer = not lnewer
