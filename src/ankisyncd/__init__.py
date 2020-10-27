@@ -1,7 +1,7 @@
 import os
 import sys
 
-_homepage = "https://github.com/tsudoko/anki-sync-server"
+_homepage = "https://github.com/ankicommunity/anki-sync-server.git"
 _unknown_version = "[unknown version]"
 
 
