@@ -4,10 +4,10 @@ description = "Anki's library code"
 name = "anki"
 optional = false
 python-versions = ">=3.7"
-version = "2.1.32"
+version = "2.1.36"
 
 [package.dependencies]
-ankirspy = "2.1.32"
+ankirspy = "2.1.36"
 beautifulsoup4 = "*"
 decorator = "*"
 distro = "*"
@@ -25,7 +25,7 @@ description = "Anki's Rust library code Python bindings"
 name = "ankirspy"
 optional = false
 python-versions = "*"
-version = "2.1.32"
+version = "2.1.36"
 
 [[package]]
 category = "dev"

@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "anki-sync-server"
-version = "0.1.0"
+version = "2.2.0"
 description = "Self-hosted Anki Sync Server."
 authors = ["Vikash Kothary <kothary.vikash@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-anki = "^2.1.32"
+anki = "^2.1.36"
 beautifulsoup4 = "^4.9.1"
 requests = "^2.24.0"
 markdown = "^3.2.2"
