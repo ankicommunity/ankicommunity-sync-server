@@ -1,5 +1,5 @@
-anki==2.1.32
-ankirspy==2.1.32
+anki==2.1.36
+ankirspy==2.1.36
 beautifulsoup4==4.9.1
 certifi==2020.6.20
 chardet==3.0.4
