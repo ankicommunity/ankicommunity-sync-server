@@ -135,7 +135,8 @@ Unless you have set up a reverse proxy to handle encrypted connections, use
 whatever you have specified in `ankisyncd.conf` (or, if using a reverse proxy,
 whatever port you configured to accept the front-end connection).
 
-Use the same base url for both the `Sync url` and the `Media sync url`. Do **not** append `/sync` and `/msync` as the default setup does.
+Use the same base url for both the `Sync url` and the `Media sync url`, but append `/msync` to
+the `Media sync url`. Do **not** append `/sync` to the `Sync url`.
 
 Even though the AnkiDroid interface will request an email address, this is not
 required; it will simply be the username you configured with `ankisyncctl.py
