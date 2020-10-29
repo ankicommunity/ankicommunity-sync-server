@@ -236,7 +236,7 @@ class SyncMediaHandler:
         # Remove media files that were removed on the client.
         media_to_remove = []
         for normname, ordinal in meta:
-            if ordinal == '':
+            if not ordinal:
                 media_to_remove.append(self._normalize_filename(normname))
 
         # Add media files that were added on the client.
