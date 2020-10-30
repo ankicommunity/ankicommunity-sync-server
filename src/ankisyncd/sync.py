@@ -185,8 +185,6 @@ from notes where %s""" % lim, self.maxUsn)
         return dict(cards=cards, notes=notes, decks=decks)
 
     def remove(self, graves):
-        # pretend to be the server so we don't set usn = -1
-        self.col.server = True
 
         # notes first, so we don't end up with duplicate graves
         self.col._remNotes(graves['notes'])
@@ -196,7 +194,6 @@ from notes where %s""" % lim, self.maxUsn)
         for oid in graves['decks']:
             self.col.decks.rem(oid, childrenToo=False)
 
-        self.col.server = False
 
     # Models
     ##########################################################################
