@@ -185,15 +185,45 @@ from notes where %s""" % lim, self.maxUsn)
         return dict(cards=cards, notes=notes, decks=decks)
 
     def remove(self, graves):
+        # remove card and the card's orphaned notes
+        self.col.remove_cards_and_orphaned_notes(graves['cards'])
 
-        # notes first, so we don't end up with duplicate graves
-        self.col._remNotes(graves['notes'])
-        # then cards
-        self.col.remCards(graves['cards'], notes=False)
-        # and decks
+        # only notes
+        self.col.remove_notes(graves['notes'])
+
+        # since level 0 deck ,we only remove deck ,but backend will delete child,it is ok, the delete
+        # will have once effect
         for oid in graves['decks']:
             self.col.decks.rem(oid)
 
+
+      # we can place non-exist grave after above delete.
+        localgcards = []
+        localgnotes = []
+        localgdecks = []
+        curs = self.col.db.execute(
+            "select oid, type from graves where usn = %d" % self.col.usn())
+
+        for oid, type in curs:
+            if type == REM_CARD:
+                localgcards.append(oid)
+            elif type == REM_NOTE:
+                localgnotes.append(oid)
+            else:
+                localgdecks.append(oid)
+
+        # n meaning non-exsiting grave in the server compared to client
+        ncards =  [ oid for oid in graves['cards'] if oid not in localgcards]
+        for oid in ncards:
+             self.col._logRem([oid], REM_CARD)
+
+        nnotes =  [ oid for oid in graves['notes'] if oid not in localgnotes]
+        for oid in nnotes:
+             self.col._logRem([oid], REM_NOTE)
+
+        ndecks =  [ oid for oid in graves['decks'] if oid not in localgdecks]
+        for oid in ndecks:
+             self.col._logRem([oid], REM_DECK)
 
     # Models
     ##########################################################################
