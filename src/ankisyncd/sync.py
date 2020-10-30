@@ -194,7 +194,7 @@ from notes where %s""" % lim, self.maxUsn)
         self.col.remCards(graves['cards'], notes=False)
         # and decks
         for oid in graves['decks']:
-            self.col.decks.rem(oid, childrenToo=False)
+            self.col.decks.rem(oid)
 
         self.col.server = False
 
