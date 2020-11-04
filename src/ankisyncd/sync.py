@@ -304,9 +304,7 @@ from notes where %s""" % lim, self.maxUsn)
         return self.col.conf
 
     def mergeConf(self, conf):
-        newConf = ConfigManager(self.col)
-        for key, value in conf.items():
-            self.col.set_config(key, value)
+        self.col.backend.set_all_config(json.dumps(conf).encode())
 
 # Wrapper for requests that tracks upload/download progress
 ##########################################################################
