@@ -57,7 +57,7 @@ class Syncer(object):
                  decks=self.getDecks(),
                  tags=self.getTags())
         if self.lnewer:
-            #d['conf'] = self.getConf()
+            d['conf'] = json.loads(self.col.backend.get_all_config())
             d['crt'] = self.col.crt
         return d
 
