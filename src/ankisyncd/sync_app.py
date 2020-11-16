@@ -245,6 +245,9 @@ class SyncMediaHandler:
         media_to_add = []
         usn = self.col.media.lastUsn()
         oldUsn = usn
+        media_dir = self.col.media.dir()
+        os.makedirs(media_dir, exist_ok=True)
+
         for i in zip_file.infolist():
             if i.filename == "_meta":  # Ignore previously retrieved metadata.
                 continue
@@ -252,7 +255,7 @@ class SyncMediaHandler:
             file_data = zip_file.read(i)
             csum = anki.utils.checksum(file_data)
             filename = self._normalize_filename(meta[int(i.filename)][0])
-            file_path = os.path.join(self.col.media.dir(), filename)
+            file_path = os.path.join(media_dir, filename)
 
             # Save file to media directory.
             with open(file_path, 'wb') as f:
