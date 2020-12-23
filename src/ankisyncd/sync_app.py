@@ -62,11 +62,12 @@ class SyncCollectionHandler(Syncer):
         note = {"alpha": 0, "beta": 0, "rc": 0}
         client, version, platform = cv.split(',')
 
-        for name in note.keys():
-            if name in version:
-                vs = version.split(name)
-                version = vs[0]
-                note[name] = int(vs[-1])
+        if 'arch' not in version:
+            for name in note.keys():
+                if name in version:
+                    vs = version.split(name)
+                    version = vs[0]
+                    note[name] = int(vs[-1])
 
         # convert the version string, ignoring non-numeric suffixes like in beta versions of Anki
         version_nosuffix = re.sub(r'[^0-9.].*$', '', version)
