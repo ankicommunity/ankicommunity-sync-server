@@ -17,6 +17,10 @@ help:
 docs: print-env
 	@${MKDOCS} ${MKDOCS_OPTION} -f docs/mkdocs.yml
 
+.PHONY: tests #: Run unit tests.
+tests:
+	@${UNITTEST} discover -s tests
+
 .PHONY: notebooks #: Run jupyter notebooks.
 notebooks:
 	@${JUPYTER} ${JUPYTER_OPTION}
