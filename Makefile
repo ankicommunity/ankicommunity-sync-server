@@ -24,3 +24,7 @@ notebooks:
 %:
 	@test -f scripts/${*}.sh
 	@${SHELL} scripts/${*}.sh
+
+.PHONY: init #: Download Python dependencies.
+init:
+	@${POETRY} install
