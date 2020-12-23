@@ -3,8 +3,8 @@
 ANKI_SERVER_NAME ?= "Anki Sync Server"
 ANKI_SERVER_VERSION ?= "v0.1.0"
 ANKI_SERVER_DESCRIPTION ?= "Self-hosted Anki Sync Server."
-ENV ?= local
 
+ENV ?= local
 -include config/.env.${ENV}
 export
 
