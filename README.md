@@ -26,9 +26,11 @@ It supports Python 3 and Anki 2.1.
  - [Installing](#installing)
  - [Installing (Docker)](#installing-docker)
  - [Setting up Anki](#setting-up-anki)
-   - [Anki 2.1](#anki-21)
-   - [Anki 2.0](#anki-20)
-   - [AnkiDroid](#ankidroid)
+    - [Anki 2.1](#anki-21)
+    - [Anki 2.0](#anki-20)
+    - [AnkiDroid](#ankidroid)
+ - [Development](#development)
+    - [Testing](#testing)
  - [ENVVAR configuration overrides](#envvar-configuration-overrides)
  - [Support for other database backends](#support-for-other-database-backends)
 </details>
@@ -141,6 +143,35 @@ the `Media sync url`. Do **not** append `/sync` to the `Sync url`.
 Even though the AnkiDroid interface will request an email address, this is not
 required; it will simply be the username you configured with `ankisyncctl.py
 adduser`.
+
+Development
+-----------
+
+### Testing
+
+0. Prerequites
+
+This project uses [GNU Make](https://www.gnu.org/software/make/) to simplify the development commands. It also uses [Poetry](https://python-poetry.org/) to manage the Python dependencies. Ensure they are installed.
+
+1. Create a config for your local environment.
+
+```bash
+$ cp config/.env.example config/.env.local
+```
+
+See [ENVVAR configuration overrides](#envvar-configuration-overrides) for more information.
+
+2. Download Python dependencies.
+
+```bash
+$ make init
+```
+
+3. Run unit tests.
+
+```bash
+$ make tests
+```
 
 ENVVAR configuration overrides
 ------------------------------

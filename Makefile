@@ -3,8 +3,8 @@
 ANKI_SERVER_NAME ?= "Anki Sync Server"
 ANKI_SERVER_VERSION ?= "v0.1.0"
 ANKI_SERVER_DESCRIPTION ?= "Self-hosted Anki Sync Server."
-ENV ?= local
 
+ENV ?= local
 -include config/.env.${ENV}
 export
 
@@ -17,6 +17,10 @@ help:
 docs: print-env
 	@${MKDOCS} ${MKDOCS_OPTION} -f docs/mkdocs.yml
 
+.PHONY: tests #: Run unit tests.
+tests:
+	@${UNITTEST} discover -s tests
+
 .PHONY: notebooks #: Run jupyter notebooks.
 notebooks:
 	@${JUPYTER} ${JUPYTER_OPTION}
@@ -24,3 +28,7 @@ notebooks:
 %:
 	@test -f scripts/${*}.sh
 	@${SHELL} scripts/${*}.sh
+
+.PHONY: init #: Download Python dependencies.
+init:
+	@${POETRY} install
