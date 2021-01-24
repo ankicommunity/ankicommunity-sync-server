@@ -2,7 +2,7 @@
 import os
 import sqlite3 as sqlite
 from anki.media import MediaManager
-from anki.storage import DB
+from anki.db import DB
 
 mediamanager_orig_funcs = {
     "findChanges": None,
@@ -26,10 +26,6 @@ def monkeypatch_mediamanager():
 
     def make_cwd_safe(original_func):
         mediamanager_orig_funcs["findChanges"] = MediaManager.findChanges
-        mediamanager_orig_funcs["mediaChangesZip"] = MediaManager.mediaChangesZip
-        mediamanager_orig_funcs["addFilesFromZip"] = MediaManager.addFilesFromZip
-        mediamanager_orig_funcs["syncDelete"] = MediaManager.syncDelete
-        mediamanager_orig_funcs["_logChanges"] = MediaManager._logChanges
 
         def wrapper(instance, *args):
             old_cwd = os.getcwd()
@@ -42,27 +38,14 @@ def monkeypatch_mediamanager():
         return wrapper
 
     MediaManager.findChanges = make_cwd_safe(MediaManager.findChanges)
-    MediaManager.mediaChangesZip = make_cwd_safe(MediaManager.mediaChangesZip)
-    MediaManager.addFilesFromZip = make_cwd_safe(MediaManager.addFilesFromZip)
-    MediaManager.syncDelete = make_cwd_safe(MediaManager.syncDelete)
-    MediaManager._logChanges = make_cwd_safe(MediaManager._logChanges)
 
 
 def unpatch_mediamanager():
     """Undoes monkey patches to Anki's MediaManager."""
 
     MediaManager.findChanges = mediamanager_orig_funcs["findChanges"]
-    MediaManager.mediaChangesZip = mediamanager_orig_funcs["mediaChangesZip"]
-    MediaManager.addFilesFromZip = mediamanager_orig_funcs["addFilesFromZip"]
-    MediaManager.syncDelete = mediamanager_orig_funcs["syncDelete"]
-    MediaManager._logChanges = mediamanager_orig_funcs["_logChanges"]
 
     mediamanager_orig_funcs["findChanges"] = None
-    mediamanager_orig_funcs["mediaChangesZip"] = None
-    mediamanager_orig_funcs["mediaChangesZip"] = None
-    mediamanager_orig_funcs["mediaChangesZip"] = None
-    mediamanager_orig_funcs["_logChanges"] = None
-
 
 def monkeypatch_db():
     """

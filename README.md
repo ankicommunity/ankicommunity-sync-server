@@ -1,6 +1,9 @@
 ankisyncd
 =========
 
+[![Documentation Status](https://readthedocs.org/projects/anki-sync-server/badge/?version=latest)](https://anki-sync-server.readthedocs.io/?badge=latest)
+[![Gitter](https://badges.gitter.im/ankicommunity/community.svg)](https://gitter.im/ankicommunity/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 [Anki][] is a powerful open source flashcard application, which helps you
 quickly and easily memorize facts over the long term utilizing a spaced
 repetition algorithm. Anki's main form is a desktop application (for Windows,
@@ -26,9 +29,6 @@ It supports Python 3 and Anki 2.1.
    - [Anki 2.1](#anki-21)
    - [Anki 2.0](#anki-20)
    - [AnkiDroid](#ankidroid)
- - [Running `ankisyncd` without `pyaudio`](#running-ankisyncd-without-pyaudio)
-   - [Anki ≥2.1.9](#anki-219)
-   - [Older versions](#older-versions)
  - [ENVVAR configuration overrides](#envvar-configuration-overrides)
  - [Support for other database backends](#support-for-other-database-backends)
 </details>
@@ -36,25 +36,9 @@ It supports Python 3 and Anki 2.1.
 Installing
 ----------
 
-0. Install Anki. The currently supported version range is 2.1.1〜2.1.11, with the
-   exception of 2.1.9<sup id="readme-fn-01b">[1](#readme-fn-01)</sup>. (Keep in
-   mind this range only applies to the Anki used by the server, clients can be
-   as old as 2.0.27 and still work.) Running the server with other versions might
-   work as long as they're not 2.0.x, but things might break, so do it at your
-   own risk. If for some reason you can't get the supported Anki version easily
-   on your system, you can use `anki-bundled` from this repo:
-
-        $ git submodule update --init
-        $ cd anki-bundled
-        $ pip install -r requirements.txt
-
-   Keep in mind `pyaudio`, a dependency of Anki, requires development headers for
-   Python 3 and PortAudio to be present before running `pip`. If you can't or
-   don't want to install these, you can try [patching Anki](#running-ankisyncd-without-pyaudio).
-
 1. Install the dependencies:
 
-        $ pip install webob
+        $ pip install -r src/requirements.txt
 
 2. Modify ankisyncd.conf according to your needs
 
@@ -62,21 +46,38 @@ Installing
 
         $ ./ankisyncctl.py adduser <username>
 
-4. Run ankisyncd:
+4. Setup a proxy to unchunk the requests.
+
+    Webob does not support the header "Transfer-Encoding: chunked" used by Anki
+    and therefore ankisyncd sees chunked requests as empty. To solve this problem
+    setup Nginx (or any other webserver of your choice) and configure it to
+    "unchunk" the requests for ankisyncd.
+
+    For example, if you use Nginx  on the same machine as ankisyncd, you first
+    have to change the port in `ankisyncd.conf` to something other than `27701`.
+    Then configure Nginx to listen on port `27701` and forward the unchunked
+    requests to ankisyncd.
+
+    An example configuration with ankisyncd running on the same machine as Nginx
+    and listening on port `27702` may look like:
+
+    ```
+    server {
+        listen      27701;
+        server_name default;
+
+        location / {
+            proxy_http_version 1.0;
+            proxy_pass         http://localhost:27702/;
+        }
+    }
+    ```
+
+5. Run ankisyncd:
 
         $ python -m ankisyncd
 
 ---
-
-<span id="readme-fn-01"></span>
-1. 2.1.9 is not supported due to [commit `95ccbfdd3679`][] introducing the
-   dependency on the `aqt` module, which depends on PyQt5. The server should
-   still work fine if you have PyQt5 installed. This has been fixed in
-   [commit `a389b8b4a0e2`][], which is a part of the 2.1.10 release.
-[↑](#readme-fn-01b)
-
-[commit `95ccbfdd3679`]: https://github.com/dae/anki/commit/95ccbfdd3679dd46f22847c539c7fddb8fa904ea
-[commit `a389b8b4a0e2`]: https://github.com/dae/anki/commit/a389b8b4a0e209023c4533a7ee335096a704079c
 
 Installing (Docker)
 -------------------
@@ -85,6 +86,18 @@ Follow [these instructions](https://github.com/kuklinistvan/docker-anki-sync-ser
 
 Setting up Anki
 ---------------
+
+### Anki 2.1.28 and above
+
+Create a new directory in [the add-ons folder][addons21] (name it something
+like ankisyncd), create a file named `__init__.py` containing the code below
+and put it in the `ankisyncd` directory.
+
+    import os
+
+    addr = "http://127.0.0.1:27701/" # put your server address here
+    os.environ["SYNC_ENDPOINT"] = addr + "sync/"
+    os.environ["SYNC_ENDPOINT_MEDIA"] = addr + "msync/"
 
 ### Anki 2.1
 
@@ -111,7 +124,7 @@ and put it in `~/Anki/addons`.
     anki.sync.SYNC_BASE = addr
     anki.sync.SYNC_MEDIA_BASE = addr + "msync/"
 
-[addons21]: https://apps.ankiweb.net/docs/addons.html#_add_on_folders
+[addons21]: https://addon-docs.ankiweb.net/#/getting-started?id=add-on-folders
 
 ### AnkiDroid
 
@@ -122,43 +135,12 @@ Unless you have set up a reverse proxy to handle encrypted connections, use
 whatever you have specified in `ankisyncd.conf` (or, if using a reverse proxy,
 whatever port you configured to accept the front-end connection).
 
-**Do not use trailing slashes.**
+Use the same base url for both the `Sync url` and the `Media sync url`, but append `/msync` to
+the `Media sync url`. Do **not** append `/sync` to the `Sync url`.
 
 Even though the AnkiDroid interface will request an email address, this is not
 required; it will simply be the username you configured with `ankisyncctl.py
 adduser`.
-
-Running `ankisyncd` without `pyaudio`
--------------------------------------
-
-`ankisyncd` doesn't use the audio recording feature of Anki, so if you don't
-want to install PortAudio, you can edit some files in the `anki-bundled`
-directory to exclude `pyaudio`:
-
-### Anki ≥2.1.9
-
-Just remove "pyaudio" from requirements.txt and you're done. This change has
-been introduced in [commit `ca710ab3f1c1`][].
-
-[commit `ca710ab3f1c1`]: https://github.com/dae/anki/commit/ca710ab3f1c1174469a3b48f1257c0fc0ce624bf
-
-### Older versions
-
-First go to `anki-bundled`, then follow one of the instructions below. They all
-do the same thing, you can pick whichever one you're most comfortable with.
-
-Manual version: remove every line past "# Packaged commands" in anki/sound.py,
-remove every line starting with "pyaudio" in requirements.txt
-
-`ed` version:
-
-    $ echo '/# Packaged commands/,$d;w' | tr ';' '\n' | ed anki/sound.py
-    $ echo '/^pyaudio/d;w' | tr ';' '\n' | ed requirements.txt
-
-`sed -i` version:
-
-    $ sed -i '/# Packaged commands/,$d' anki/sound.py
-    $ sed -i '/^pyaudio/d' requirements.txt
 
 ENVVAR configuration overrides
 ------------------------------

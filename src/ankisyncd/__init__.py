@@ -1,10 +1,7 @@
 import os
 import sys
 
-sys.path.insert(0, "/usr/share/anki")
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "anki-bundled"))
-
-_homepage = "https://github.com/tsudoko/anki-sync-server"
+_homepage = "https://github.com/ankicommunity/anki-sync-server.git"
 _unknown_version = "[unknown version]"
 
 

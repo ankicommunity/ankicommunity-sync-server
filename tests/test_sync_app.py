@@ -3,9 +3,9 @@ import os
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import MagicMock, Mock
 
-from anki.consts import SYNC_VER
-
+from ankisyncd.sync import SYNC_VER
 from ankisyncd.sync_app import SyncCollectionHandler
 from ankisyncd.sync_app import SyncUserSession
 
@@ -14,8 +14,13 @@ from collection_test_base import CollectionTestBase
 
 class SyncCollectionHandlerTest(CollectionTestBase):
     def setUp(self):
-        CollectionTestBase.setUp(self)
-        self.syncCollectionHandler = SyncCollectionHandler(self.collection)
+        super().setUp()
+        self.session = MagicMock()
+        self.session.name = 'test'
+        self.syncCollectionHandler = SyncCollectionHandler(
+            self.collection,
+            self.session
+        )
 
     def tearDown(self):
         CollectionTestBase.tearDown(self)
@@ -38,6 +43,7 @@ class SyncCollectionHandlerTest(CollectionTestBase):
             ','.join(('ankidesktop', '2.1.0', 'lin::')),
             ','.join(('ankidesktop', '2.1.6-beta2', 'lin::')),
             ','.join(('ankidesktop', '2.1.9 (dev)', 'lin::')),
+            ','.join(('ankidesktop', '2.1.26 (arch-linux-2.1.26-1)', 'lin:arch:')),
             ','.join(('ankidroid', '2.2.3', '')),
             ','.join(('ankidroid', '2.3alpha4', '')),
             ','.join(('ankidroid', '2.3alpha5', '')),
@@ -60,6 +66,7 @@ class SyncCollectionHandlerTest(CollectionTestBase):
         self.assertTrue((type(meta['ts']) == int) and meta['ts'] > 0)
         self.assertEqual(meta['mod'], self.collection.mod)
         self.assertEqual(meta['usn'], self.collection._usn)
+        self.assertEqual(meta['uname'], self.session.name)
         self.assertEqual(meta['musn'], self.collection.media.lastUsn())
         self.assertEqual(meta['msg'], '')
         self.assertEqual(meta['cont'], True)

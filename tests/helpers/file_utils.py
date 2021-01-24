@@ -10,7 +10,7 @@ import tempfile
 import unicodedata
 import zipfile
 
-from anki.consts import SYNC_ZIP_SIZE
+from ankisyncd.sync import SYNC_ZIP_SIZE
 
 
 def create_named_file(filename, file_contents=None):
