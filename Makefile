@@ -15,20 +15,28 @@ help:
 
 .PHONY: docs #: Build and serve documentation.
 docs: print-env
-	@${MKDOCS} ${MKDOCS_OPTION} -f docs/mkdocs.yml
+	@${PYTHON} -m mkdocs ${MKDOCS_OPTION} -f docs/mkdocs.yml
 
 .PHONY: tests #: Run unit tests.
 tests:
-	@${UNITTEST} discover -s tests
+	@${PYTHON} -m unittest discover -s tests
 
-.PHONY: notebooks #: Run jupyter notebooks.
-notebooks:
-	@${JUPYTER} ${JUPYTER_OPTION}
+.PHONY: run
+run:
+	@${PYTHON} -m ankisyncd
 
 %:
 	@test -f scripts/${*}.sh
-	@${SHELL} scripts/${*}.sh
+	@${BASH} scripts/${*}.sh
 
 .PHONY: init #: Download Python dependencies.
 init:
 	@${POETRY} install
+
+.PHONY: notebooks #: Run jupyter notebooks.
+notebooks:
+	@${PYTHON} -m jupyter ${JUPYTER_OPTION}
+
+.PHONY: open
+open:
+	@${OPEN} http://127.0.0.1:27701
