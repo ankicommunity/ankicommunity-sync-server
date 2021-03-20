@@ -84,7 +84,7 @@ Installing
 Installing (Docker)
 -------------------
 
-Follow [these instructions](https://github.com/kuklinistvan/docker-anki-sync-server#usage).
+Follow [these instructions](https://github.com/ankicommunity/anki-devops-services#about-this-docker-image).
 
 Setting up Anki
 ---------------
