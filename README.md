@@ -42,7 +42,7 @@ Installing
 
         $ pip install -r src/requirements.txt
 
-2. Modify ankisyncd.conf according to your needs
+2. Configuration: The config file can be found here: `https://github.com/ankicommunity/anki-sync-server/src/ankisyncd.conf`. Copying the config file from `src/ankisyncd.conf` to `src/ankisyncd/ankisyncd.conf` will allow you to configure the server. Subsequent commands refer to `/anki-sync-server/src/ankisyncd`.
 
 3. Create user:
 
@@ -87,6 +87,16 @@ Installing (Docker)
 -------------------
 
 Follow [these instructions](https://github.com/ankicommunity/anki-devops-services#about-this-docker-image).
+
+Configuration: .env.local (Environment variables)
+* The environment variables can be found here: config/.env.example. 
+* The file also includes other development variables, but the notable ones are the ones with the prefix ANKISYNCD_
+* Environment variables will override the config files values (which is why I recommend you use them)
+* This is what we use in the Docker images (see: https://github.com/ankicommunity/anki-devops-services/blob/develop/services/anki-sync-server/examples/docker-compose.yml).
+* Copying the config file from config/.env.example to config/.env.local will allow you to configure the server when using the make commands
+* You can also set it when running the server e.g. ANKISYNCD_PORT=5001 make run
+* The above two options are useful for development. But if you're only going for usage, you can also set it globally by adding it to your ~/.bashrc file e.g. export ANKISYNCD_PORT=50001
+
 
 Setting up Anki
 ---------------
