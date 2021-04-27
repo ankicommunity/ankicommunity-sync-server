@@ -121,6 +121,10 @@ class SyncCollectionHandler(Syncer):
         self.minUsn = minUsn
         self.lnewer = not lnewer
         lgraves = self.removed()
+        # convert grave:None to {'cards': [], 'notes': [], 'decks': []}
+        #     because req.POST['data'] returned value of grave is None     
+        if graves==None:
+            graves={'cards': [], 'notes': [], 'decks': []}
         self.remove(graves)
         return lgraves
 
