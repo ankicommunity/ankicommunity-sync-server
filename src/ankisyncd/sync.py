@@ -10,6 +10,7 @@ import random
 import requests
 import json
 import os
+from typing import List
 
 from anki.db import DB, DBError
 from anki.utils import ids2str, intTime, platDesc, checksum, devMode
@@ -18,6 +19,7 @@ from anki.config import ConfigManager
 from anki.utils import versionWithBuild
 import anki
 from anki.lang import ngettext
+from anki.tags import TagManager
 
 
 # https://github.com/ankitects/anki/blob/04b1ca75599f18eb783a8bf0bdeeeb32362f4da0/rslib/src/sync/http_client.rs#L11
@@ -57,7 +59,8 @@ class Syncer(object):
                  decks=self.getDecks(),
                  tags=self.getTags())
         if self.lnewer:
-            d['conf'] = json.loads(self.col.backend.get_all_config())
+#             backend to _backend
+            d['conf'] = json.loads(self.col._backend.get_all_config())
             d['crt'] = self.col.crt
         return d
 
@@ -65,7 +68,8 @@ class Syncer(object):
         # then the other objects
         self.mergeModels(rchg['models'])
         self.mergeDecks(rchg['decks'])
-        self.mergeTags(rchg['tags'])
+#         .mergeTags():register() is not working, so comment
+#         self.mergeTags(rchg['tags'])
         if 'conf' in rchg:
             self.mergeConf(rchg['conf'])
         # this was left out of earlier betas
@@ -74,8 +78,9 @@ class Syncer(object):
         self.prepareToChunk()
 
     def sanityCheck(self, full):
-        if not self.col.basicCheck():
-            return "failed basic check"
+#         comment as removed in anki module
+#         if not self.col.basicCheck():
+#             return "failed basic check"
         for t in "cards", "notes", "revlog", "graves":
             if self.col.db.scalar(
                 "select count() from %s where usn = -1" % t):
@@ -83,9 +88,10 @@ class Syncer(object):
         for g in self.col.decks.all():
             if g['usn'] == -1:
                 return "deck had usn = -1"
-        for t, usn in self.col.tags.allItems():
-            if usn == -1:
-                return "tag had usn = -1"
+#             comment because .tags.allItems() only return tags,not usn
+#         for t, usn in self.col.tags.allItems():
+#             if usn == -1:
+#                 return "tag had usn = -1"
         found = False
         for m in self.col.models.all():
             if m['usn'] == -1:
@@ -276,7 +282,11 @@ from notes where %s""" % lim, self.maxUsn)
 
     # Tags
     ##########################################################################
-
+    # List of tag
+#     added as removed in anki module
+    def allItems(self) -> List[str]:
+        new_tagsmanager=TagManager(self.col)
+        return [t for t in new_tagsmanager.all()]
     def getTags(self):
         tags = []
         for t, usn in self.col.tags.allItems():
@@ -285,9 +295,9 @@ from notes where %s""" % lim, self.maxUsn)
                 tags.append(t)
         self.col.tags.save()
         return tags
-
-    def mergeTags(self, tags):
-        self.col.tags.register(tags, usn=self.maxUsn)
+# register() is not working ,so comment
+#     def mergeTags(self, tags):
+#         self.col.tags.register(tags, usn=self.maxUsn)
 
     # Cards/notes/revlog
     ##########################################################################
@@ -331,7 +341,11 @@ from notes where %s""" % lim, self.maxUsn)
         return self.col.conf
 
     def mergeConf(self, conf):
-        self.col.backend.set_all_config(json.dumps(conf).encode())
+#         .set_all_config is removed 
+        newConf = ConfigManager(self.col)
+        for key, value in conf.items():
+            newConf.set(key, value)
+#         self.col.backend.set_all_config(json.dumps(conf).encode())
 
 # Wrapper for requests that tracks upload/download progress
 ##########################################################################
