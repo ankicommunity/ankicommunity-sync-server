@@ -182,8 +182,13 @@ class SyncCollectionHandler(Syncer):
         ]
 
     def getTags(self):
-        return [t for t, usn in self.col.tags.allItems()
-                if usn >= self.minUsn]
+#         .tags.allItems() was removed
+# No checking if usn >= self.minUsn
+         # clone fn allItems to sync.py because of remove in anki module
+        # usn is removed
+        return [t for t in self.allItems()] 
+#         return [t for t, usn in self.col.tags.allItems()
+#                 if usn >= self.minUsn]
 
 class SyncMediaHandler:
     operations = ['begin', 'mediaChanges', 'mediaSanity', 'uploadChanges', 'downloadFiles']
