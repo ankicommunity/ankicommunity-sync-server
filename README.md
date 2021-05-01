@@ -100,6 +100,11 @@ and put it in the `ankisyncd` directory.
     addr = "http://127.0.0.1:27701/" # put your server address here
     os.environ["SYNC_ENDPOINT"] = addr + "sync/"
     os.environ["SYNC_ENDPOINT_MEDIA"] = addr + "msync/"
+#### anki 2.1.41-2.1.43
+this short message is temprarily useful while upload function bug is not fixed.
+After creating a new profile and entering it,fist,Add a card whose contents or notes are casual.
+Second,Hit sync button and choose download from ankiweb (not upload).
+After that,you can freely enjoy edit cards and syncing .may 
 
 ### Anki 2.1
 
