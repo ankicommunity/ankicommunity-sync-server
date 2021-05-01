@@ -178,7 +178,7 @@ class SyncCollectionHandler(Syncer):
         ]
 
     def getTags(self):
-        return [t for t, usn in self.col.tags.allItems()
+        return [t for t, usn in self.allItems()
                 if usn >= self.minUsn]
 
 class SyncMediaHandler:
