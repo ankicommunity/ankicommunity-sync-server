@@ -64,15 +64,32 @@ Installing
     and listening on port `27702` may look like:
 
     ```
-    server {
-        listen      27701;
-        server_name default;
+    worker_processes  1;
 
-        location / {
-            proxy_http_version 1.0;
-            proxy_pass         http://localhost:27702/;
-        }
-    }
+events {
+worker_connections  1024;
+}
+
+http {
+include       mime.types;
+default_type  application/octet-stream;
+sendfile        on;
+
+keepalive_timeout  65;
+client_max_body_size 2048m;
+
+server {
+listen       27701;
+server_name   default;
+
+
+location / {
+proxy_http_version 1.0;
+proxy_pass         http://127.0.0.1:27702/;
+}
+}
+
+}
     ```
 
 5. Run ankisyncd:
