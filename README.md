@@ -80,6 +80,7 @@ client_max_body_size 2048m;
 
 server {
 listen       27701;
+# server_name should be modified (LAN eg: 192.168.1.43 )
 server_name   default;
 
 
