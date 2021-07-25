@@ -61,35 +61,17 @@ Installing
     requests to ankisyncd.
 
     An example configuration with ankisyncd running on the same machine as Nginx
-    and listening on port `27702` may look like:
+    and listening on port `27702` may look like ([entire config template click me](https://github.com/ankicommunity/anki-sync-server/blob/develop/docs/nginx.conf)):
 
     ```
-    worker_processes  1;
-
-events {
-worker_connections  1024;
-}
-
-http {
-include       mime.types;
-default_type  application/octet-stream;
-sendfile        on;
-
-keepalive_timeout  65;
-client_max_body_size 2048m;
-
 server {
 listen       27701;
-# server_name should be modified (LAN eg: 192.168.1.43 )
 server_name   default;
-
 
 location / {
 proxy_http_version 1.0;
 proxy_pass         http://127.0.0.1:27702/;
 }
-}
-
 }
     ```
 
