@@ -124,7 +124,15 @@ select id from notes where mid = ?) limit 1"""
                 return "model had usn = -1"
         if found:
             self.col.models.save()
-        self.col.sched.reset()
+        # relace self.col.sched.reset() with following code 
+        # in fn reset() ,self.col.decks.update_active() will  go away as
+        # anki module 2.1.44 comments,so remove this sentence
+        self.col.sched._updateCutoff()
+        self.col.sched._reset_counts()
+        self.col.sched._resetLrn()
+        self.col.sched._resetRev()
+        self.col.sched._resetNew()
+        self.col.sched._haveQueues = True
         # check for missing parent decks
         #self.col.sched.deckDueList()
         # return summary of deck
