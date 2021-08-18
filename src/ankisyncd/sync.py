@@ -106,27 +106,27 @@ select id from notes where mid = ?) limit 1"""
         return True
     
     def sanityCheck(self, full):
-        if not self.basicCheck():
-            return "failed basic check"
-        for t in "cards", "notes", "revlog", "graves":
-            if self.col.db.scalar(
-                "select count() from %s where usn = -1" % t):
-                return "%s had usn = -1" % t
-        for g in self.col.decks.all():
-            if g['usn'] == -1:
-                return "deck had usn = -1"
-        for t, usn in self.allItems():
-            if usn == -1:
-                return "tag had usn = -1"
-        found = False
-        for m in self.col.models.all():
-            if m['usn'] == -1:
-                return "model had usn = -1"
-        if found:
-            self.col.models.save()
-        self.col.sched.reset()
-        # check for missing parent decks
-        #self.col.sched.deckDueList()
+        # basicCheck() seems to have no effect on this procedure,
+        # if necessary  remove comment
+        # if not self.basicCheck():
+        #     return "failed basic check"
+        # reference to server.rs
+        tables=["cards", 
+            "notes",
+            "revlog",
+            "graves",
+            "decks",
+            "deck_config",
+            "tags",
+            "notetypes",
+        ]
+        for tb in tables:
+            # removed
+            print(self.col.db.scalar(f'select null from {tb} where usn=-1'))
+            if  self.col.db.scalar(f'select null from {tb} where usn=-1'):
+                return f'table had usn=-1: {tb}'
+
+        self.col.sched.reset() 
         # return summary of deck
         return [
             list(self.col.sched.counts()),
