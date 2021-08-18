@@ -148,7 +148,7 @@ class SyncCollectionHandler(Syncer):
             return dict(status="bad", c=client, s=server)
         return dict(status="ok")
 
-    def finish(self, mod=None):
+    def finish(self):
         return super().finish(anki.utils.intTime(1000))
 
     # This function had to be put here in its entirety because Syncer.removed()
