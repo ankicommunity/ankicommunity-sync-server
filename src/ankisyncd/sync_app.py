@@ -97,8 +97,8 @@ class SyncCollectionHandler(Syncer):
 
         return {
             'mod': self.col.mod,
-            'scm': self.col.scm,
-            'usn': self.col._usn,
+            'scm': self.scm(),
+            'usn': self.col.usn(),
             'ts': anki.utils.intTime(),
             'musn': self.col.media.lastUsn(),
             'uname': self.session.name,
@@ -117,13 +117,13 @@ class SyncCollectionHandler(Syncer):
         # Since now have not thorougly test the V2 scheduler, we leave this comments here, and 
         # just enable the V2 scheduler in the serve code.    
 
-        self.maxUsn = self.col._usn
+        self.maxUsn = self.col.usn()
         self.minUsn = minUsn
         self.lnewer = not lnewer
         lgraves = self.removed()
         # convert grave:None to {'cards': [], 'notes': [], 'decks': []}
         #     because req.POST['data'] returned value of grave is None     
-        if graves==None:
+        if graves is None:
             graves={'cards': [], 'notes': [], 'decks': []}
         self.remove(graves)
         return lgraves
@@ -178,7 +178,7 @@ class SyncCollectionHandler(Syncer):
     def getDecks(self):
         return [
             [g for g in self.col.decks.all() if g['usn'] >= self.minUsn],
-            [g for g in self.col.decks.allConf() if g['usn'] >= self.minUsn]
+            [g for g in self.col.decks.all_config() if g['usn'] >= self.minUsn]
         ]
 
     def getTags(self):

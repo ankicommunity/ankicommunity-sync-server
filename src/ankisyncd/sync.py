@@ -66,7 +66,8 @@ class Syncer(object):
         # then the other objects
         self.mergeModels(rchg['models'])
         self.mergeDecks(rchg['decks'])
-        self.mergeTags(rchg['tags'])
+        # comment sentence,no effect on process,and register() no longer used
+        # self.mergeTags(rchg['tags'])
         if 'conf' in rchg:
             self.mergeConf(rchg['conf'])
         # this was left out of earlier betas
@@ -225,8 +226,7 @@ from notes where %s""" % lim, self.maxUsn)
 
         # since level 0 deck ,we only remove deck ,but backend will delete child,it is ok, the delete
         # will have once effect
-        for oid in graves['decks']:
-            self.col.decks.rem(oid)
+        self.col.decks.remove(graves['decks']) 
 
 
       # we can place non-exist grave after above delete.
@@ -342,7 +342,7 @@ from notes where %s""" % lim, self.maxUsn)
         for r in data:
             if r[0] not in lmods or lmods[r[0]] < r[modIdx]:
                 update.append(r)
-        self.col.log(table, data)
+        print(table, data)
         return update
 
     def mergeCards(self, cards):
@@ -356,7 +356,7 @@ from notes where %s""" % lim, self.maxUsn)
         self.col.db.executemany(
             "insert or replace into notes values (?,?,?,?,?,?,?,?,?,?,?)",
             rows)
-        self.col.updateFieldCache([f[0] for f in rows])
+        self.col.after_note_updates([f[0] for f in rows],False)
 
     # Col config
     ##########################################################################
