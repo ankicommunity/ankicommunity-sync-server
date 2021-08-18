@@ -40,7 +40,26 @@ class Syncer(object):
     def __init__(self, col, server=None):
         self.col = col
         self.server = server
+     # --------------------------------------------------
+    # new added functions related to Syncer:
+    #  these are removed from latest anki module
+    def scm(self):
+        """return schema"""
+        scm=self.col.db.scalar("select scm from col")
+        return scm
+    def increment_usn(self):
+        """usn+1 in db"""
+        self.col.db.execute("update col set usn = usn + 1")
+    def set_modified_time(self,now:int):
+        self.col.db.execute("update col set mod=?", now)
+    def set_last_sync(self,now:int):
+        self.col.db.execute("update col set ls = ?", now)
 
+
+
+
+    # end here-----------------------------------------------
+    # -------------------------------------------------------
     def meta(self):
         return dict(
             mod=self.col.mod,
@@ -142,13 +161,16 @@ select id from notes where mid = ?) limit 1"""
     def usnLim(self):
         return "usn = -1"
 
-    def finish(self, mod=None):
-        self.col.ls = mod
-        self.col._usn = self.maxUsn + 1
+    def finish(self, now=None):
+        if now is not None:
+            # reference to server.rs
         # ensure we save the mod time even if no changes made
-        self.col.db.mod = True
-        self.col.save(mod=mod)
-        return mod
+            self.set_modified_time(now)
+            self.set_last_sync(now)
+            self.increment_usn()
+            self.col.save()
+            # now is None not happen
+        return now
 
     # Chunked syncing
     ##########################################################################
