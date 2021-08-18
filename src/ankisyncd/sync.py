@@ -121,8 +121,6 @@ select id from notes where mid = ?) limit 1"""
             "notetypes",
         ]
         for tb in tables:
-            # removed
-            print(self.col.db.scalar(f'select null from {tb} where usn=-1'))
             if  self.col.db.scalar(f'select null from {tb} where usn=-1'):
                 return f'table had usn=-1: {tb}'
 
