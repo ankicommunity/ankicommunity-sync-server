@@ -138,8 +138,8 @@ class SyncCollectionHandler(Syncer):
         self.mergeChanges(lchg, self.rchg)
         return lchg
 
-    def sanityCheck2(self, client, full=None):
-        server = self.sanityCheck(full)
+    def sanityCheck2(self, client):
+        server = self.sanityCheck()
         if client != server:
             logger.info(
                 f"sanity check failed with server: {server} client: {client}"
