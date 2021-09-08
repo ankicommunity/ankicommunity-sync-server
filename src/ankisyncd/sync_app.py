@@ -33,11 +33,12 @@ from sqlite3 import dbapi2 as sqlite
 from webob import Response
 from webob.dec import wsgify
 from webob.exc import *
+import urllib.parse
 
+from anki.collection import Collection
 import anki.db
 import anki.utils
 from anki.consts import REM_CARD, REM_NOTE
-
 from ankisyncd.full_sync import get_full_sync_manager
 from ankisyncd.sessions import get_session_manager
 from ankisyncd.sync import Syncer, SYNC_VER, SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
@@ -97,8 +98,8 @@ class SyncCollectionHandler(Syncer):
 
         return {
             'mod': self.col.mod,
-            'scm': self.col.scm,
-            'usn': self.col._usn,
+            'scm': self.scm(),
+            'usn': self.col.usn(),
             'ts': anki.utils.intTime(),
             'musn': self.col.media.lastUsn(),
             'uname': self.session.name,
@@ -117,19 +118,20 @@ class SyncCollectionHandler(Syncer):
         # Since now have not thorougly test the V2 scheduler, we leave this comments here, and 
         # just enable the V2 scheduler in the serve code.    
 
-        self.maxUsn = self.col._usn
+        self.maxUsn = self.col.usn()
         self.minUsn = minUsn
         self.lnewer = not lnewer
+        #  fetch local/server graves
         lgraves = self.removed()
-        # convert grave:None to {'cards': [], 'notes': [], 'decks': []}
-        #     because req.POST['data'] returned value of grave is None     
-        if graves==None:
-            graves={'cards': [], 'notes': [], 'decks': []}
-        self.remove(graves)
+        #  handle AnkiDroid using old protocol
+        # Only if Operations like deleting deck are performed on Ankidroid
+        # can (client) graves is not None
+        if graves is not None:
+            self.apply_graves(graves,self.maxUsn)
         return lgraves
 
     def applyGraves(self, chunk):
-        self.remove(chunk)
+        self.apply_graves(chunk,self.maxUsn)
 
     def applyChanges(self, changes):
         self.rchg = changes
@@ -138,8 +140,8 @@ class SyncCollectionHandler(Syncer):
         self.mergeChanges(lchg, self.rchg)
         return lchg
 
-    def sanityCheck2(self, client, full=None):
-        server = self.sanityCheck(full)
+    def sanityCheck2(self, client):
+        server = self.sanityCheck()
         if client != server:
             logger.info(
                 f"sanity check failed with server: {server} client: {client}"
@@ -148,7 +150,7 @@ class SyncCollectionHandler(Syncer):
             return dict(status="bad", c=client, s=server)
         return dict(status="ok")
 
-    def finish(self, mod=None):
+    def finish(self):
         return super().finish(anki.utils.intTime(1000))
 
     # This function had to be put here in its entirety because Syncer.removed()
@@ -178,7 +180,7 @@ class SyncCollectionHandler(Syncer):
     def getDecks(self):
         return [
             [g for g in self.col.decks.all() if g['usn'] >= self.minUsn],
-            [g for g in self.col.decks.allConf() if g['usn'] >= self.minUsn]
+            [g for g in self.col.decks.all_config() if g['usn'] >= self.minUsn]
         ]
 
     def getTags(self):
@@ -338,7 +340,6 @@ class SyncMediaHandler:
         if lastUsn < server_lastUsn or lastUsn == 0:
             for fname,usn,csum, in self.col.media.changes(lastUsn):
                 result.append([fname, usn, csum])
-
         # anki assumes server_lastUsn == result[-1][1]
         # ref: anki/sync.py:720 (commit cca3fcb2418880d0430a5c5c2e6b81ba260065b7)
         result.reverse()
@@ -394,7 +395,125 @@ class SyncUserSession:
         # for inactivity and then later re-open it (creating a new Collection object).
         handler.col = col
         return handler
+class Requests(object):
+    '''parse request message from client'''
+    def __init__(self,environ: dict):
+        self.query_string=environ['QUERY_STRING']
+        self.environ=environ
+        self.data=None
+    @property
+    def path(self):
+        return self.environ['PATH_INFO']
+    @property
+    def parse_request(self):
+        '''Return a MultiDict containing all the variables from a form
+        request.'''
+        env = self.environ
+        content_len= env.get('CONTENT_LENGTH', '0')
+        input = env.get('wsgi.input')
+        length = 0 if content_len == '' else int(content_len)
+        body=b''
+        d={}
+       
+        if length == 0:
+            if input is None:
+                return
+            if env.get('HTTP_TRANSFER_ENCODING','0') == 'chunked':
+                bd=b''
+                size = int(input.readline(),16)
+                while size > 0:
+                    bd += (input.read(size+2)).strip()
+                    size = int(input.readline(),16)
+                repeat=re.findall(b'^(.*?)Content-Disposition: form-data; name="data"',bd,re.MULTILINE)
+                items=re.split(repeat,bd)
+                # del first ,last item
+                items.pop()
+                items.pop(0)
+                for item in items:
+                    if b'name="data"' in item:
+                        dt=item.strip(b'Content-Disposition: form-data; name="data"; filename="data"')
+                        d['data']=dt
+                        continue
+                    key=re.findall(b'name="(.*?)"',item)[0].decode('utf-8')
+                    v=item[item.rfind(b'"')+1:].decode('utf-8')
+                    d[key]=v
+                return d
+                
+               
+            if self.query_string !='':
+                # GET method
+                body=self.query_string
+                d=urllib.parse.parse_qs(body)
+                for k,v in d.items():
+                    d[k]=''.join(v)
+                return d
 
+             # request server with web server
+            if self.path=='/' :
+                d= {'url':b'Anki Sync Server'}
+                return d
+            if self.path=='/favicon.ico' :
+                d= {'url':b''}
+                return d
+  
+        else:
+            body = env['wsgi.input'].read(length)
+        
+        if body is None or body ==b'':
+            return 'empty body'
+            # process body to dict
+        repeat=body.splitlines()[0]
+        items=re.split(repeat,body)
+        # del first ,last item
+        items.pop()
+        items.pop(0)
+        for item in items:
+            if b'name="data"' in item:
+                bt=None
+                # remove \r\n 
+                if b'application/octet-stream' in item:
+                    # Ankidroid case
+                    item=re.sub(b'Content-Disposition: form-data; name="data"; filename="data"',b'',item)
+                    item=re.sub(b'Content-Type: application/octet-stream',b'',item)
+                    bt=item.strip()
+                else:
+                    # PKzip file stream and others
+                    item=re.sub(b'Content-Disposition: form-data; name="data"; filename="data"',b'',item)
+                    bt=item.strip()
+                d['data']=bt
+                continue
+            item=re.sub(b'\r\n',b'',item,flags=re.MULTILINE)
+            key=re.findall(b'name="(.*?)"',item)[0].decode('utf-8')
+            v=item[item.rfind(b'"')+1:].decode('utf-8')
+            d[key]=v
+        return d
+    @property
+    def params(self):
+        """
+        A dictionary-like object containing both the parameters from
+        the query string and request body.
+        """
+        
+        r=self.parse_request
+        if r is None :
+            return 'POST or GET is None'
+        else:
+            
+            params = MultiDict(r)
+        return params
+class MultiDict(object):
+    def __init__(self, *dicts):
+        for d in dicts:
+            if not isinstance(d,dict):
+                raise TypeError(d)
+        self.dicts=dicts
+    def __getitem__(self,key):
+        for d in self.dicts:
+            try:
+                value = d[key]
+                return value
+            except KeyError:
+                raise KeyError(key)
 class SyncApp:
     valid_urls = SyncCollectionHandler.operations + SyncMediaHandler.operations + ['hostKey', 'upload', 'download']
 
@@ -467,11 +586,12 @@ class SyncApp:
         # local copy in Anki
         return self.full_sync_manager.download(col, session)
 
-    @wsgify
-    def __call__(self, req):
+    def __call__(self, env,start_resp):
+        req=Requests(env)
+        p=req.params
         # Get and verify the session
         try:
-            hkey = req.params['k']
+            hkey = p['k']
         except KeyError:
             hkey = None
 
@@ -479,18 +599,18 @@ class SyncApp:
 
         if session is None:
             try:
-                skey = req.POST['sk']
+                skey = p['sk']
                 session = self.session_manager.load_from_skey(skey, self.create_session)
             except KeyError:
                 skey = None
 
         try:
-            compression = int(req.POST['c'])
+            compression = int(p['c'])
         except KeyError:
             compression = 0
 
         try:
-            data = req.POST['data'].file.read()
+            data = p['data']
             data = self._decode_data(data, compression)
         except KeyError:
             data = {}
@@ -503,7 +623,8 @@ class SyncApp:
             if url == 'hostKey':
                 result = self.operation_hostKey(data.get("u"), data.get("p"))
                 if result:
-                    return json.dumps(result)
+                    resp=Response(json.dumps(result))
+                    return resp(env,start_resp)
                 else:
                     # TODO: do I have to pass 'null' for the client to receive None?
                     raise HTTPForbidden('null')
@@ -529,17 +650,20 @@ class SyncApp:
                 if type(result) not in (str, bytes, Response):
                     result = json.dumps(result)
 
-                return result
+                resp=Response(result)
+                return resp(env,start_resp)
 
             elif url == 'upload':
                 thread = session.get_thread()
                 result = thread.execute(self.operation_upload, [data['data'], session])
-                return result
+                resp=Response(json.dumps(result))
+                return resp(env,start_resp)
 
             elif url == 'download':
                 thread = session.get_thread()
                 result = thread.execute(self.operation_download, [session])
-                return result
+                resp=Response(result)
+                return resp(env,start_resp)
 
             # This was one of our operations but it didn't get handled... Oops!
             raise HTTPInternalServerError()
@@ -563,9 +687,10 @@ class SyncApp:
             if type(result) not in (str, bytes):
                 result = json.dumps(result)
 
-            return result
-
-        return "Anki Sync Server"
+            resp=Response(result)
+            return resp(env,start_resp)
+        resp=Response(p['url'])
+        return resp(env,start_resp)
 
     @staticmethod
     def _execute_handler_method_in_thread(method_name, keyword_args, session):
@@ -631,5 +756,5 @@ def main():
     finally:
         shutdown()
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
     main()
