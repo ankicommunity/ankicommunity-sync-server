@@ -31,7 +31,6 @@ from configparser import ConfigParser
 from sqlite3 import dbapi2 as sqlite
 
 from webob import Response
-from webob.dec import wsgify
 from webob.exc import *
 import urllib.parse
 
