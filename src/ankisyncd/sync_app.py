@@ -447,7 +447,7 @@ class Requests(object):
                     d[k]=''.join(v)
                 return d
 
-             # request server with web server
+             # request server with web browser
             if self.path=='/' :
                 d= {'url':b'Anki Sync Server'}
                 return d
