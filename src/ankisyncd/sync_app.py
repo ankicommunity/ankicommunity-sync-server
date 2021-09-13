@@ -424,7 +424,6 @@ class Requests(object):
                 body =input.read()
                 repeat=body.splitlines()[1]
                 items=body.split(repeat)
-               
                 items.pop()
                 items.pop(0)
                 # parse data
@@ -662,8 +661,6 @@ class SyncApp:
             elif url == 'upload':
                 thread = session.get_thread()
                 result = thread.execute(self.operation_upload, [data['data'], session])
-                print('#### from call')
-                print(result)
                 resp=Response(result)
                 return resp(env,start_resp)
                 
@@ -698,7 +695,6 @@ class SyncApp:
 
             resp=Response(result)
             return resp(env,start_resp)
-        print(p)
         resp=Response(p['url'])
         return resp(env,start_resp)
 
