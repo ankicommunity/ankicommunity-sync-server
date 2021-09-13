@@ -141,13 +141,15 @@ class SyncCollectionHandler(Syncer):
 
     def sanityCheck2(self, client):
         server = self.sanityCheck()
+        status="ok"
         if client != server:
             logger.info(
                 f"sanity check failed with server: {server} client: {client}"
             )
+            status='bad'
 
-            return dict(status="bad", c=client, s=server)
-        return dict(status="ok")
+        return dict(status, c=client, s=server)
+
 
     def finish(self):
         return super().finish(anki.utils.intTime(1000))
@@ -418,13 +420,12 @@ class Requests(object):
             if input is None:
                 return
             if env.get('HTTP_TRANSFER_ENCODING','0') == 'chunked':
-                bd=b''
                 size = int(input.readline(),16)
                 while size > 0:
-                    bd += (input.read(size+2)).strip()
+                    body += (input.read(size+2)).strip()
                     size = int(input.readline(),16)
-                repeat=re.findall(b'^(.*?)Content-Disposition: form-data; name="data"',bd,re.MULTILINE)
-                items=re.split(repeat,bd)
+                repeat=re.findall(b'^(.*?)Content-Disposition: form-data; name="data"',body,re.MULTILINE)[0]
+                items=re.split(repeat,body)
                 # del first ,last item
                 items.pop()
                 items.pop(0)
@@ -655,6 +656,8 @@ class SyncApp:
             elif url == 'upload':
                 thread = session.get_thread()
                 result = thread.execute(self.operation_upload, [data['data'], session])
+                print('#### from call')
+                print(result)
                 resp=Response(json.dumps(result))
                 return resp(env,start_resp)
 
