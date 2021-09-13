@@ -151,7 +151,7 @@ select id from notes where mid = ?) limit 1"""
             self.col.db.scalar("select count() from graves"),
             len(self.col.models.all()),
             len(self.col.decks.all()),
-            len(self.col.decks.allConf()),
+            len(self.col.decks.all_config()),
         ]
 
     def usnLim(self):

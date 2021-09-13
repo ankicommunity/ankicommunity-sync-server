@@ -23,7 +23,7 @@ class FullSyncManager:
                 "Integrity check failed for uploaded collection database file."
             )
 
-    def upload(self, col: Collection, data: bytes, session) -> str:
+    def upload(self, col: Collection, data: bytes, session) :
         """
         Uploads a sqlite database from the client to the sync server.
 
