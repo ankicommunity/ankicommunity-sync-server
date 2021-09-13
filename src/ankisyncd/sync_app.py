@@ -403,7 +403,7 @@ class Requests(object):
         self.environ=environ
         self.data=None
     @property
-    def path(self):
+    def path(self)-> str:
         return self.environ['PATH_INFO']
     @property
     def parse_request(self):
@@ -502,18 +502,18 @@ class Requests(object):
             params = MultiDict(r)
         return params
 class MultiDict(object):
-    def __init__(self, *dicts):
-        for d in dicts:
-            if not isinstance(d,dict):
-                raise TypeError(d)
+    def __init__(self, dicts: dict):
+        if not isinstance(dicts,dict):
+            raise TypeError(dicts)
         self.dicts=dicts
+    def __str__(self) -> str:
+        return dict.__str__(self.dicts)
     def __getitem__(self,key):
-        for d in self.dicts:
-            try:
-                value = d[key]
-                return value
-            except KeyError:
-                raise KeyError(key)
+        try:
+            value = self.dicts[key]
+            return value
+        except KeyError:
+            raise KeyError(key)
 class SyncApp:
     valid_urls = SyncCollectionHandler.operations + SyncMediaHandler.operations + ['hostKey', 'upload', 'download']
 
@@ -635,8 +635,8 @@ class SyncApp:
             if url in SyncCollectionHandler.operations + SyncMediaHandler.operations:
                 # 'meta' passes the SYNC_VER but it isn't used in the handler
                 if url == 'meta':
-                    if session.skey == None and 's' in req.POST:
-                        session.skey = req.POST['s']
+                    if session.skey == None and 's' in p:
+                        session.skey = p['s']
                     if 'v' in data:
                         session.version = data['v']
                     if 'cv' in data:
