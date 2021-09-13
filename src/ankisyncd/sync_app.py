@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from datetime import date
 import gzip
 import hashlib
 import io
@@ -420,22 +421,27 @@ class Requests(object):
             if input is None:
                 return
             if env.get('HTTP_TRANSFER_ENCODING','0') == 'chunked':
-                size = int(input.readline(),16)
-                while size > 0:
-                    body += (input.read(size+2)).strip()
-                    size = int(input.readline(),16)
-                repeat=re.findall(b'^(.*?)Content-Disposition: form-data; name="data"',body,re.MULTILINE)[0]
-                items=re.split(repeat,body)
-                # del first ,last item
+                body =input.read()
+                repeat=body.splitlines()[1]
+                items=body.split(repeat)
+               
                 items.pop()
                 items.pop(0)
-                for item in items:
-                    if b'name="data"' in item:
-                        dt=item.strip(b'Content-Disposition: form-data; name="data"; filename="data"')
-                        d['data']=dt
-                        continue
-                    key=re.findall(b'name="(.*?)"',item)[0].decode('utf-8')
-                    v=item[item.rfind(b'"')+1:].decode('utf-8')
+                # parse data
+                data_raw=items[0]
+                data_raw_li=data_raw.splitlines()
+                data1=data_raw_li[7]
+                cd=data_raw_li[3]
+                start_len=len(data_raw_li[2])+len(cd)+len(data1)+len(data_raw_li[8])+len(data_raw_li[6])+len(b'\r\n')*9 
+                end_len=-len(data_raw_li[-1])-len(data_raw_li[-4])-len(b'\r\n')*5
+                data=data1+data_raw[start_len:end_len]
+                d['data']=data
+                # 
+                others=items[1:]
+                for i in others:
+                    i=i.splitlines()
+                    key=re.findall(b'name="(.*?)"',i[3])[0].decode('utf-8')
+                    v=i[-5].decode('utf-8')
                     d[key]=v
                 return d
                 
@@ -658,8 +664,9 @@ class SyncApp:
                 result = thread.execute(self.operation_upload, [data['data'], session])
                 print('#### from call')
                 print(result)
-                resp=Response(json.dumps(result))
+                resp=Response(result)
                 return resp(env,start_resp)
+                
 
             elif url == 'download':
                 thread = session.get_thread()
@@ -691,6 +698,7 @@ class SyncApp:
 
             resp=Response(result)
             return resp(env,start_resp)
+        print(p)
         resp=Response(p['url'])
         return resp(env,start_resp)
 
