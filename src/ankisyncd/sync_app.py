@@ -14,22 +14,17 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from datetime import date
 import gzip
-import hashlib
 import io
 import json
 import logging
 import os
 import random
 import re
-import string
 import sys
 import time
 import unicodedata
 import zipfile
-from configparser import ConfigParser
-from sqlite3 import dbapi2 as sqlite
 
 from webob import Response
 from webob.exc import *
@@ -420,30 +415,35 @@ class Requests(object):
             if input is None:
                 return
             if env.get('HTTP_TRANSFER_ENCODING','0') == 'chunked':
-                body =input.read()
-                repeat=body.splitlines()[1]
-                items=body.split(repeat)
+                # method readlines() and read(no len) will block the process
+                leng=int(input.readline(),16)
+                while leng >0:
+                    body += input.read(leng+2)
+                    leng = int(input.readline(),16)
+                
+                boundary=body.splitlines()[0]
+                items=body.split(boundary)
                 items.pop()
                 items.pop(0)
                 # parse data
-                data_raw=items[0]
+                data_raw=items[0].strip()
                 data_raw_li=data_raw.splitlines()
-                data1=data_raw_li[7]
-                cd=data_raw_li[3]
-                start_len=len(data_raw_li[2])+len(cd)+len(data1)+len(data_raw_li[8])+len(data_raw_li[6])+len(b'\r\n')*9 
-                end_len=-len(data_raw_li[-1])-len(data_raw_li[-4])-len(b'\r\n')*5
-                data=data1+data_raw[start_len:end_len]
+                data1=data_raw_li[3]
+                cd=data_raw_li[0]
+                start_len=4*len(b'\r\n')+len(cd)+len(data1)
+                data2=data_raw[start_len:]
+                data=data1+data2
                 d['data']=data
                 # 
                 others=items[1:]
                 for i in others:
                     i=i.splitlines()
-                    key=re.findall(b'name="(.*?)"',i[3])[0].decode('utf-8')
-                    v=i[-5].decode('utf-8')
+                    print(i)
+                    key=re.findall(b'name="(.*?)"',i[2])[0].decode('utf-8')
+                    v=i[-3].decode('utf-8')
                     d[key]=v
                 return d
                 
-               
             if self.query_string !='':
                 # GET method
                 body=self.query_string
