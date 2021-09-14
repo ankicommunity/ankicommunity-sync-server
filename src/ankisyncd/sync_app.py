@@ -415,12 +415,11 @@ class Requests(object):
             if input is None:
                 return
             if env.get('HTTP_TRANSFER_ENCODING','0') == 'chunked':
-                # method readlines() and read(no len) will block the process
+                # readlines and read(no argument) will block
                 leng=int(input.readline(),16)
                 while leng >0:
                     body += input.read(leng+2)
                     leng = int(input.readline(),16)
-                print(body)
                 boundary=body.splitlines()[0]
                 items=body.split(boundary)
                 items.pop()
@@ -429,16 +428,12 @@ class Requests(object):
                 data_raw=items[0].strip()
                 cd=data_raw.splitlines()[0]
                 data_without_cd=data_raw[len(cd):].strip()
+                data=b''
                 if b'\r\n' in data_without_cd:
-                    # case 2.1.44
-                    data_raw_li=data_without_cd.splitlines()
-                    data1=data_raw_li[0]
-                    data2=data_without_cd[len(data1)+len(b'\r\n'):]
-                    data=data1+data2
+                    # seems b'\r\n'  should not exist in data
+                    data=re.sub(b'\r\n',b'',data_without_cd,flags=re.M)
                 else:
-                    # case 2.1.46
                     data=data_without_cd
-                print(data)
                 d['data']=data
                 # 
                 others=items[1:]
@@ -447,6 +442,7 @@ class Requests(object):
                     key=re.findall(b'name="(.*?)"',i[2])[0].decode('utf-8')
                     v=i[-3].decode('utf-8')
                     d[key]=v
+                
                 return d
                 
             if self.query_string !='':
