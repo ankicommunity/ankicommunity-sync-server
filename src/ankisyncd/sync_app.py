@@ -147,9 +147,8 @@ class SyncCollectionHandler(Syncer):
             logger.info(
                 f"sanity check failed with server: {server} client: {client}"
             )
-            status='bad'
-
-        return dict(status, c=client, s=server)
+            return dict(status="bad", c=client, s=server)
+        return dict(status="ok")
 
 
     def finish(self):
