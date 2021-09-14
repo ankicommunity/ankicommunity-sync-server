@@ -420,25 +420,30 @@ class Requests(object):
                 while leng >0:
                     body += input.read(leng+2)
                     leng = int(input.readline(),16)
-                
+                print(body)
                 boundary=body.splitlines()[0]
                 items=body.split(boundary)
                 items.pop()
                 items.pop(0)
                 # parse data
                 data_raw=items[0].strip()
-                data_raw_li=data_raw.splitlines()
-                data1=data_raw_li[3]
-                cd=data_raw_li[0]
-                start_len=4*len(b'\r\n')+len(cd)+len(data1)
-                data2=data_raw[start_len:]
-                data=data1+data2
+                cd=data_raw.splitlines()[0]
+                data_without_cd=data_raw[len(cd):].strip()
+                if b'\r\n' in data_without_cd:
+                    # case 2.1.44
+                    data_raw_li=data_without_cd.splitlines()
+                    data1=data_raw_li[0]
+                    data2=data_without_cd[len(data1)+len(b'\r\n'):]
+                    data=data1+data2
+                else:
+                    # case 2.1.46
+                    data=data_without_cd
+                print(data)
                 d['data']=data
                 # 
                 others=items[1:]
                 for i in others:
                     i=i.splitlines()
-                    print(i)
                     key=re.findall(b'name="(.*?)"',i[2])[0].decode('utf-8')
                     v=i[-3].decode('utf-8')
                     d[key]=v
