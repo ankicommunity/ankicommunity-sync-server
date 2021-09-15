@@ -73,7 +73,7 @@ class Syncer(object):
                  decks=self.getDecks(),
                  tags=self.getTags())
         if self.lnewer:
-            d['conf'] = json.loads(self.col.backend.get_all_config())
+            d['conf'] = json.loads(self.col.all_config())
             d['crt'] = self.col.crt
         return d
 
@@ -332,7 +332,7 @@ from notes where %s""" % lim, self.maxUsn)
         self.col.db.executemany(
             "insert or replace into notes values (?,?,?,?,?,?,?,?,?,?,?)",
             rows)
-        self.col.updateFieldCache([f[0] for f in rows])
+        self.col.after_note_updates([f[0] for f in rows],True)
 
     # Col config
     ##########################################################################
