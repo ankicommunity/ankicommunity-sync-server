@@ -332,7 +332,7 @@ from notes where %s""" % lim, self.maxUsn)
         self.col.db.executemany(
             "insert or replace into notes values (?,?,?,?,?,?,?,?,?,?,?)",
             rows)
-        self.col.after_note_updates([f[0] for f in rows],True)
+        self.col.after_note_updates([f[0] for f in rows], mark_modified=False, generate_cards=False)
 
     # Col config
     ##########################################################################
