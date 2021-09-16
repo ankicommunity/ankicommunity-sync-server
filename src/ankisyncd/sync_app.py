@@ -430,14 +430,14 @@ class Requests(object):
                     elif c>=3:
                         # data
                         data_other.append(dt)
-                    line=input.readline()
-                    leng = int(line,16)
-                    print(line)
+                    leng = int(input.readline(),16)
                 data_other=[item for item in data_other if item!=b'\r\n\r\n']
                 for item in data_other:
                     if bdry in item:
                         break
-                    data.append(item.strip())
+                    # only strip \r\n if there are extra \n
+                    # eg b'?V\xc1\x8f>\xf9\xb1\n\r\n'
+                    data.append(item[:-2])
                 d['data']=b''.join(data)
                 others=data_other[len(data):]
                 boundary=others[0]
@@ -448,30 +448,7 @@ class Requests(object):
                     i=i.splitlines()
                     key=re.findall(b'name="(.*?)"',i[2],flags=re.M)[0].decode('utf-8')
                     v=i[-1].decode('utf-8')
-                    d[key]=v
-                # boundary=body.splitlines()[0]
-                # items=body.split(boundary)
-                # items.pop()
-                # items.pop(0)
-                # # parse data
-                # data_raw=items[0].strip()
-                # cd=data_raw.splitlines()[0]
-                # data_without_cd=data_raw[len(cd):].strip()
-                # data=b''
-                # if b'\r\n' in data_without_cd:
-                #     # seems b'\r\n'  should not exist in data
-                #     data=re.sub(b'\r\n',b'',data_without_cd,flags=re.M)
-                # else:
-                #     data=data_without_cd
-                # d['data']=data
-                # # 
-                # others=items[1:]
-                # for i in others:
-                #     i=i.splitlines()
-                #     key=re.findall(b'name="(.*?)"',i[2])[0].decode('utf-8')
-                #     v=i[-3].decode('utf-8')
-                #     d[key]=v
-                
+                    d[key]=v     
                 return d
                 
             if self.query_string !='':
@@ -645,7 +622,6 @@ class SyncApp:
 
         try:
             data = p['data']
-            print(compression)
             data = self._decode_data(data, compression)
         except KeyError:
             data = {}
