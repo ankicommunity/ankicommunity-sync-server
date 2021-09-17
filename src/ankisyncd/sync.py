@@ -318,7 +318,8 @@ from notes where %s""" % lim, self.maxUsn)
         for r in data:
             if r[0] not in lmods or lmods[r[0]] < r[modIdx]:
                 update.append(r)
-        self.col.log(table, data)
+        # replace col.log by just using print
+        print(table, data)
         return update
 
     def mergeCards(self, cards):
