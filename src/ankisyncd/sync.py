@@ -121,10 +121,7 @@ select id from notes where mid = ?) limit 1"""
         return True
     
     def sanityCheck(self):
-        # basicCheck() seems to have no effect on this procedure,
-        # if necessary  remove comment
-        # if not self.basicCheck():
-        #     return "failed basic check"
+        
         tables=["cards", 
             "notes",
             "revlog",
@@ -137,13 +134,15 @@ select id from notes where mid = ?) limit 1"""
         for tb in tables:
             if  self.col.db.scalar(f'select null from {tb} where usn=-1'):
                 return f'table had usn=-1: {tb}'
-        
         self.col.sched.reset()
-        # check for missing parent decks
-        #self.col.sched.deckDueList()
+        
         # return summary of deck
+        # make sched.counts() equal to default [0,0,0]
+        # to make sure sync normally if sched.counts()
+        # are not equal between different clients due to
+        # different deck selection 
         return [
-            list(self.col.sched.counts()),
+            list([0,0,0]),
             self.col.db.scalar("select count() from cards"),
             self.col.db.scalar("select count() from notes"),
             self.col.db.scalar("select count() from revlog"),
