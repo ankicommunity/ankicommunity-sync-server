@@ -63,21 +63,23 @@ Installing
     An example configuration with ankisyncd running on the same machine as Nginx
     and listening on port `27702` may look like ([entire config template click me](https://github.com/ankicommunity/anki-sync-server/blob/develop/docs/nginx.conf)):
 
-    ```
-server {
-listen       27701;
-server_name   default;
-
-location / {
-proxy_http_version 1.0;
-proxy_pass         http://127.0.0.1:27702/;
-}
-}
+    ```nginx
+    server {
+    listen       27701;
+    server_name   default;
+    location / {
+    proxy_http_version 1.0;
+    proxy_pass         http://127.0.0.1:27702/;
+    }
+    }
+     
     ```
 
 5. Run ankisyncd:
 
-        $ python -m ankisyncd
+```
+$ python -m ankisyncd
+```
 
 ---
 
@@ -89,6 +91,16 @@ Follow [these instructions](https://github.com/ankicommunity/anki-devops-service
 Setting up Anki
 ---------------
 
+### Install addon from ankiweb (support 2.1)
+
+1.on add-on window,click `Get Add-ons` and fill in the textbox with the code  `358444159`
+
+2.there,you get add-on `custom sync server redirector`,choose it.Then click `config`  below right
+
+3.apply your server ip address 
+
+if this step is taken,the following instructions regarding addon setting 2.1( including 2.1.28 and above) can be skipped.
+
 ### Anki 2.1.28 and above
 
 Create a new directory in [the add-ons folder][addons21] (name it something
@@ -96,7 +108,7 @@ like ankisyncd), create a file named `__init__.py` containing the code below
 and put it in the `ankisyncd` directory.
 
     import os
-
+    
     addr = "http://127.0.0.1:27701/" # put your server address here
     os.environ["SYNC_ENDPOINT"] = addr + "sync/"
     os.environ["SYNC_ENDPOINT_MEDIA"] = addr + "msync/"
@@ -108,7 +120,7 @@ like ankisyncd), create a file named `__init__.py` containing the code below
 and put it in the `ankisyncd` directory.
 
     import anki.sync, anki.hooks, aqt
-
+    
     addr = "http://127.0.0.1:27701/" # put your server address here
     anki.sync.SYNC_BASE = "%s" + addr
     def resetHostNum():
@@ -121,7 +133,7 @@ Create a file (name it something like ankisyncd.py) containing the code below
 and put it in `~/Anki/addons`.
 
     import anki.sync
-
+    
     addr = "http://127.0.0.1:27701/" # put your server address here
     anki.sync.SYNC_BASE = addr
     anki.sync.SYNC_MEDIA_BASE = addr + "msync/"
