@@ -33,10 +33,6 @@ run:
 init:
 	@${POETRY} install
 
-.PHONY: notebooks #: Run jupyter notebooks.
-notebooks:
-	@${PYTHON} -m jupyter ${JUPYTER_OPTION}
-
 %:
 	@test -f scripts/${*}.sh
 	@${SHELL} scripts/${*}.sh
