@@ -1,7 +1,7 @@
 #!/usr/bin/env make
 
 ANKISYNCD_NAME ?= Anki Sync Server
-ANKISYNCD_VERSION ?= v2.2.0
+ANKISYNCD_VERSION ?= v2.3.0
 ANKISYNCD_DESCRIPTION ?= Self-hosted Anki Sync Server.
 
 ENV ?= local
