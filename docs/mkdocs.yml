@@ -7,3 +7,5 @@ site_url: https://ankicommunity.github.io/anki-sync-server
 repo_url: https://github.com/ankicommunity/anki-sync-server
 docs_dir: src
 site_dir: build
+plugins:
+  - mkdocs-jupyter
