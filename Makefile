@@ -36,8 +36,7 @@ init:
 	@${POETRY} install
 
 .PHONY: release #: Create new Git release and tags.
-release:
-	@${BASH} scripts/release.sh
+release: release-branch release-tags
 
 .PHONY: open
 open:
