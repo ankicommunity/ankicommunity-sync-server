@@ -1,45 +1,44 @@
-#/bin/make
+#!/usr/bin/env make
 
-ANKI_SERVER_NAME ?= "Anki Sync Server"
-ANKI_SERVER_VERSION ?= "v0.1.0"
-ANKI_SERVER_DESCRIPTION ?= "Self-hosted Anki Sync Server."
+ANKISYNCD_NAME ?= Anki Sync Server
+ANKISYNCD_VERSION ?= v2.2.0
+ANKISYNCD_DESCRIPTION ?= Self-hosted Anki Sync Server.
 
 ENV ?= local
 -include config/.env.${ENV}
+-include config/secrets/.env.*.${ENV}
 export
 
 .DEFAULT_GOAL := help
 .PHONY: help #: Display list of command and exit.
 help:
-	@awk 'BEGIN {FS = " ?#?: "; print ""${ANKI_SERVER_NAME}" "${ANKI_SERVER_VERSION}"\n"${ANKI_SERVER_DESCRIPTION}"\n\nUsage: make \033[36m<command>\033[0m\n\nCommands:"} /^.PHONY: ?[a-zA-Z_-]/ { printf "  \033[36m%-10s\033[0m %s\n", $$2, $$3 }' $(MAKEFILE_LIST)
+	@${AWK} 'BEGIN {FS = " ?#?: "; print "${ANKISYNCD_NAME} ${ANKISYNCD_VERSION}\n${ANKISYNCD_DESCRIPTION}\n\nUsage: make \033[36m<command>\033[0m\n\nCommands:"} /^.PHONY: ?[a-zA-Z_-]/ { printf "  \033[36m%-10s\033[0m %s\n", $$2, $$3 }' $(MAKEFILE_LIST)
 
 .PHONY: docs #: Build and serve documentation.
-docs: print-env
-	@${PYTHON} -m mkdocs ${MKDOCS_OPTION} -f docs/mkdocs.yml
+docs:
+	@${MKDOCS} ${MKDOCS_CMD} -f docs/mkdocs.yml ${MKDOCS_OPTS}
 
 .PHONY: tests #: Run unit tests.
 tests:
-	@${PYTHON} -m unittest discover -s tests
+	@${UNITTEST} discover -s tests
 
 .PHONY: run
 run:
-	@${PYTHON} -m ankisyncd
+	@${PYTHON} src/ankisyncd/__main__.py
 
+# Run scripts using make
 %:
-	@test -f scripts/${*}.sh
-	@${BASH} scripts/${*}.sh
+	@if [[ -f "scripts/${*}.sh" ]]; then \
+	${BASH} "scripts/${*}.sh"; fi
 
 .PHONY: init #: Download Python dependencies.
 init:
 	@${POETRY} install
 
-%:
-	@test -f scripts/${*}.sh
-	@${SHELL} scripts/${*}.sh
-
-.PHONY: release #: Tag and deploy to PyPI.
+.PHONY: release #: Create new Git release and tags.
 release:
-	@${SHELL} scripts/release.sh
+	@${BASH} scripts/release.sh
+
 .PHONY: open
 open:
-	@${OPEN} http://127.0.0.1:27701
+	@${OPEN} ${ANKISYNCD_URL}
