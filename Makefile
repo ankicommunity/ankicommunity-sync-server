@@ -37,6 +37,13 @@ init:
 notebooks:
 	@${PYTHON} -m jupyter ${JUPYTER_OPTION}
 
+%:
+	@test -f scripts/${*}.sh
+	@${SHELL} scripts/${*}.sh
+
+.PHONY: release #: Tag and deploy to PyPI.
+release:
+	@${SHELL} scripts/release.sh
 .PHONY: open
 open:
 	@${OPEN} http://127.0.0.1:27701
