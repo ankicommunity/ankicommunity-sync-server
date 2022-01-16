@@ -121,6 +121,10 @@ class SyncCollectionHandler(Syncer):
         self.minUsn = minUsn
         self.lnewer = not lnewer
         lgraves = self.removed()
+        # convert grave:None to {'cards': [], 'notes': [], 'decks': []}
+        #     because req.POST['data'] returned value of grave is None     
+        if graves==None:
+            graves={'cards': [], 'notes': [], 'decks': []}
         self.remove(graves)
         return lgraves
 
@@ -178,7 +182,7 @@ class SyncCollectionHandler(Syncer):
         ]
 
     def getTags(self):
-        return [t for t, usn in self.col.tags.allItems()
+        return [t for t, usn in self.allItems()
                 if usn >= self.minUsn]
 
 class SyncMediaHandler:

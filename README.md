@@ -26,9 +26,11 @@ It supports Python 3 and Anki 2.1.
  - [Installing](#installing)
  - [Installing (Docker)](#installing-docker)
  - [Setting up Anki](#setting-up-anki)
-   - [Anki 2.1](#anki-21)
-   - [Anki 2.0](#anki-20)
-   - [AnkiDroid](#ankidroid)
+    - [Anki 2.1](#anki-21)
+    - [Anki 2.0](#anki-20)
+    - [AnkiDroid](#ankidroid)
+ - [Development](#development)
+    - [Testing](#testing)
  - [ENVVAR configuration overrides](#envvar-configuration-overrides)
  - [Support for other database backends](#support-for-other-database-backends)
 </details>
@@ -59,33 +61,45 @@ Installing
     requests to ankisyncd.
 
     An example configuration with ankisyncd running on the same machine as Nginx
-    and listening on port `27702` may look like:
+    and listening on port `27702` may look like ([entire config template click me](https://github.com/ankicommunity/anki-sync-server/blob/develop/docs/nginx.conf)):
 
-    ```
+    ```nginx
     server {
-        listen      27701;
-        server_name default;
-
-        location / {
-            proxy_http_version 1.0;
-            proxy_pass         http://localhost:27702/;
-        }
+    listen       27701;
+    server_name   default;
+    location / {
+    proxy_http_version 1.0;
+    proxy_pass         http://127.0.0.1:27702/;
     }
+    }
+     
     ```
 
 5. Run ankisyncd:
 
-        $ python -m ankisyncd
+```
+$ python -m ankisyncd
+```
 
 ---
 
 Installing (Docker)
 -------------------
 
-Follow [these instructions](https://github.com/kuklinistvan/docker-anki-sync-server#usage).
+Follow [these instructions](https://github.com/ankicommunity/anki-devops-services#about-this-docker-image).
 
 Setting up Anki
 ---------------
+
+### Install addon from ankiweb (support 2.1)
+
+1.on add-on window,click `Get Add-ons` and fill in the textbox with the code  `358444159`
+
+2.there,you get add-on `custom sync server redirector`,choose it.Then click `config`  below right
+
+3.apply your server ip address 
+
+if this step is taken,the following instructions regarding addon setting 2.1( including 2.1.28 and above) can be skipped.
 
 ### Anki 2.1.28 and above
 
@@ -94,7 +108,7 @@ like ankisyncd), create a file named `__init__.py` containing the code below
 and put it in the `ankisyncd` directory.
 
     import os
-
+    
     addr = "http://127.0.0.1:27701/" # put your server address here
     os.environ["SYNC_ENDPOINT"] = addr + "sync/"
     os.environ["SYNC_ENDPOINT_MEDIA"] = addr + "msync/"
@@ -106,7 +120,7 @@ like ankisyncd), create a file named `__init__.py` containing the code below
 and put it in the `ankisyncd` directory.
 
     import anki.sync, anki.hooks, aqt
-
+    
     addr = "http://127.0.0.1:27701/" # put your server address here
     anki.sync.SYNC_BASE = "%s" + addr
     def resetHostNum():
@@ -119,7 +133,7 @@ Create a file (name it something like ankisyncd.py) containing the code below
 and put it in `~/Anki/addons`.
 
     import anki.sync
-
+    
     addr = "http://127.0.0.1:27701/" # put your server address here
     anki.sync.SYNC_BASE = addr
     anki.sync.SYNC_MEDIA_BASE = addr + "msync/"
@@ -141,6 +155,35 @@ the `Media sync url`. Do **not** append `/sync` to the `Sync url`.
 Even though the AnkiDroid interface will request an email address, this is not
 required; it will simply be the username you configured with `ankisyncctl.py
 adduser`.
+
+Development
+-----------
+
+### Testing
+
+0. Prerequites
+
+This project uses [GNU Make](https://www.gnu.org/software/make/) to simplify the development commands. It also uses [Poetry](https://python-poetry.org/) to manage the Python dependencies. Ensure they are installed.
+
+1. Create a config for your local environment.
+
+```bash
+$ cp config/.env.example config/.env.local
+```
+
+See [ENVVAR configuration overrides](#envvar-configuration-overrides) for more information.
+
+2. Download Python dependencies.
+
+```bash
+$ make init
+```
+
+3. Run unit tests.
+
+```bash
+$ make tests
+```
 
 ENVVAR configuration overrides
 ------------------------------

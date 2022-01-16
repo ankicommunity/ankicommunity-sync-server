@@ -10,6 +10,7 @@ import random
 import requests
 import json
 import os
+from typing import List,Tuple
 
 from anki.db import DB, DBError
 from anki.utils import ids2str, intTime, platDesc, checksum, devMode
@@ -72,9 +73,40 @@ class Syncer(object):
         if 'crt' in rchg:
             self.col.crt = rchg['crt']
         self.prepareToChunk()
-
+#     this fn was cloned from anki module(version 2.1.36)
+    def basicCheck(self) -> bool:
+        "Basic integrity check for syncing. True if ok."
+        # cards without notes
+        if self.col.db.scalar(
+            """
+select 1 from cards where nid not in (select id from notes) limit 1"""
+        ):
+            return False
+        # notes without cards or models
+        if self.col.db.scalar(
+            """
+select 1 from notes where id not in (select distinct nid from cards)
+or mid not in %s limit 1"""
+            % ids2str(self.col.models.ids())
+        ):
+            return False
+        # invalid ords
+        for m in self.col.models.all():
+            # ignore clozes
+            if m["type"] != MODEL_STD:
+                continue
+            if self.col.db.scalar(
+                """
+select 1 from cards where ord not in %s and nid in (
+select id from notes where mid = ?) limit 1"""
+                % ids2str([t["ord"] for t in m["tmpls"]]),
+                m["id"],
+            ):
+                return False
+        return True
+    
     def sanityCheck(self, full):
-        if not self.col.basicCheck():
+        if not self.basicCheck():
             return "failed basic check"
         for t in "cards", "notes", "revlog", "graves":
             if self.col.db.scalar(
@@ -83,7 +115,7 @@ class Syncer(object):
         for g in self.col.decks.all():
             if g['usn'] == -1:
                 return "deck had usn = -1"
-        for t, usn in self.col.tags.allItems():
+        for t, usn in self.allItems():
             if usn == -1:
                 return "tag had usn = -1"
         found = False
@@ -276,10 +308,12 @@ from notes where %s""" % lim, self.maxUsn)
 
     # Tags
     ##########################################################################
-
+    def allItems(self) -> List[Tuple[str, int]]:
+        tags=self.col.db.execute("select tag, usn from tags")
+        return [(tag, int(usn)) for tag,usn in tags]
     def getTags(self):
         tags = []
-        for t, usn in self.col.tags.allItems():
+        for t, usn in self.allItems():
             if usn == -1:
                 self.col.tags.tags[t] = self.maxUsn
                 tags.append(t)
@@ -331,7 +365,9 @@ from notes where %s""" % lim, self.maxUsn)
         return self.col.conf
 
     def mergeConf(self, conf):
-        self.col.backend.set_all_config(json.dumps(conf).encode())
+        for key, value in conf.items():
+            self.col.set_config(key, value)
+#         self.col.backend.set_all_config(json.dumps(conf).encode())
 
 # Wrapper for requests that tracks upload/download progress
 ##########################################################################
@@ -568,7 +604,7 @@ class FullSyncer(HttpSyncer):
         # make sure it's ok before we try to upload
         if self.col.db.scalar("pragma integrity_check") != "ok":
             return False
-        if not self.col.basicCheck():
+        if not self.basicCheck():
             return False
         # apply some adjustments, then upload
         self.col.beforeUpload()
