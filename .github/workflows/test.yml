@@ -24,6 +24,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry
           poetry install
-          cd src
+          poetry shell
       - name: Run Tests    
         run: python -m unittest discover -s tests 
