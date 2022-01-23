@@ -24,6 +24,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry
           poetry install
+          poetry config virtualenv.in-project true
           poetry config virtualenv.path .venv
           source .venv/bin/activate
           echo "VENV=.venv/bin/activate" >>"$GITHUB_ENV"
