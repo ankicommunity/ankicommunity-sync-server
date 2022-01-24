@@ -17,6 +17,6 @@ jobs:
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "action-user"
-          git checkout main
+          git checkout -b main
           git merge develop
           git push
