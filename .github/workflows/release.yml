@@ -1,0 +1,22 @@
+---
+name: Release
+
+on:
+  push:
+    tags:
+      - "*" # triggers only if push new tag version
+  workflow_dispatch:
+
+jobs:
+  merge-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Merge develop to master
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "action-user"
+          git checkout main
+          git merge develop
+          git push
