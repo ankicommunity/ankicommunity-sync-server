@@ -22,3 +22,6 @@ jobs:
           git checkout -b main
           git merge origin/develop
           git push --set-upstream origin main
+      - name: Release
+        uses: softprops/action-gh-release@v1
+      
