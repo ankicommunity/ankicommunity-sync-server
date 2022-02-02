@@ -25,11 +25,11 @@ import sys
 import time
 import unicodedata
 import zipfile
-
+import types
 from webob import Response
 from webob.exc import *
 import urllib.parse
-
+from functools import wraps
 from anki.collection import Collection
 import anki.db
 import anki.utils
@@ -391,20 +391,30 @@ class SyncUserSession:
         # for inactivity and then later re-open it (creating a new Collection object).
         handler.col = col
         return handler
-class chunked(object):
-    '''parse request message from client'''
-    # def __init__(self,environ: dict):
-    #     self.query_string=environ['QUERY_STRING']
-    #     self.environ=environ
-    #     self.data=None
-    def __init__(self,func=None):
-      self.func = func
-     
+class Requests(object):
+    def __init__(self,environ: dict):
+        self.environ=environ
+    @property
+    def params(self):
+        return self._p
+    @params.setter
+    def params(self,value):
+        """
+        A dictionary-like object containing both the parameters from
+        the query string and request body.
+        """
+        self._p= value
     @property
     def path(self)-> str:
         return self.environ['PATH_INFO']
     @property
     def POST(self):
+        return self._x
+    @POST.setter
+    def POST(self,value):
+        self._x=value
+    @property
+    def parse(self):
         '''Return a MultiDict containing all the variables from a form
         request.\n
         include not only post req,but also get'''
@@ -463,13 +473,13 @@ class chunked(object):
                     d[k]=''.join(v)
                 return d
 
-            #  # request server with web browser
-            # if self.path=='/' :
-            #     d= {'url':b'Anki Sync Server'}
-            #     return d
-            # if self.path=='/favicon.ico' :
-            #     d= {'url':b''}
-            #     return d
+             # request server with web browser
+            if self.path=='/' :
+                d= {'url':b'Anki Sync Server'}
+                return d
+            if self.path=='/favicon.ico' :
+                d= {'url':b''}
+                return d
   
         else:
             body = env['wsgi.input'].read(length)
@@ -503,34 +513,24 @@ class chunked(object):
             v=item[item.rfind(b'"')+1:].decode('utf-8')
             d[key]=v
         return d
-
-    def __call__(self,environ: dict,*args):
-        
-        self.environ=environ
-        func=self.func
-        return func(self,environ)
-    @property
-    def params(self):
-        """
-        A dictionary-like object containing both the parameters from
-        the query string and request body.
-        """
-        
-        r=self.POST
-        return r
-class MultiDict(object):
-    def __init__(self, dicts: dict):
-        if not isinstance(dicts,dict):
-            raise TypeError(dicts)
-        self.dicts=dicts
-    def __str__(self) -> str:
-        return dict.__str__(self.dicts)
-    def __getitem__(self,key):
-        try:
-            value = self.dicts[key]
-            return value
-        except KeyError:
-            raise KeyError(key)
+class chunked(object):
+    '''decorator'''
+    def __init__(self, func):
+        wraps(func)(self)
+    def __call__(self, *args, **kwargs):
+        clss=args[0]
+        environ=args[1]
+        start_response = args[2]
+        b=Requests(environ)
+        args=(clss,b,)
+        w= self.__wrapped__(*args, **kwargs)
+        resp=Response(w)
+        return resp(environ, start_response)
+    def __get__(self, instance, cls):
+        if instance is None:
+            return self
+        else:
+            return types.MethodType(self, instance)
 class SyncApp:
     valid_urls = SyncCollectionHandler.operations + SyncMediaHandler.operations + ['hostKey', 'upload', 'download']
 
@@ -602,17 +602,20 @@ class SyncApp:
         # returns user data (not media) as a sqlite3 database for replacing their
         # local copy in Anki
         return self.full_sync_manager.download(col, session)
+
     @chunked
     def __call__(self, req):
-        # Get and verify the session
-        print(f'hkey {self}')
+        # cgi file can only be read once,and will be blocked after being read once more
+        # so i call Requests.parse only once,and bind its return result to properties
+        # POST and params (set return result as property values)
+        # can switch back to previous version easily by commenting following two lines
+        req.params=req.parse
+        req.POST=req.params
         try:
             hkey = req.params['k']
         except KeyError:
             hkey = None
-        print(f'hkey {self}')
         session = self.session_manager.load(hkey, self.create_session)
-
         if session is None:
             try:
                 skey = req.POST['sk']
@@ -626,7 +629,9 @@ class SyncApp:
             compression = 0
 
         try:
-            data = req.POST['data'].file.read()
+            # can switch back to previous version easily
+            # data = req.POST['data'].file.read()
+            data = req.POST['data']
             data = self._decode_data(data, compression)
         except KeyError:
             data = {}
@@ -702,112 +707,6 @@ class SyncApp:
             return result
 
         return "Anki Sync Server"
-    # def __call__(self, env,start_resp):
-    #     req=Requests(env)
-    #     p=req.params
-    #     # Get and verify the session
-    #     try:
-    #         hkey = p['k']
-    #     except KeyError:
-    #         hkey = None
-
-    #     session = self.session_manager.load(hkey, self.create_session)
-
-    #     if session is None:
-    #         try:
-    #             skey = p['sk']
-    #             session = self.session_manager.load_from_skey(skey, self.create_session)
-    #         except KeyError:
-    #             skey = None
-
-    #     try:
-    #         compression = int(p['c'])
-    #     except KeyError:
-    #         compression = 0
-
-    #     try:
-    #         data = p['data']
-    #         data = self._decode_data(data, compression)
-    #     except KeyError:
-    #         data = {}
-
-    #     if req.path.startswith(self.base_url):
-    #         url = req.path[len(self.base_url):]
-    #         if url not in self.valid_urls:
-    #             raise HTTPNotFound()
-
-    #         if url == 'hostKey':
-    #             result = self.operation_hostKey(data.get("u"), data.get("p"))
-    #             if result:
-    #                 resp=Response(json.dumps(result))
-    #                 return resp(env,start_resp)
-    #             else:
-    #                 # TODO: do I have to pass 'null' for the client to receive None?
-    #                 raise HTTPForbidden('null')
-
-    #         if session is None:
-    #             raise HTTPForbidden()
-
-    #         if url in SyncCollectionHandler.operations + SyncMediaHandler.operations:
-    #             # 'meta' passes the SYNC_VER but it isn't used in the handler
-    #             if url == 'meta':
-    #                 if session.skey == None and 's' in p:
-    #                     session.skey = p['s']
-    #                 if 'v' in data:
-    #                     session.version = data['v']
-    #                 if 'cv' in data:
-    #                     session.client_version = data['cv']
-
-    #                 self.session_manager.save(hkey, session)
-    #                 session = self.session_manager.load(hkey, self.create_session)
-    #             thread = session.get_thread()
-    #             result = self._execute_handler_method_in_thread(url, data, session)
-    #             # If it's a complex data type, we convert it to JSON
-    #             if type(result) not in (str, bytes, Response):
-    #                 result = json.dumps(result)
-
-    #             resp=Response(result)
-    #             return resp(env,start_resp)
-
-    #         elif url == 'upload':
-    #             thread = session.get_thread()
-    #             result = thread.execute(self.operation_upload, [data['data'], session])
-    #             resp=Response(result)
-    #             return resp(env,start_resp)
-                
-
-    #         elif url == 'download':
-    #             thread = session.get_thread()
-    #             result = thread.execute(self.operation_download, [session])
-    #             resp=Response(result)
-    #             return resp(env,start_resp)
-
-    #         # This was one of our operations but it didn't get handled... Oops!
-    #         raise HTTPInternalServerError()
-
-    #     # media sync
-    #     elif req.path.startswith(self.base_media_url):
-    #         if session is None:
-    #             raise HTTPForbidden()
-
-    #         url = req.path[len(self.base_media_url):]
-
-    #         if url not in self.valid_urls:
-    #             raise HTTPNotFound()
-
-    #         if url == "begin":
-    #             data['skey'] = session.skey
-
-    #         result = self._execute_handler_method_in_thread(url, data, session)
-
-    #         # If it's a complex data type, we convert it to JSON
-    #         if type(result) not in (str, bytes):
-    #             result = json.dumps(result)
-
-    #         resp=Response(result)
-    #         return resp(env,start_resp)
-    #     resp=Response(p['url'])
-    #     return resp(env,start_resp)
 
     @staticmethod
     def _execute_handler_method_in_thread(method_name, keyword_args, session):
