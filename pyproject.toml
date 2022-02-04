@@ -6,6 +6,7 @@ authors = ["Vikash Kothary <kothary.vikash@gmail.com>"]
 packages = [
 	{ include = "ankisyncd", from = "src" }
 ]
+
 [tool.poetry.dependencies]
 python = "^3.8"
 anki = "2.1.46"
