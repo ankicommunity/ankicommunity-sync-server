@@ -81,7 +81,6 @@ class Syncer(object):
         # then the other objects
         self.mergeModels(rchg['models'])
         self.mergeDecks(rchg['decks'])
-        # self.mergeTags(rchg['tags'])
         if 'conf' in rchg:
             self.mergeConf(rchg['conf'])
         # this was left out of earlier betas
