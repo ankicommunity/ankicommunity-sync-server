@@ -396,23 +396,23 @@ class Requests(object):
         self.environ=environ
     @property
     def params(self):
-        return self._p
+        return self.request_items_dict
     @params.setter
     def params(self,value):
         """
         A dictionary-like object containing both the parameters from
         the query string and request body.
         """
-        self._p= value
+        self.request_items_dict= value
     @property
     def path(self)-> str:
         return self.environ['PATH_INFO']
     @property
     def POST(self):
-        return self._x
+        return self._request_items_dict
     @POST.setter
     def POST(self,value):
-        self._x=value
+        self._request_items_dict=value
     @property
     def parse(self):
         '''Return a MultiDict containing all the variables from a form
@@ -424,10 +424,10 @@ class Requests(object):
         input = env.get('wsgi.input')
         length = 0 if content_len == '' else int(content_len)
         body=b''
-        d={}
+        request_items_dict={}
         if length == 0:
             if input is None:
-                return d
+                return request_items_dict
             if env.get('HTTP_TRANSFER_ENCODING','0') == 'chunked':
                 # readlines and read(no argument) will block
                 # convert byte str to number base 16
@@ -452,7 +452,7 @@ class Requests(object):
                     # only strip \r\n if there are extra \n
                     # eg b'?V\xc1\x8f>\xf9\xb1\n\r\n'
                     data.append(item[:-2])
-                d['data']=b''.join(data)
+                request_items_dict['data']=b''.join(data)
                 others=data_other[len(data):]
                 boundary=others[0]
                 others=b''.join(others).split(boundary.strip())
@@ -462,31 +462,22 @@ class Requests(object):
                     i=i.splitlines()
                     key=re.findall(b'name="(.*?)"',i[2],flags=re.M)[0].decode('utf-8')
                     v=i[-1].decode('utf-8')
-                    d[key]=v     
-                return d
+                    request_items_dict[key]=v     
+                return request_items_dict
                 
             if query_string !='':
                 # GET method
                 body=query_string
-                d=urllib.parse.parse_qs(body)
-                for k,v in d.items():
-                    d[k]=''.join(v)
-                return d
-
-             # request server with web browser
-            if self.path=='/' :
-                d= {'url':b'Anki Sync Server'}
-                return d
-            if self.path=='/favicon.ico' :
-                d= {'url':b''}
-                return d
+                request_items_dict=urllib.parse.parse_qs(body)
+                for k,v in request_items_dict.items():
+                    request_items_dict[k]=''.join(v)
+                return request_items_dict
   
         else:
             body = env['wsgi.input'].read(length)
         
         if body is None or body ==b'':
-            # return 'empty body'
-            return d
+            return request_items_dict
             # process body to dict
         repeat=body.splitlines()[0]
         items=re.split(repeat,body)
@@ -495,24 +486,24 @@ class Requests(object):
         items.pop(0)
         for item in items:
             if b'name="data"' in item:
-                bt=None
+                data_field=None
                 # remove \r\n 
                 if b'application/octet-stream' in item:
                     # Ankidroid case
                     item=re.sub(b'Content-Disposition: form-data; name="data"; filename="data"',b'',item)
                     item=re.sub(b'Content-Type: application/octet-stream',b'',item)
-                    bt=item.strip()
+                    data_field=item.strip()
                 else:
                     # PKzip file stream and others
                     item=re.sub(b'Content-Disposition: form-data; name="data"; filename="data"',b'',item)
-                    bt=item.strip()
-                d['data']=bt
+                    data_field=item.strip()
+                request_items_dict['data']=data_field
                 continue
             item=re.sub(b'\r\n',b'',item,flags=re.MULTILINE)
             key=re.findall(b'name="(.*?)"',item)[0].decode('utf-8')
             v=item[item.rfind(b'"')+1:].decode('utf-8')
-            d[key]=v
-        return d
+            request_items_dict[key]=v
+        return request_items_dict
 class chunked(object):
     '''decorator'''
     def __init__(self, func):
@@ -608,7 +599,6 @@ class SyncApp:
         # cgi file can only be read once,and will be blocked after being read once more
         # so i call Requests.parse only once,and bind its return result to properties
         # POST and params (set return result as property values)
-        # can switch back to previous version easily by commenting following two lines
         req.params=req.parse
         req.POST=req.params
         try:
@@ -629,8 +619,6 @@ class SyncApp:
             compression = 0
 
         try:
-            # can switch back to previous version easily
-            # data = req.POST['data'].file.read()
             data = req.POST['data']
             data = self._decode_data(data, compression)
         except KeyError:
