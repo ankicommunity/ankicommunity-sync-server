@@ -120,7 +120,6 @@ select id from notes where mid = ?) limit 1"""
         return True
     
     def sanityCheck(self):
-        
         tables=["cards", 
             "notes",
             "revlog",
@@ -161,8 +160,9 @@ select id from notes where mid = ?) limit 1"""
             self.set_last_sync(now)
             self.increment_usn()
             self.col.save()
-            # now is None not happen
-        return now
+            return now
+        # even though that now is None will not happen,have to match a gurad case
+        return None
 
     # Chunked syncing
     ##########################################################################
