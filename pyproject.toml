@@ -9,7 +9,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-anki = "2.1.46"
+anki = "2.1.49"
 beautifulsoup4 = "^4.9.1"
 requests = "^2.24.0"
 markdown = "^3.2.2"
