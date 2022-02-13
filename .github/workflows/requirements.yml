@@ -3,7 +3,8 @@ name: Update requirements file
 
 on:
   push:
-    branch: develop
+    branch:
+      - develop
   workflow_dispatch:
 
 jobs:
