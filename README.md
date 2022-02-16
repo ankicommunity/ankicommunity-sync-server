@@ -70,10 +70,13 @@ Installing
     location / {
     proxy_http_version 1.0;
     proxy_pass         http://127.0.0.1:27702/;
+    client_max_body_size 222M;
     }
     }
      
     ```
+
+    Adding the line `client_max_body_size 222M;` to Nginx prevents bigger collections from not being able to sync due to size limitations.
 
 5. Run ankisyncd:
 
