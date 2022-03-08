@@ -65,7 +65,7 @@ Installing
     requests to ankisyncd.
 
     An example configuration with ankisyncd running on the same machine as Nginx
-    and listening on port `27702` may look like ([entire config template click me](https://github.com/ankicommunity/anki-sync-server/blob/develop/docs/nginx.conf)):
+    and listening on port `27702` may look like ([entire config template click me](docs/src/nginx/nginx.example.conf)):
 
     ```nginx
     server {
