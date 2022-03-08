@@ -31,7 +31,9 @@ It supports Python 3 and Anki 2.1.
     - [AnkiDroid](#ankidroid)
  - [Development](#development)
     - [Testing](#testing)
- - [ENVVAR configuration overrides](#envvar-configuration-overrides)
+ - [Configuration](#configuration)
+    - [Environment Variables](#environment-variables-preferred)
+    - [Config File](#config-file-ankisyncdconf)
  - [Support for other database backends](#support-for-other-database-backends)
 </details>
 
@@ -42,7 +44,7 @@ Installing
 
         $ pip install -r src/requirements.txt
 
-2. Copy the default config file ([ankisyncd.conf](src/ankisyncd.conf)) to configure the server using the command below. Environment variables can be used instead, see: [ENVVAR configuration overrides](#envvar-configuration-overrides).
+2. Copy the default config file ([ankisyncd.conf](src/ankisyncd.conf)) to configure the server using the command below. Environment variables can be used instead, see: [Configuration](#configuration).
 
         $ cp src/ankisyncd.conf src/ankisyncd/.
 
@@ -174,7 +176,7 @@ This project uses [GNU Make](https://www.gnu.org/software/make/) to simplify the
 $ cp config/.env.example config/.env.local
 ```
 
-See [ENVVAR configuration overrides](#envvar-configuration-overrides) for more information.
+See [Configuration](#configuration) for more information.
 
 2. Download Python dependencies.
 
@@ -188,8 +190,9 @@ $ make init
 $ make tests
 ```
 
-ENVVAR configuration overrides
-------------------------------
+## Configuration
+
+### Environment Variables (preferred)
 
 Configuration values can be set via environment variables using `ANKISYNCD_` prepended
 to the uppercase form of the configuration value. E.g. the environment variable,
@@ -204,6 +207,11 @@ Environment variables override the values set in the `ankisyncd.conf`.
 * Copying the config file from config/.env.example to config/.env.local will allow you to configure the server when using the make commands
 * You can also set it when running the server e.g. ANKISYNCD_PORT=5001 make run
 * The above two options are useful for development. But if you're only going for usage, you can also set it globally by adding it to your ~/.bashrc file e.g. export ANKISYNCD_PORT=50001
+
+### Config File: ankisyncd.conf
+
+A config file can be used to configuring the server. It can be found here: [src/ankisyncd.conf](src/ankisyncd.conf).
+
 
 Support for other database backends
 -----------------------------------
