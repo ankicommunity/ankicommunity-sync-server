@@ -42,7 +42,9 @@ Installing
 
         $ pip install -r src/requirements.txt
 
-2. Configuration: The config file can be found here: `https://github.com/ankicommunity/anki-sync-server/src/ankisyncd.conf`. Copying the config file from `src/ankisyncd.conf` to `src/ankisyncd/ankisyncd.conf` will allow you to configure the server. Subsequent commands refer to `/anki-sync-server/src/ankisyncd`.
+2. Copy the default config file ([ankisyncd.conf](src/ankisyncd.conf)) to configure the server using the command below. Environment variables can be used instead, see: [ENVVAR configuration overrides](#envvar-configuration-overrides).
+
+        $ cp src/ankisyncd.conf src/ankisyncd/.
 
 3. Create user:
 
