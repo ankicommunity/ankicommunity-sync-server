@@ -69,13 +69,13 @@ Installing
 
     ```nginx
     server {
-    listen       27701;
-    server_name   default;
-    location / {
-    proxy_http_version 1.0;
-    proxy_pass         http://127.0.0.1:27702/;
-    client_max_body_size 222M;
-    }
+        listen       27701;
+        server_name   default;
+        location / {
+            proxy_http_version 1.0;
+            proxy_pass         http://127.0.0.1:27702/;
+            client_max_body_size 222M;
+        }
     }
      
     ```
