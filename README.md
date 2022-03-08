@@ -88,15 +88,6 @@ Installing (Docker)
 
 Follow [these instructions](https://github.com/ankicommunity/anki-devops-services#about-this-docker-image).
 
-Configuration: .env.local (Environment variables)
-* The environment variables can be found here: config/.env.example. 
-* The file also includes other development variables, but the notable ones are the ones with the prefix ANKISYNCD_
-* Environment variables will override the config files values (which is why I recommend you use them)
-* This is what we use in the Docker images (see: https://github.com/ankicommunity/anki-devops-services/blob/develop/services/anki-sync-server/examples/docker-compose.yml).
-* Copying the config file from config/.env.example to config/.env.local will allow you to configure the server when using the make commands
-* You can also set it when running the server e.g. ANKISYNCD_PORT=5001 make run
-* The above two options are useful for development. But if you're only going for usage, you can also set it globally by adding it to your ~/.bashrc file e.g. export ANKISYNCD_PORT=50001
-
 
 Setting up Anki
 ---------------
@@ -203,6 +194,14 @@ to the uppercase form of the configuration value. E.g. the environment variable,
 `ANKISYNCD_AUTH_DB_PATH` will set the configuration value `auth_db_path`
 
 Environment variables override the values set in the `ankisyncd.conf`.
+
+* The environment variables can be found here: config/.env.example. 
+* The file also includes other development variables, but the notable ones are the ones with the prefix ANKISYNCD_
+* Environment variables will override the config files values (which is why I recommend you use them)
+* This is what we use in the Docker images (see: https://github.com/ankicommunity/anki-devops-services/blob/develop/services/anki-sync-server/examples/docker-compose.yml).
+* Copying the config file from config/.env.example to config/.env.local will allow you to configure the server when using the make commands
+* You can also set it when running the server e.g. ANKISYNCD_PORT=5001 make run
+* The above two options are useful for development. But if you're only going for usage, you can also set it globally by adding it to your ~/.bashrc file e.g. export ANKISYNCD_PORT=50001
 
 Support for other database backends
 -----------------------------------
