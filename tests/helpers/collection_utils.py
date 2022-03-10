@@ -3,7 +3,7 @@ import os
 import shutil
 import tempfile
 
-from anki import Collection
+from anki.collection import Collection
 
 class CollectionUtils:
     """
