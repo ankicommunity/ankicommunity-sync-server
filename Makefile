@@ -31,6 +31,11 @@ run:
 	@if [[ -f "scripts/${*}.sh" ]]; then \
 	${BASH} "scripts/${*}.sh"; fi
 
+.PHONY: config #: Create new config file.
+config: config/.env.${ENV}
+config/.env.%:
+	@cp -n config/.env.example config/.env.${ENV}
+
 .PHONY: init #: Download Python dependencies.
 init:
 	@${POETRY} install
