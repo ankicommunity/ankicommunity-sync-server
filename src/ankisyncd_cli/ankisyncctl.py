@@ -3,8 +3,8 @@ import os
 import sys
 import getpass
 
-from src.ankisyncd import config
-from src.ankisyncd.users import get_user_manager
+from ankisyncd import config
+from ankisyncd.users import get_user_manager
 
 
 config = config.load()
