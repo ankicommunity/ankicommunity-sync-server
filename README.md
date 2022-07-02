@@ -37,6 +37,12 @@ It supports Python 3 and Anki 2.1.
  - [Support for other database backends](#support-for-other-database-backends)
 </details>
 
+Known Issues
+------------
+
+TODO
+
+
 Installing
 ----------
 
