@@ -56,7 +56,7 @@ Installing
 
 3. Create user:
 
-        $ ./ankisyncctl.py adduser <username>
+        $ python -m ankisyncd_cli adduser <username>
 
 4. Setup a proxy to trans-write the requests (Optional) .
     Ankisyncd currently support the header "Transfer-Encoding: chunked" used by Anki.
