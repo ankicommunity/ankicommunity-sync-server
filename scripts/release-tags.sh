@@ -15,7 +15,7 @@ if [[ "${GIT_BRANCH}" != "main" ]]; then
 fi
 
 ## TODO: get package version from pyproject.toml
-CURRENT_VERSION=v2.3.0
+CURRENT_VERSION=${ANKISYNCD_VERSION}
 
 ## Create GitHub Release
 git tag -a ${CURRENT_VERSION} -m "v${CURRENT_VERSION}"
