@@ -40,8 +40,16 @@ config/.env.%:
 init:
 	@${POETRY} install
 
+.PHONY: build
+build:
+	@${POETRY} build
+
 .PHONY: release #: Create new Git release and tags.
 release: release-branch release-tags
+
+.PHONY: publish
+publish: build
+	@${POETRY} publish
 
 .PHONY: open
 open:
