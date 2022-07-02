@@ -4,7 +4,7 @@ version = "2.3.0"
 description = "Self-hosted Anki Sync Server."
 authors = ["Vikash Kothary <kothary.vikash@gmail.com>"]
 packages = [
-	{ include = "ankisyncd", from = "src" }
+	{ include = "*", from = "src" }
 ]
 
 [tool.poetry.dependencies]
