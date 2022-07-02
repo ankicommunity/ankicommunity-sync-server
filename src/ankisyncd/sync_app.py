@@ -15,29 +15,25 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import gzip
-import hashlib
 import io
 import json
 import logging
 import os
 import random
 import re
-import string
 import sys
 import time
 import unicodedata
 import zipfile
-from configparser import ConfigParser
-from sqlite3 import dbapi2 as sqlite
-
+import types
 from webob import Response
-from webob.dec import wsgify
 from webob.exc import *
-
+import urllib.parse
+from functools import wraps
+from anki.collection import Collection
 import anki.db
 import anki.utils
 from anki.consts import REM_CARD, REM_NOTE
-
 from ankisyncd.full_sync import get_full_sync_manager
 from ankisyncd.sessions import get_session_manager
 from ankisyncd.sync import Syncer, SYNC_VER, SYNC_ZIP_SIZE, SYNC_ZIP_COUNT
@@ -97,8 +93,8 @@ class SyncCollectionHandler(Syncer):
 
         return {
             'mod': self.col.mod,
-            'scm': self.col.scm,
-            'usn': self.col._usn,
+            'scm': self.scm(),
+            'usn': self.col.usn(),
             'ts': anki.utils.intTime(),
             'musn': self.col.media.lastUsn(),
             'uname': self.session.name,
@@ -117,19 +113,20 @@ class SyncCollectionHandler(Syncer):
         # Since now have not thorougly test the V2 scheduler, we leave this comments here, and 
         # just enable the V2 scheduler in the serve code.    
 
-        self.maxUsn = self.col._usn
+        self.maxUsn = self.col.usn()
         self.minUsn = minUsn
         self.lnewer = not lnewer
+        #  fetch local/server graves
         lgraves = self.removed()
-        # convert grave:None to {'cards': [], 'notes': [], 'decks': []}
-        #     because req.POST['data'] returned value of grave is None     
-        if graves==None:
-            graves={'cards': [], 'notes': [], 'decks': []}
-        self.remove(graves)
+        #  handle AnkiDroid using old protocol
+        # Only if Operations like deleting deck are performed on Ankidroid
+        # can (client) graves is not None
+        if graves is not None:
+            self.apply_graves(graves,self.maxUsn)
         return lgraves
 
     def applyGraves(self, chunk):
-        self.remove(chunk)
+        self.apply_graves(chunk,self.maxUsn)
 
     def applyChanges(self, changes):
         self.rchg = changes
@@ -138,17 +135,18 @@ class SyncCollectionHandler(Syncer):
         self.mergeChanges(lchg, self.rchg)
         return lchg
 
-    def sanityCheck2(self, client, full=None):
-        server = self.sanityCheck(full)
+    def sanityCheck2(self, client):
+        client[0]=[0,0,0]
+        server = self.sanityCheck()
         if client != server:
             logger.info(
                 f"sanity check failed with server: {server} client: {client}"
             )
-
             return dict(status="bad", c=client, s=server)
         return dict(status="ok")
 
-    def finish(self, mod=None):
+
+    def finish(self):
         return super().finish(anki.utils.intTime(1000))
 
     # This function had to be put here in its entirety because Syncer.removed()
@@ -178,7 +176,7 @@ class SyncCollectionHandler(Syncer):
     def getDecks(self):
         return [
             [g for g in self.col.decks.all() if g['usn'] >= self.minUsn],
-            [g for g in self.col.decks.allConf() if g['usn'] >= self.minUsn]
+            [g for g in self.col.decks.all_config() if g['usn'] >= self.minUsn]
         ]
 
     def getTags(self):
@@ -338,7 +336,6 @@ class SyncMediaHandler:
         if lastUsn < server_lastUsn or lastUsn == 0:
             for fname,usn,csum, in self.col.media.changes(lastUsn):
                 result.append([fname, usn, csum])
-
         # anki assumes server_lastUsn == result[-1][1]
         # ref: anki/sync.py:720 (commit cca3fcb2418880d0430a5c5c2e6b81ba260065b7)
         result.reverse()
@@ -394,7 +391,137 @@ class SyncUserSession:
         # for inactivity and then later re-open it (creating a new Collection object).
         handler.col = col
         return handler
-
+class Requests(object):
+    def __init__(self,environ: dict):
+        self.environ=environ
+    @property
+    def params(self):
+        return self.request_items_dict
+    @params.setter
+    def params(self,value):
+        """
+        A dictionary-like object containing both the parameters from
+        the query string and request body.
+        """
+        self.request_items_dict= value
+    @property
+    def path(self)-> str:
+        return self.environ['PATH_INFO']
+    @property
+    def POST(self):
+        return self._request_items_dict
+    @POST.setter
+    def POST(self,value):
+        self._request_items_dict=value
+    @property
+    def parse(self):
+        '''Return a MultiDict containing all the variables from a form
+        request.\n
+        include not only post req,but also get'''
+        env = self.environ
+        query_string=env['QUERY_STRING']
+        content_len= env.get('CONTENT_LENGTH', '0')
+        input = env.get('wsgi.input')
+        length = 0 if content_len == '' else int(content_len)
+        body=b''
+        request_items_dict={}
+        if length == 0:
+            if input is None:
+                return request_items_dict
+            if env.get('HTTP_TRANSFER_ENCODING','0') == 'chunked':
+                # readlines and read(no argument) will block
+                # convert byte str to number base 16
+                leng=int(input.readline(),16)
+                c=0
+                bdry=b''
+                data=[]
+                data_other=[]
+                while leng >0:
+                    c+=1
+                    dt = input.read(leng+2)
+                    if c==1:
+                        bdry=dt
+                    elif c>=3:
+                        # data
+                        data_other.append(dt)
+                    leng = int(input.readline(),16)
+                data_other=[item for item in data_other if item!=b'\r\n\r\n']
+                for item in data_other:
+                    if bdry in item:
+                        break
+                    # only strip \r\n if there are extra \n
+                    # eg b'?V\xc1\x8f>\xf9\xb1\n\r\n'
+                    data.append(item[:-2])
+                request_items_dict['data']=b''.join(data)
+                others=data_other[len(data):]
+                boundary=others[0]
+                others=b''.join(others).split(boundary.strip())
+                others.pop()
+                others.pop(0)
+                for i in others:
+                    i=i.splitlines()
+                    key=re.findall(b'name="(.*?)"',i[2],flags=re.M)[0].decode('utf-8')
+                    v=i[-1].decode('utf-8')
+                    request_items_dict[key]=v     
+                return request_items_dict
+                
+            if query_string !='':
+                # GET method
+                body=query_string
+                request_items_dict=urllib.parse.parse_qs(body)
+                for k,v in request_items_dict.items():
+                    request_items_dict[k]=''.join(v)
+                return request_items_dict
+  
+        else:
+            body = env['wsgi.input'].read(length)
+        
+        if body is None or body ==b'':
+            return request_items_dict
+            # process body to dict
+        repeat=body.splitlines()[0]
+        items=re.split(repeat,body)
+        # del first ,last item
+        items.pop()
+        items.pop(0)
+        for item in items:
+            if b'name="data"' in item:
+                data_field=None
+                # remove \r\n 
+                if b'application/octet-stream' in item:
+                    # Ankidroid case
+                    item=re.sub(b'Content-Disposition: form-data; name="data"; filename="data"',b'',item)
+                    item=re.sub(b'Content-Type: application/octet-stream',b'',item)
+                    data_field=item.strip()
+                else:
+                    # PKzip file stream and others
+                    item=re.sub(b'Content-Disposition: form-data; name="data"; filename="data"',b'',item)
+                    data_field=item.strip()
+                request_items_dict['data']=data_field
+                continue
+            item=re.sub(b'\r\n',b'',item,flags=re.MULTILINE)
+            key=re.findall(b'name="(.*?)"',item)[0].decode('utf-8')
+            v=item[item.rfind(b'"')+1:].decode('utf-8')
+            request_items_dict[key]=v
+        return request_items_dict
+class chunked(object):
+    '''decorator'''
+    def __init__(self, func):
+        wraps(func)(self)
+    def __call__(self, *args, **kwargs):
+        clss=args[0]
+        environ=args[1]
+        start_response = args[2]
+        b=Requests(environ)
+        args=(clss,b,)
+        w= self.__wrapped__(*args, **kwargs)
+        resp=Response(w)
+        return resp(environ, start_response)
+    def __get__(self, instance, cls):
+        if instance is None:
+            return self
+        else:
+            return types.MethodType(self, instance)
 class SyncApp:
     valid_urls = SyncCollectionHandler.operations + SyncMediaHandler.operations + ['hostKey', 'upload', 'download']
 
@@ -467,16 +594,18 @@ class SyncApp:
         # local copy in Anki
         return self.full_sync_manager.download(col, session)
 
-    @wsgify
+    @chunked
     def __call__(self, req):
-        # Get and verify the session
+        # cgi file can only be read once,and will be blocked after being read once more
+        # so i call Requests.parse only once,and bind its return result to properties
+        # POST and params (set return result as property values)
+        req.params=req.parse
+        req.POST=req.params
         try:
             hkey = req.params['k']
         except KeyError:
             hkey = None
-
         session = self.session_manager.load(hkey, self.create_session)
-
         if session is None:
             try:
                 skey = req.POST['sk']
@@ -490,7 +619,7 @@ class SyncApp:
             compression = 0
 
         try:
-            data = req.POST['data'].file.read()
+            data = req.POST['data']
             data = self._decode_data(data, compression)
         except KeyError:
             data = {}
@@ -631,4 +760,5 @@ def main():
     finally:
         shutdown()
 
-if __name__ == '__main__': main()
+if __name__ == '__main__':
+    main()

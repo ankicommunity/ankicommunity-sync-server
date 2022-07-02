@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-import os
+
 import sys
 import getpass
 
-import ankisyncd.config
+from ankisyncd import config
 from ankisyncd.users import get_user_manager
 
 
-config = ankisyncd.config.load()
+config = config.load()
 
 def usage():
     print("usage: {} <command> [<args>]".format(sys.argv[0]))

@@ -4,12 +4,12 @@ version = "2.3.0"
 description = "Self-hosted Anki Sync Server."
 authors = ["Vikash Kothary <kothary.vikash@gmail.com>"]
 packages = [
-	{ include = "ankisyncd", from = "src" }
+	{ include = "*", from = "src" }
 ]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-anki = "2.1.43"
+anki = "2.1.49"
 beautifulsoup4 = "^4.9.1"
 requests = "^2.24.0"
 markdown = "^3.2.2"

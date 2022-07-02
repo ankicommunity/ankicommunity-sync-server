@@ -41,6 +41,21 @@ class Syncer(object):
         self.col = col
         self.server = server
 
+# new added functions related to Syncer:
+#  these are removed from latest anki module
+########################################################################
+    def scm(self):
+        """return schema"""
+        scm=self.col.db.scalar("select scm from col")
+        return scm
+    def increment_usn(self):
+        """usn+1 in db"""
+        self.col.db.execute("update col set usn = usn + 1")
+    def set_modified_time(self,now:int):
+        self.col.db.execute("update col set mod=?", now)
+    def set_last_sync(self,now:int):
+        self.col.db.execute("update col set ls = ?", now)
+#########################################################################
     def meta(self):
         return dict(
             mod=self.col.mod,
@@ -58,7 +73,7 @@ class Syncer(object):
                  decks=self.getDecks(),
                  tags=self.getTags())
         if self.lnewer:
-            d['conf'] = json.loads(self.col.backend.get_all_config())
+            d['conf'] = self.col.all_config()
             d['crt'] = self.col.crt
         return d
 
@@ -66,7 +81,6 @@ class Syncer(object):
         # then the other objects
         self.mergeModels(rchg['models'])
         self.mergeDecks(rchg['decks'])
-        self.mergeTags(rchg['tags'])
         if 'conf' in rchg:
             self.mergeConf(rchg['conf'])
         # this was left out of earlier betas
@@ -105,50 +119,50 @@ select id from notes where mid = ?) limit 1"""
                 return False
         return True
     
-    def sanityCheck(self, full):
-        if not self.basicCheck():
-            return "failed basic check"
-        for t in "cards", "notes", "revlog", "graves":
-            if self.col.db.scalar(
-                "select count() from %s where usn = -1" % t):
-                return "%s had usn = -1" % t
-        for g in self.col.decks.all():
-            if g['usn'] == -1:
-                return "deck had usn = -1"
-        for t, usn in self.allItems():
-            if usn == -1:
-                return "tag had usn = -1"
-        found = False
-        for m in self.col.models.all():
-            if m['usn'] == -1:
-                return "model had usn = -1"
-        if found:
-            self.col.models.save()
+    def sanityCheck(self):
+        tables=["cards", 
+            "notes",
+            "revlog",
+            "graves",
+            "decks",
+            "deck_config",
+            "tags",
+            "notetypes",
+        ]
+        for tb in tables:
+            if  self.col.db.scalar(f'select null from {tb} where usn=-1'):
+                return f'table had usn=-1: {tb}'
         self.col.sched.reset()
-        # check for missing parent decks
-        #self.col.sched.deckDueList()
+        
         # return summary of deck
+        # make sched.counts() equal to default [0,0,0]
+        # to make sure sync normally if sched.counts()
+        # are not equal between different clients due to
+        # different deck selection 
         return [
-            list(self.col.sched.counts()),
+            list([0,0,0]),
             self.col.db.scalar("select count() from cards"),
             self.col.db.scalar("select count() from notes"),
             self.col.db.scalar("select count() from revlog"),
             self.col.db.scalar("select count() from graves"),
             len(self.col.models.all()),
             len(self.col.decks.all()),
-            len(self.col.decks.allConf()),
+            len(self.col.decks.all_config()),
         ]
 
     def usnLim(self):
         return "usn = -1"
 
-    def finish(self, mod=None):
-        self.col.ls = mod
-        self.col._usn = self.maxUsn + 1
+    def finish(self, now=None):
+        if now is not None:
         # ensure we save the mod time even if no changes made
-        self.col.db.mod = True
-        self.col.save(mod=mod)
-        return mod
+            self.set_modified_time(now)
+            self.set_last_sync(now)
+            self.increment_usn()
+            self.col.save()
+            return now
+        # even though that now is None will not happen,have to match a gurad case
+        return None
 
     # Chunked syncing
     ##########################################################################
@@ -195,67 +209,26 @@ from notes where %s""" % lim, self.maxUsn)
     # Deletions
     ##########################################################################
 
-    def removed(self):
-        cards = []
-        notes = []
-        decks = []
-
-        curs = self.col.db.execute(
-            "select oid, type from graves where usn = -1")
-
-        for oid, type in curs:
-            if type == REM_CARD:
-                cards.append(oid)
-            elif type == REM_NOTE:
-                notes.append(oid)
-            else:
-                decks.append(oid)
-
-        self.col.db.execute("update graves set usn=? where usn=-1",
-                             self.maxUsn)
-
-        return dict(cards=cards, notes=notes, decks=decks)
-
-    def remove(self, graves):
-        # remove card and the card's orphaned notes
+    def add_grave(self, ids: List[int], type: int,usn: int):
+        items=[(id,type,usn) for id in ids]
+        # make sure table graves fields order and schema version match
+        # query sql1='pragma table_info(graves)' version query schema='select ver from col'
+        self.col.db.executemany(
+            "INSERT OR IGNORE INTO graves (oid, type, usn) VALUES (?, ?, ?)" ,
+            items)
+    
+    def apply_graves(self, graves,latest_usn: int):
+         # remove card and the card's orphaned notes
         self.col.remove_cards_and_orphaned_notes(graves['cards'])
-
+        self.add_grave(graves['cards'], REM_CARD,latest_usn)
         # only notes
         self.col.remove_notes(graves['notes'])
+        self.add_grave(graves['notes'], REM_NOTE,latest_usn)
 
         # since level 0 deck ,we only remove deck ,but backend will delete child,it is ok, the delete
         # will have once effect
-        for oid in graves['decks']:
-            self.col.decks.rem(oid)
-
-
-      # we can place non-exist grave after above delete.
-        localgcards = []
-        localgnotes = []
-        localgdecks = []
-        curs = self.col.db.execute(
-            "select oid, type from graves where usn = %d" % self.col.usn())
-
-        for oid, type in curs:
-            if type == REM_CARD:
-                localgcards.append(oid)
-            elif type == REM_NOTE:
-                localgnotes.append(oid)
-            else:
-                localgdecks.append(oid)
-
-        # n meaning non-exsiting grave in the server compared to client
-        ncards =  [ oid for oid in graves['cards'] if oid not in localgcards]
-        for oid in ncards:
-             self.col._logRem([oid], REM_CARD)
-
-        nnotes =  [ oid for oid in graves['notes'] if oid not in localgnotes]
-        for oid in nnotes:
-             self.col._logRem([oid], REM_NOTE)
-
-        ndecks =  [ oid for oid in graves['decks'] if oid not in localgdecks]
-        for oid in ndecks:
-             self.col._logRem([oid], REM_DECK)
+        self.col.decks.remove(graves['decks']) 
+        self.add_grave(graves['decks'], REM_DECK,latest_usn)
 
     # Models
     ##########################################################################
@@ -342,7 +315,8 @@ from notes where %s""" % lim, self.maxUsn)
         for r in data:
             if r[0] not in lmods or lmods[r[0]] < r[modIdx]:
                 update.append(r)
-        self.col.log(table, data)
+        # replace col.log by just using print
+        print(table, data)
         return update
 
     def mergeCards(self, cards):
@@ -356,7 +330,7 @@ from notes where %s""" % lim, self.maxUsn)
         self.col.db.executemany(
             "insert or replace into notes values (?,?,?,?,?,?,?,?,?,?,?)",
             rows)
-        self.col.updateFieldCache([f[0] for f in rows])
+        self.col.after_note_updates([f[0] for f in rows], mark_modified=False, generate_cards=False)
 
     # Col config
     ##########################################################################

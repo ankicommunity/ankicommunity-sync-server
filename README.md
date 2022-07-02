@@ -31,7 +31,9 @@ It supports Python 3 and Anki 2.1.
     - [AnkiDroid](#ankidroid)
  - [Development](#development)
     - [Testing](#testing)
- - [ENVVAR configuration overrides](#envvar-configuration-overrides)
+ - [Configuration](#configuration)
+    - [Environment Variables](#environment-variables-preferred)
+    - [Config File](#config-file-ankisyncdconf)
  - [Support for other database backends](#support-for-other-database-backends)
 </details>
 
@@ -42,38 +44,40 @@ Installing
 
         $ pip install -r src/requirements.txt
 
-2. Modify ankisyncd.conf according to your needs
+2. Copy the default config file ([ankisyncd.conf](src/ankisyncd.conf)) to configure the server using the command below. Environment variables can be used instead, see: [Configuration](#configuration).
+
+        $ cp src/ankisyncd.conf src/ankisyncd/.
 
 3. Create user:
 
         $ ./ankisyncctl.py adduser <username>
 
-4. Setup a proxy to unchunk the requests.
-
-    Webob does not support the header "Transfer-Encoding: chunked" used by Anki
-    and therefore ankisyncd sees chunked requests as empty. To solve this problem
-    setup Nginx (or any other webserver of your choice) and configure it to
-    "unchunk" the requests for ankisyncd.
-
+4. Setup a proxy to trans-write the requests (Optional) .
+    Ankisyncd currently support the header "Transfer-Encoding: chunked" used by Anki.
+    If you want to enable secure connection or have a better security,a proxy can be set up.
+    
     For example, if you use Nginx  on the same machine as ankisyncd, you first
     have to change the port in `ankisyncd.conf` to something other than `27701`.
     Then configure Nginx to listen on port `27701` and forward the unchunked
     requests to ankisyncd.
 
     An example configuration with ankisyncd running on the same machine as Nginx
-    and listening on port `27702` may look like ([entire config template click me](https://github.com/ankicommunity/anki-sync-server/blob/develop/docs/nginx.conf)):
+    and listening on port `27702` may look like ([entire config template click me](docs/src/nginx/nginx.example.conf)):
 
     ```nginx
     server {
-    listen       27701;
-    server_name   default;
-    location / {
-    proxy_http_version 1.0;
-    proxy_pass         http://127.0.0.1:27702/;
-    }
+        listen       27701;
+        server_name   default;
+        location / {
+            proxy_http_version 1.0;
+            proxy_pass         http://127.0.0.1:27702/;
+            client_max_body_size 222M;
+        }
     }
      
     ```
+
+    Adding the line `client_max_body_size 222M;` to Nginx prevents bigger collections from not being able to sync due to size limitations.
 
 5. Run ankisyncd:
 
@@ -87,6 +91,7 @@ Installing (Docker)
 -------------------
 
 Follow [these instructions](https://github.com/ankicommunity/anki-devops-services#about-this-docker-image).
+
 
 Setting up Anki
 ---------------
@@ -138,7 +143,7 @@ and put it in `~/Anki/addons`.
     anki.sync.SYNC_BASE = addr
     anki.sync.SYNC_MEDIA_BASE = addr + "msync/"
 
-[addons21]: https://addon-docs.ankiweb.net/#/getting-started?id=add-on-folders
+[addons21]: https://addon-docs.ankiweb.net/addon-folders.html
 
 ### AnkiDroid
 
@@ -171,7 +176,7 @@ This project uses [GNU Make](https://www.gnu.org/software/make/) to simplify the
 $ cp config/.env.example config/.env.local
 ```
 
-See [ENVVAR configuration overrides](#envvar-configuration-overrides) for more information.
+See [Configuration](#configuration) for more information.
 
 2. Download Python dependencies.
 
@@ -185,14 +190,28 @@ $ make init
 $ make tests
 ```
 
-ENVVAR configuration overrides
-------------------------------
+## Configuration
+
+### Environment Variables (preferred)
 
 Configuration values can be set via environment variables using `ANKISYNCD_` prepended
 to the uppercase form of the configuration value. E.g. the environment variable,
 `ANKISYNCD_AUTH_DB_PATH` will set the configuration value `auth_db_path`
 
 Environment variables override the values set in the `ankisyncd.conf`.
+
+* The environment variables can be found here: config/.env.example. 
+* The file also includes other development variables, but the notable ones are the ones with the prefix ANKISYNCD_
+* Environment variables will override the config files values (which is why I recommend you use them)
+* This is what we use in the Docker images (see: https://github.com/ankicommunity/anki-devops-services/blob/develop/services/anki-sync-server/examples/docker-compose.yml).
+* Copying the config file from config/.env.example to config/.env.local will allow you to configure the server when using the make commands
+* You can also set it when running the server e.g. ANKISYNCD_PORT=5001 make run
+* The above two options are useful for development. But if you're only going for usage, you can also set it globally by adding it to your ~/.bashrc file e.g. export ANKISYNCD_PORT=50001
+
+### Config File: ankisyncd.conf
+
+A config file can be used to configuring the server. It can be found here: [src/ankisyncd.conf](src/ankisyncd.conf).
+
 
 Support for other database backends
 -----------------------------------
