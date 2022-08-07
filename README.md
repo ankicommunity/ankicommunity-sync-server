@@ -59,32 +59,37 @@ Installing
 
         $ python -m ankisyncd_cli adduser <username>
 
-4. Setup a proxy to trans-write the requests (Optional) .
-    Ankisyncd currently support the header "Transfer-Encoding: chunked" used by Anki.
-    If you want to enable secure connection or have a better security,a proxy can be set up.
-    
-    For example, if you use Nginx  on the same machine as ankisyncd, you first
-    have to change the port in `ankisyncd.conf` to something other than `27701`.
-    Then configure Nginx to listen on port `27701` and forward the unchunked
-    requests to ankisyncd.
+4. Ankisyncd can serve the requests directly. However, if you want better
+   security and SSL encryption, a proxy can be set up.
 
-    An example configuration with ankisyncd running on the same machine as Nginx
-    and listening on port `27702` may look like ([entire config template click me](docs/src/nginx/nginx.example.conf)):
+   For example, you can use Nginx. First, obtain the SSL certificate from
+   [Let's Encrypt](https://letsencrypt.org) via
+   [certbot](https://certbot.eff.org/). Nginx will accept the requests at
+   standard HTTPS port 443 and forward the traffic to ankisyncd which runs by
+   default on port `27701` ([configuration](#configuration)).
+
+   An example of configuration for domain `example.com`:
 
     ```nginx
     server {
-        listen       27701;
-        server_name   default;
+        listen        443 ssl;
+        server_name   example.com;
+
+        # Configuration managed by Certbot
+        ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+        include /etc/letsencrypt/options-ssl-nginx.conf;
+
         location / {
-            proxy_http_version 1.0;
-            proxy_pass         http://127.0.0.1:27702/;
+            proxy_http_version   1.0;
+            proxy_pass           http://127.0.0.1:27702/;
             client_max_body_size 222M;
         }
     }
-     
     ```
 
-    Adding the line `client_max_body_size 222M;` to Nginx prevents bigger collections from not being able to sync due to size limitations.
+    Adding the line `client_max_body_size 222M;` to Nginx prevents bigger
+    collections from not being able to sync due to size limitations.
 
 5. Run ankisyncd:
 
