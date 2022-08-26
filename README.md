@@ -49,6 +49,7 @@ Installing
 1. Install the dependencies:
 
         $ pip install -r src/requirements.txt
+        $ pip install -e src
 
 2. Copy the default config file ([ankisyncd.conf](src/ankisyncd.conf)) to configure the server using the command below. Environment variables can be used instead, see: [Configuration](#configuration).
 
