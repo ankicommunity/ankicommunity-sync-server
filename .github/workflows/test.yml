@@ -43,7 +43,5 @@ jobs:
         run: poetry install --no-interaction --no-root
       - name: Install library
         run: poetry install --no-interaction
-      - name: Run Tests    
-        run: |
-          source .venv/bin/activate
-          python -m unittest discover -s tests 
+      - name: Run Tests
+        run: poetry run python -m unittest discover -s tests
