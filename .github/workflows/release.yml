@@ -1,0 +1,28 @@
+---
+name: Release
+
+on:
+  push:
+    branches:
+      - develop
+    tags:
+      - "v*.*.*"  # triggers only if push new tag version
+  workflow_dispatch:
+
+jobs:
+  merge-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Merge develop to master
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "action-user"
+          git checkout -b main
+          git merge origin/develop
+          git push --set-upstream origin main
+      - name: Release
+        uses: softprops/action-gh-release@v1
