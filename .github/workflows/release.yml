@@ -26,3 +26,5 @@ jobs:
           git push --set-upstream origin main
       - name: Release
         uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
