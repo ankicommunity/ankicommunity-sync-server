@@ -3,8 +3,6 @@ name: Release
 
 on:
   push:
-    branches:
-      - develop
     tags:
       - "v*.*.*"  # triggers only if push new tag version
   workflow_dispatch:
