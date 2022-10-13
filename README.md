@@ -1,8 +1,28 @@
-ankisyncd
-=========
+<div align="center">
 
-[![Documentation Status](https://readthedocs.org/projects/anki-sync-server/badge/?version=latest)](https://anki-sync-server.readthedocs.io/?badge=latest)
+# anki-sync-server
+
+
+[![Python version](https://img.shields.io/pypi/pyversions/anki-sync-server)](https://github.com/ankicommunity/anki-sync-server/blob/develop/pyproject.toml)
+[![License](https://img.shields.io/github/license/ankicommunity/anki-sync-server)](https://github.com/ankicommunity/anki-sync-server/blob/develop/COPYING)
+[![Last commit](https://img.shields.io/github/last-commit/ankicommunity/anki-sync-server)](https://github.com/ankicommunity/anki-sync-server/commits/develop)
+<br />
+[![Github status](https://img.shields.io/github/checks-status/ankicommunity/anki-sync-server/develop?label=github%20status)](https://github.com/ankicommunity/anki-sync-server/actions)
+[![Github version](https://img.shields.io/github/v/tag/ankicommunity/anki-sync-server?label=github%20version)](https://github.com/ankicommunity/anki-sync-server/releases)
+[![Github contributors](https://img.shields.io/github/contributors/ankicommunity/anki-sync-server?label=github%20contributors)](https://github.com/ankicommunity/anki-sync-server/graphs/contributors)
+[![Github sponsors](https://img.shields.io/github/sponsors/ankicommunity?label=github%20sponsors)](https://github.com/sponsors/ankicommunity)
+<br />
+[![PyPI version](https://img.shields.io/pypi/v/anki-sync-server?label=pypi%20version)](https://pypi.org/project/anki-sync-server)
+[![PyPI downloads](https://img.shields.io/pypi/dm/anki-sync-server?label=pypi%20downloads)](https://pypi.org/project/anki-sync-server)
+<br />
+[![DockerHub version](https://img.shields.io/docker/v/ankicommunity/anki-sync-server?label=dockerhub%20version&sort=date)](https://hub.docker.com/repository/docker/ankicommunity/anki-sync-server)
+[![DockerHub pulls](https://img.shields.io/docker/pulls/ankicommunity/anki-sync-server)](https://hub.docker.com/repository/docker/ankicommunity/anki-sync-server)
+[![DockerHub stars](https://img.shields.io/docker/stars/ankicommunity/anki-sync-server)](https://hub.docker.com/repository/docker/ankicommunity/anki-sync-server)
+<br />
+[![Readthedocs status](https://img.shields.io/readthedocs/anki-sync-server?label=readthedocs%20status)](https://anki-sync-server.readthedocs.io/?badge=latest)
 [![Gitter](https://badges.gitter.im/ankicommunity/community.svg)](https://gitter.im/ankicommunity/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
+</div>
 
 [Anki][] is a powerful open source flashcard application, which helps you
 quickly and easily memorize facts over the long term utilizing a spaced
