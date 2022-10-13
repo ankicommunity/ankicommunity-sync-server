@@ -1,5 +1,5 @@
 ---
-name: Update requirements file
+name: Update requirements files
 
 on:
   push:
