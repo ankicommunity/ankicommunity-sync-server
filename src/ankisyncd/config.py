@@ -26,6 +26,11 @@ def load_from_env(conf):
 
 
 def load(path=None):
+    # backwards compat
+    if len(path) > 1:
+        path = path[1]
+    else:
+        path = None
     choices = paths
     parser = configparser.ConfigParser()
     if path:

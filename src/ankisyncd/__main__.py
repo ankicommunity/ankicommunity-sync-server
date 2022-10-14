@@ -19,11 +19,7 @@ def main():
         "ankisyncd {} ({})".format(ankisyncd._get_version(), ankisyncd._homepage)
     )
 
-    if len(sys.argv) > 1:
-        # backwards compat
-        config = ankisyncd.config.load(sys.argv[1])
-    else:
-        config = ankisyncd.config.load()
+    config = ankisyncd.config.load(sys.argv)
 
     ankiserver = SyncApp(config)
     run_server(ankiserver, config["host"], int(config["port"]))
