@@ -2,28 +2,17 @@ import os
 import sys
 import logging
 
-from wsgiref.simple_server import make_server, WSGIRequestHandler
 
 import ankisyncd
 import ankisyncd.config
 from ankisyncd.sync_app import SyncApp
-from ankisyncd.thread import shutdown
+from ankisyncd.server import run_server
 
 logger = logging.getLogger("ankisyncd")
 
 if __package__ is None and not hasattr(sys, "frozen"):
     path = os.path.realpath(os.path.abspath(__file__))
     sys.path.insert(0, os.path.dirname(os.path.dirname(path)))
-
-
-class RequestHandler(WSGIRequestHandler):
-    logger = logging.getLogger("ankisyncd.http")
-
-    def log_error(self, format, *args):
-        self.logger.error("%s %s", self.address_string(), format % args)
-
-    def log_message(self, format, *args):
-        self.logger.info("%s %s", self.address_string(), format % args)
 
 
 def main():
@@ -41,17 +30,7 @@ def main():
         config = ankisyncd.config.load()
 
     ankiserver = SyncApp(config)
-    httpd = make_server(
-        config["host"], int(config["port"]), ankiserver, handler_class=RequestHandler
-    )
-
-    try:
-        logger.info("Serving HTTP on {} port {}...".format(*httpd.server_address))
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        logger.info("Exiting...")
-    finally:
-        shutdown()
+    run_server(ankiserver, config["host"], int(config["port"]))
 
 
 if __name__ == "__main__":
