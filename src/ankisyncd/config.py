@@ -26,7 +26,7 @@ def load_from_env(conf):
             logger.info("Setting {} from ENV".format(config_key))
 
 
-def load(path=None):
+def load_from_file(path=None):
     # backwards compat
     if len(path) > 1:
         path = path[1]
@@ -42,7 +42,6 @@ def load(path=None):
             parser.read(path)
             conf = parser["sync_app"]
             logger.info("Loaded config from {}".format(path))
-            load_from_env(conf)
             return conf
         except KeyError:
             pass

@@ -2,7 +2,8 @@ import os
 import sys
 
 import ankisyncd
-import ankisyncd.config
+from ankisyncd.config import load_from_file
+from ankisyncd.config import load_from_env
 from ankisyncd import logging
 from ankisyncd.sync_app import SyncApp
 from ankisyncd.server import run_server
@@ -19,7 +20,8 @@ def main():
         "ankisyncd {} ({})".format(ankisyncd._get_version(), ankisyncd._homepage)
     )
 
-    config = ankisyncd.config.load(sys.argv)
+    config = load_from_file(sys.argv)
+    load_from_env(config)
 
     ankiserver = SyncApp(config)
     run_server(ankiserver, config["host"], int(config["port"]))
