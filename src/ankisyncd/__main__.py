@@ -1,14 +1,13 @@
 import os
 import sys
-import logging
-
 
 import ankisyncd
 import ankisyncd.config
+from ankisyncd import logging
 from ankisyncd.sync_app import SyncApp
 from ankisyncd.server import run_server
 
-logger = logging.getLogger("ankisyncd")
+logger = logging.get_logger("ankisyncd")
 
 if __package__ is None and not hasattr(sys, "frozen"):
     path = os.path.realpath(os.path.abspath(__file__))
@@ -16,9 +15,6 @@ if __package__ is None and not hasattr(sys, "frozen"):
 
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO, format="[%(asctime)s]:%(levelname)s:%(name)s:%(message)s"
-    )
     logger.info(
         "ankisyncd {} ({})".format(ankisyncd._get_version(), ankisyncd._homepage)
     )
