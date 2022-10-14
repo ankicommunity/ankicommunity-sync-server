@@ -1,11 +1,7 @@
+import os
 import anki.storage
 
 import ankisyncd.media
-
-import os, errno
-import logging
-
-logger = logging.getLogger("ankisyncd.collection")
 
 
 class CollectionWrapper:
@@ -91,56 +87,3 @@ class CollectionWrapper:
     def opened(self):
         """Returns True if the collection is open, False otherwise."""
         return self.__col is not None
-
-
-class CollectionManager:
-    """Manages a set of CollectionWrapper objects."""
-
-    collection_wrapper = CollectionWrapper
-
-    def __init__(self, config):
-        self.collections = {}
-        self.config = config
-
-    def get_collection(self, path, setup_new_collection=None):
-        """Gets a CollectionWrapper for the given path."""
-
-        path = os.path.realpath(path)
-
-        try:
-            col = self.collections[path]
-        except KeyError:
-            col = self.collections[path] = self.collection_wrapper(
-                self.config, path, setup_new_collection
-            )
-
-        return col
-
-    def shutdown(self):
-        """Close all CollectionWrappers managed by this object."""
-        for path, col in list(self.collections.items()):
-            del self.collections[path]
-            col.close()
-
-
-def get_collection_wrapper(config, path, setup_new_collection=None):
-    if "collection_wrapper" in config and config["collection_wrapper"]:
-        logger.info(
-            "Found collection_wrapper in config, using {} for "
-            "user data persistence".format(config["collection_wrapper"])
-        )
-        import importlib
-        import inspect
-
-        module_name, class_name = config["collection_wrapper"].rsplit(".", 1)
-        module = importlib.import_module(module_name.strip())
-        class_ = getattr(module, class_name.strip())
-
-        if not CollectionWrapper in inspect.getmro(class_):
-            raise TypeError(
-                """"collection_wrapper" found in the conf file but it doesn''t
-                            inherit from CollectionWrapper"""
-            )
-        return class_(config, path, setup_new_collection)
-    else:
-        return CollectionWrapper(config, path, setup_new_collection)
