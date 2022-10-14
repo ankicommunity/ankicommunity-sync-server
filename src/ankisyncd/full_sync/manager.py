@@ -1,9 +1,10 @@
 import shutil
 from sqlite3 import dbapi2 as sqlite
-from webob.exc import HTTPBadRequest
 
 from anki.db import DB
 from anki.collection import Collection
+
+from ankisyncd.exceptions import BadRequestException
 
 
 class FullSyncManager:
@@ -12,7 +13,7 @@ class FullSyncManager:
         :param anki.db.DB db: the database uploaded from the client.
         """
         if db.scalar("pragma integrity_check") != "ok":
-            raise HTTPBadRequest(
+            raise BadRequestException(
                 "Integrity check failed for uploaded collection database file."
             )
 
@@ -34,7 +35,9 @@ class FullSyncManager:
             with DB(temp_db_path) as test_db:
                 self.test_db(test_db)
         except sqlite.Error as e:
-            raise HTTPBadRequest("Uploaded collection database file is " "corrupt.")
+            raise BadRequestException(
+                "Uploaded collection database file is " "corrupt."
+            )
 
         # Overwrite existing db.
         col.close()
