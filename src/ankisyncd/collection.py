@@ -30,7 +30,7 @@ class CollectionWrapper:
         self.close()
 
     def execute(self, func, args=[], kw={}, waitForReturn=True):
-        """ Executes the given function with the underlying anki.storage.Collection
+        """Executes the given function with the underlying anki.storage.Collection
         object as the first argument and any additional arguments specified by *args
         and **kw.
 
@@ -92,6 +92,7 @@ class CollectionWrapper:
         """Returns True if the collection is open, False otherwise."""
         return self.__col is not None
 
+
 class CollectionManager:
     """Manages a set of CollectionWrapper objects."""
 
@@ -109,7 +110,9 @@ class CollectionManager:
         try:
             col = self.collections[path]
         except KeyError:
-            col = self.collections[path] = self.collection_wrapper(self.config, path, setup_new_collection)
+            col = self.collections[path] = self.collection_wrapper(
+                self.config, path, setup_new_collection
+            )
 
         return col
 
@@ -119,19 +122,25 @@ class CollectionManager:
             del self.collections[path]
             col.close()
 
-def get_collection_wrapper(config, path, setup_new_collection = None):
+
+def get_collection_wrapper(config, path, setup_new_collection=None):
     if "collection_wrapper" in config and config["collection_wrapper"]:
-        logger.info("Found collection_wrapper in config, using {} for "
-                     "user data persistence".format(config['collection_wrapper']))
+        logger.info(
+            "Found collection_wrapper in config, using {} for "
+            "user data persistence".format(config["collection_wrapper"])
+        )
         import importlib
         import inspect
-        module_name, class_name = config['collection_wrapper'].rsplit('.', 1)
+
+        module_name, class_name = config["collection_wrapper"].rsplit(".", 1)
         module = importlib.import_module(module_name.strip())
         class_ = getattr(module, class_name.strip())
 
         if not CollectionWrapper in inspect.getmro(class_):
-            raise TypeError('''"collection_wrapper" found in the conf file but it doesn''t
-                            inherit from CollectionWrapper''')
+            raise TypeError(
+                """"collection_wrapper" found in the conf file but it doesn''t
+                            inherit from CollectionWrapper"""
+            )
         return class_(config, path, setup_new_collection)
     else:
         return CollectionWrapper(config, path, setup_new_collection)

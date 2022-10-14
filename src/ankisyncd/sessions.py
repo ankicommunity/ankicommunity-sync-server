@@ -43,20 +43,26 @@ class SqliteSessionManager(SimpleSessionManager):
 
         conn = self._conn()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM sqlite_master "
-                       "WHERE sql LIKE '%user VARCHAR PRIMARY KEY%' "
-                       "AND tbl_name = 'session'")
+        cursor.execute(
+            "SELECT * FROM sqlite_master "
+            "WHERE sql LIKE '%user VARCHAR PRIMARY KEY%' "
+            "AND tbl_name = 'session'"
+        )
         res = cursor.fetchone()
         conn.close()
         if res is not None:
-            raise Exception("Outdated database schema, run utils/migrate_user_tables.py")
+            raise Exception(
+                "Outdated database schema, run utils/migrate_user_tables.py"
+            )
 
     def _conn(self):
         new = not os.path.exists(self.session_db_path)
         conn = sqlite.connect(self.session_db_path)
         if new:
             cursor = conn.cursor()
-            cursor.execute("CREATE TABLE session (hkey VARCHAR PRIMARY KEY, skey VARCHAR, username VARCHAR, path VARCHAR)")
+            cursor.execute(
+                "CREATE TABLE session (hkey VARCHAR PRIMARY KEY, skey VARCHAR, username VARCHAR, path VARCHAR)"
+            )
         return conn
 
     # Default to using sqlite3 syntax but overridable for sub-classes using other
@@ -73,7 +79,9 @@ class SqliteSessionManager(SimpleSessionManager):
         conn = self._conn()
         cursor = conn.cursor()
 
-        cursor.execute(self.fs("SELECT skey, username, path FROM session WHERE hkey=?"), (hkey,))
+        cursor.execute(
+            self.fs("SELECT skey, username, path FROM session WHERE hkey=?"), (hkey,)
+        )
         res = cursor.fetchone()
 
         if res is not None:
@@ -89,7 +97,9 @@ class SqliteSessionManager(SimpleSessionManager):
         conn = self._conn()
         cursor = conn.cursor()
 
-        cursor.execute(self.fs("SELECT hkey, username, path FROM session WHERE skey=?"), (skey,))
+        cursor.execute(
+            self.fs("SELECT hkey, username, path FROM session WHERE skey=?"), (skey,)
+        )
         res = cursor.fetchone()
 
         if res is not None:
@@ -103,8 +113,10 @@ class SqliteSessionManager(SimpleSessionManager):
         conn = self._conn()
         cursor = conn.cursor()
 
-        cursor.execute("INSERT OR REPLACE INTO session (hkey, skey, username, path) VALUES (?, ?, ?, ?)",
-            (hkey, session.skey, session.name, session.path))
+        cursor.execute(
+            "INSERT OR REPLACE INTO session (hkey, skey, username, path) VALUES (?, ?, ?, ?)",
+            (hkey, session.skey, session.name, session.path),
+        )
 
         conn.commit()
 
@@ -117,25 +129,35 @@ class SqliteSessionManager(SimpleSessionManager):
         cursor.execute(self.fs("DELETE FROM session WHERE hkey=?"), (hkey,))
         conn.commit()
 
+
 def get_session_manager(config):
     if "session_db_path" in config and config["session_db_path"]:
-        logger.info("Found session_db_path in config, using SqliteSessionManager for auth")
-        return SqliteSessionManager(config['session_db_path'])
+        logger.info(
+            "Found session_db_path in config, using SqliteSessionManager for auth"
+        )
+        return SqliteSessionManager(config["session_db_path"])
     elif "session_manager" in config and config["session_manager"]:  # load from config
-        logger.info("Found session_manager in config, using {} for persisting sessions".format(
-            config['session_manager'])
+        logger.info(
+            "Found session_manager in config, using {} for persisting sessions".format(
+                config["session_manager"]
+            )
         )
         import importlib
         import inspect
-        module_name, class_name = config['session_manager'].rsplit('.', 1)
+
+        module_name, class_name = config["session_manager"].rsplit(".", 1)
         module = importlib.import_module(module_name.strip())
         class_ = getattr(module, class_name.strip())
 
         if not SimpleSessionManager in inspect.getmro(class_):
-            raise TypeError('''"session_manager" found in the conf file but it doesn''t
-                            inherit from SimpleSessionManager''')
+            raise TypeError(
+                """"session_manager" found in the conf file but it doesn''t
+                            inherit from SimpleSessionManager"""
+            )
         return class_(config)
     else:
-        logger.warning("Neither session_db_path nor session_manager set, "
-                     "ankisyncd will lose sessions on application restart")
+        logger.warning(
+            "Neither session_db_path nor session_manager set, "
+            "ankisyncd will lose sessions on application restart"
+        )
         return SimpleSessionManager()

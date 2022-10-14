@@ -8,5 +8,5 @@ setup(
     author="Anki Community",
     author_email="kothary.vikash+ankicommunity@gmail.com",
     packages=find_packages(),
-    url='https://ankicommunity.github.io/'
+    url="https://ankicommunity.github.io/",
 )

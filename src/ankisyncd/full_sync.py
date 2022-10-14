@@ -13,6 +13,7 @@ from anki.collection import Collection
 logger = logging.getLogger("ankisyncd.media")
 logger.setLevel(1)
 
+
 class FullSyncManager:
     def test_db(self, db: DB):
         """
@@ -34,15 +35,14 @@ class FullSyncManager:
         # Verify integrity of the received database file before replacing our
         # existing db.
         temp_db_path = session.get_collection_path() + ".tmp"
-        with open(temp_db_path, 'wb') as f:
+        with open(temp_db_path, "wb") as f:
             f.write(data)
 
         try:
             with DB(temp_db_path) as test_db:
                 self.test_db(test_db)
         except sqlite.Error as e:
-            raise HTTPBadRequest("Uploaded collection database file is "
-                                 "corrupt.")
+            raise HTTPBadRequest("Uploaded collection database file is " "corrupt.")
 
         # Overwrite existing db.
         col.close()
@@ -69,7 +69,7 @@ class FullSyncManager:
         col.close(downgrade=True)
         db_path = session.get_collection_path()
         try:
-            with open(db_path, 'rb') as tmp:
+            with open(db_path, "rb") as tmp:
                 data = tmp.read()
         finally:
             col.reopen()
@@ -80,16 +80,21 @@ class FullSyncManager:
 
 
 def get_full_sync_manager(config):
-    if "full_sync_manager" in config and config["full_sync_manager"]:  # load from config
+    if (
+        "full_sync_manager" in config and config["full_sync_manager"]
+    ):  # load from config
         import importlib
         import inspect
-        module_name, class_name = config['full_sync_manager'].rsplit('.', 1)
+
+        module_name, class_name = config["full_sync_manager"].rsplit(".", 1)
         module = importlib.import_module(module_name.strip())
         class_ = getattr(module, class_name.strip())
 
         if not FullSyncManager in inspect.getmro(class_):
-            raise TypeError('''"full_sync_manager" found in the conf file but it doesn''t
-                            inherit from FullSyncManager''')
+            raise TypeError(
+                """"full_sync_manager" found in the conf file but it doesn''t
+                            inherit from FullSyncManager"""
+            )
         return class_(config)
     else:
         return FullSyncManager()

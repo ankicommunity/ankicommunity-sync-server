@@ -34,7 +34,7 @@ def to_sql(database):
     else:
         connection = database
 
-    res = '\n'.join(connection.iterdump())
+    res = "\n".join(connection.iterdump())
 
     if type(database) == str:
         connection.close()
@@ -54,18 +54,15 @@ def diff(left_db_path, right_db_path):
 
     command = ["sqldiff", left_db_path, right_db_path]
 
-    child_process = subprocess.Popen(command,
-                                     shell=False,
-                                     stdout=subprocess.PIPE)
+    child_process = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE)
     stdout, stderr = child_process.communicate()
     exit_code = child_process.returncode
 
     if exit_code != 0 or stderr is not None:
-        raise RuntimeError("Command {} encountered an error, exit "
-                           "code: {}, stderr: {}"
-                           .format(" ".join(command),
-                                   exit_code,
-                                   stderr))
+        raise RuntimeError(
+            "Command {} encountered an error, exit "
+            "code: {}, stderr: {}".format(" ".join(command), exit_code, stderr)
+        )
 
-    # Any output from sqldiff means the databases differ.
+        # Any output from sqldiff means the databases differ.
         return stdout != ""
