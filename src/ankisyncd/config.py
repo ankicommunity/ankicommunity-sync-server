@@ -1,9 +1,10 @@
 import configparser
-import logging
 import os
 from os.path import dirname, realpath
 
-logger = logging.getLogger("ankisyncd")
+from ankisyncd import logging
+
+logger = logging.get_logger(__name__)
 
 paths = [
     "/etc/ankisyncd/ankisyncd.conf",
