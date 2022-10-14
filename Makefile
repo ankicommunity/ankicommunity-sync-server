@@ -51,6 +51,10 @@ release: release-branch release-tags
 publish: build
 	@${POETRY} publish
 
+.PHONY: clean
+clean:
+	@find . -name __pycache__ -not -path */.venv/* -print0 | xargs -0 rm -r
+
 .PHONY: open
 open:
 	@${OPEN} ${ANKISYNCD_URL}
