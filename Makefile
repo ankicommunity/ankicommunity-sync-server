@@ -24,7 +24,7 @@ tests:
 
 .PHONY: run
 run:
-	@${PYTHON} src/ankisyncd/__main__.py
+	@${PYTHON} -m ankisyncd
 
 # Run scripts using make
 %:
