@@ -3,11 +3,12 @@
 import sys
 import getpass
 
-from ankisyncd import config
+from ankisyncd import config as config_provider
 from ankisyncd.users import get_user_manager
 
 
-config = config.load()
+config = config_provider.load_from_file()
+config_provider.load_from_env(config)
 
 
 def usage():
