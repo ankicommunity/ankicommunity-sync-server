@@ -28,7 +28,7 @@ def load_from_env(conf):
 
 def load_from_file(path=None):
     # backwards compat
-    if len(path) > 1:
+    if path is not None and len(path) > 1:
         path = path[1]
     else:
         path = None
