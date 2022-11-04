@@ -1,10 +1,5 @@
 FROM python:3.10-slim
 
-RUN RUN apt-get update && apt-get install -y \
-  rustup \
-  && rm -rf /var/lib/apt/lists/*
-RUN rustup install stable
-
 COPY src /src
 RUN cd /src \
 && pip install -r requirements.txt \
