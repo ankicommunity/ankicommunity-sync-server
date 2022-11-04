@@ -12,6 +12,7 @@ from anki.media import MediaManager
 
 logger = logging.getLogger("ankisyncd.media")
 
+
 class ServerMediaManager(MediaManager):
     def __init__(self, col, server=True):
         super().__init__(col, server)
@@ -20,14 +21,16 @@ class ServerMediaManager(MediaManager):
 
     def addMedia(self, media_to_add):
         self._db.executemany(
-            "INSERT OR REPLACE INTO media VALUES (?,?,?)",
-            media_to_add
+            "INSERT OR REPLACE INTO media VALUES (?,?,?)", media_to_add
         )
         self._db.commit()
 
     def changes(self, lastUsn):
-        return self._db.execute("select fname,usn,csum from media order by usn desc limit ?", self.lastUsn() - lastUsn)
-        
+        return self._db.execute(
+            "select fname,usn,csum from media order by usn desc limit ?",
+            self.lastUsn() - lastUsn,
+        )
+
     def connect(self):
         path = self.dir() + ".server.db"
         create = not os.path.exists(path)

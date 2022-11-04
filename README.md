@@ -1,8 +1,28 @@
-ankisyncd
-=========
+<div align="center">
 
-[![Documentation Status](https://readthedocs.org/projects/anki-sync-server/badge/?version=latest)](https://anki-sync-server.readthedocs.io/?badge=latest)
+# anki-sync-server
+
+
+[![Python version](https://img.shields.io/pypi/pyversions/anki-sync-server)](https://github.com/ankicommunity/anki-sync-server/blob/develop/pyproject.toml)
+[![License](https://img.shields.io/github/license/ankicommunity/anki-sync-server)](https://github.com/ankicommunity/anki-sync-server/blob/develop/COPYING)
+[![Last commit](https://img.shields.io/github/last-commit/ankicommunity/anki-sync-server)](https://github.com/ankicommunity/anki-sync-server/commits/develop)
+<br />
+[![Github status](https://img.shields.io/github/checks-status/ankicommunity/anki-sync-server/develop?label=github%20status)](https://github.com/ankicommunity/anki-sync-server/actions)
+[![Github version](https://img.shields.io/github/v/tag/ankicommunity/anki-sync-server?label=github%20version)](https://github.com/ankicommunity/anki-sync-server/releases)
+[![Github contributors](https://img.shields.io/github/contributors/ankicommunity/anki-sync-server?label=github%20contributors)](https://github.com/ankicommunity/anki-sync-server/graphs/contributors)
+[![Github sponsors](https://img.shields.io/github/sponsors/ankicommunity?label=github%20sponsors)](https://github.com/sponsors/ankicommunity)
+<br />
+[![PyPI version](https://img.shields.io/pypi/v/anki-sync-server?label=pypi%20version)](https://pypi.org/project/anki-sync-server)
+[![PyPI downloads](https://img.shields.io/pypi/dm/anki-sync-server?label=pypi%20downloads)](https://pypi.org/project/anki-sync-server)
+<br />
+[![DockerHub version](https://img.shields.io/docker/v/ankicommunity/anki-sync-server?label=dockerhub%20version&sort=date)](https://hub.docker.com/repository/docker/ankicommunity/anki-sync-server)
+[![DockerHub pulls](https://img.shields.io/docker/pulls/ankicommunity/anki-sync-server)](https://hub.docker.com/repository/docker/ankicommunity/anki-sync-server)
+[![DockerHub stars](https://img.shields.io/docker/stars/ankicommunity/anki-sync-server)](https://hub.docker.com/repository/docker/ankicommunity/anki-sync-server)
+<br />
+[![Readthedocs status](https://img.shields.io/readthedocs/anki-sync-server?label=readthedocs%20status)](https://anki-sync-server.readthedocs.io/?badge=latest)
 [![Gitter](https://badges.gitter.im/ankicommunity/community.svg)](https://gitter.im/ankicommunity/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
+</div>
 
 [Anki][] is a powerful open source flashcard application, which helps you
 quickly and easily memorize facts over the long term utilizing a spaced
@@ -37,12 +57,19 @@ It supports Python 3 and Anki 2.1.
  - [Support for other database backends](#support-for-other-database-backends)
 </details>
 
+Known Issues
+------------
+
+TODO
+
+
 Installing
 ----------
 
 1. Install the dependencies:
 
         $ pip install -r src/requirements.txt
+        $ pip install -e src
 
 2. Copy the default config file ([ankisyncd.conf](src/ankisyncd.conf)) to configure the server using the command below. Environment variables can be used instead, see: [Configuration](#configuration).
 
@@ -50,34 +77,39 @@ Installing
 
 3. Create user:
 
-        $ ./ankisyncctl.py adduser <username>
+        $ python -m ankisyncd_cli adduser <username>
 
-4. Setup a proxy to trans-write the requests (Optional) .
-    Ankisyncd currently support the header "Transfer-Encoding: chunked" used by Anki.
-    If you want to enable secure connection or have a better security,a proxy can be set up.
-    
-    For example, if you use Nginx  on the same machine as ankisyncd, you first
-    have to change the port in `ankisyncd.conf` to something other than `27701`.
-    Then configure Nginx to listen on port `27701` and forward the unchunked
-    requests to ankisyncd.
+4. Ankisyncd can serve the requests directly. However, if you want better
+   security and SSL encryption, a proxy can be set up.
 
-    An example configuration with ankisyncd running on the same machine as Nginx
-    and listening on port `27702` may look like ([entire config template click me](docs/src/nginx/nginx.example.conf)):
+   For example, you can use Nginx. First, obtain the SSL certificate from
+   [Let's Encrypt](https://letsencrypt.org) via
+   [certbot](https://certbot.eff.org/). Nginx will accept the requests at
+   standard HTTPS port 443 and forward the traffic to ankisyncd which runs by
+   default on port `27701` ([configuration](#configuration)).
+
+   An example of configuration for domain `example.com`:
 
     ```nginx
     server {
-        listen       27701;
-        server_name   default;
+        listen        443 ssl;
+        server_name   example.com;
+
+        # Configuration managed by Certbot
+        ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+        include /etc/letsencrypt/options-ssl-nginx.conf;
+
         location / {
-            proxy_http_version 1.0;
-            proxy_pass         http://127.0.0.1:27702/;
+            proxy_http_version   1.0;
+            proxy_pass           http://127.0.0.1:27702/;
             client_max_body_size 222M;
         }
     }
-     
     ```
 
-    Adding the line `client_max_body_size 222M;` to Nginx prevents bigger collections from not being able to sync due to size limitations.
+    Adding the line `client_max_body_size 222M;` to Nginx prevents bigger
+    collections from not being able to sync due to size limitations.
 
 5. Run ankisyncd:
 

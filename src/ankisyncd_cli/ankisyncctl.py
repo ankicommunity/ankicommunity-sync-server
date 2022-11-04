@@ -3,11 +3,13 @@
 import sys
 import getpass
 
-from ankisyncd import config
+from ankisyncd import config as config_provider
 from ankisyncd.users import get_user_manager
 
 
-config = config.load()
+config = config_provider.load_from_file()
+config_provider.load_from_env(config)
+
 
 def usage():
     print("usage: {} <command> [<args>]".format(sys.argv[0]))
@@ -18,11 +20,13 @@ def usage():
     print("  lsuser             - list users")
     print("  passwd <username>  - change password of a user")
 
+
 def adduser(username):
     password = getpass.getpass("Enter password for {}: ".format(username))
 
     user_manager = get_user_manager(config)
     user_manager.add_user(username, password)
+
 
 def deluser(username):
     user_manager = get_user_manager(config)
@@ -30,6 +34,7 @@ def deluser(username):
         user_manager.del_user(username)
     except ValueError as error:
         print("Could not delete user {}: {}".format(username, error), file=sys.stderr)
+
 
 def lsuser():
     user_manager = get_user_manager(config)
@@ -39,6 +44,7 @@ def lsuser():
             print(username)
     except ValueError as error:
         print("Could not list users: {}".format(error), file=sys.stderr)
+
 
 def passwd(username):
     user_manager = get_user_manager(config)
@@ -51,7 +57,11 @@ def passwd(username):
     try:
         user_manager.set_password_for_user(username, password)
     except ValueError as error:
-        print("Could not set password for user {}: {}".format(username, error), file=sys.stderr)
+        print(
+            "Could not set password for user {}: {}".format(username, error),
+            file=sys.stderr,
+        )
+
 
 def main():
     argc = len(sys.argv)
@@ -77,6 +87,7 @@ def main():
     except KeyError:
         usage()
         exit(1)
+
 
 if __name__ == "__main__":
     main()

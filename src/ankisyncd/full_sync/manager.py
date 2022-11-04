@@ -1,17 +1,11 @@
-# -*- coding: utf-8 -*-
-
-import logging
-import os
-from sqlite3 import dbapi2 as sqlite
 import shutil
-import sys
-from webob.exc import HTTPBadRequest
+from sqlite3 import dbapi2 as sqlite
 
 from anki.db import DB
 from anki.collection import Collection
 
-logger = logging.getLogger("ankisyncd.media")
-logger.setLevel(1)
+from ankisyncd.exceptions import BadRequestException
+
 
 class FullSyncManager:
     def test_db(self, db: DB):
@@ -19,7 +13,7 @@ class FullSyncManager:
         :param anki.db.DB db: the database uploaded from the client.
         """
         if db.scalar("pragma integrity_check") != "ok":
-            raise HTTPBadRequest(
+            raise BadRequestException(
                 "Integrity check failed for uploaded collection database file."
             )
 
@@ -34,15 +28,16 @@ class FullSyncManager:
         # Verify integrity of the received database file before replacing our
         # existing db.
         temp_db_path = session.get_collection_path() + ".tmp"
-        with open(temp_db_path, 'wb') as f:
+        with open(temp_db_path, "wb") as f:
             f.write(data)
 
         try:
             with DB(temp_db_path) as test_db:
                 self.test_db(test_db)
         except sqlite.Error as e:
-            raise HTTPBadRequest("Uploaded collection database file is "
-                                 "corrupt.")
+            raise BadRequestException(
+                "Uploaded collection database file is " "corrupt."
+            )
 
         # Overwrite existing db.
         col.close()
@@ -69,7 +64,7 @@ class FullSyncManager:
         col.close(downgrade=True)
         db_path = session.get_collection_path()
         try:
-            with open(db_path, 'rb') as tmp:
+            with open(db_path, "rb") as tmp:
                 data = tmp.read()
         finally:
             col.reopen()
@@ -77,19 +72,3 @@ class FullSyncManager:
             col.media.connect()
 
         return data
-
-
-def get_full_sync_manager(config):
-    if "full_sync_manager" in config and config["full_sync_manager"]:  # load from config
-        import importlib
-        import inspect
-        module_name, class_name = config['full_sync_manager'].rsplit('.', 1)
-        module = importlib.import_module(module_name.strip())
-        class_ = getattr(module, class_name.strip())
-
-        if not FullSyncManager in inspect.getmro(class_):
-            raise TypeError('''"full_sync_manager" found in the conf file but it doesn''t
-                            inherit from FullSyncManager''')
-        return class_(config)
-    else:
-        return FullSyncManager()

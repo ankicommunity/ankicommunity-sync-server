@@ -5,6 +5,7 @@ import tempfile
 
 from anki.collection import Collection
 
+
 class CollectionUtils:
     """
     Provides utility methods for creating, inspecting and manipulating anki

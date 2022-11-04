@@ -17,4 +17,3 @@ class SyncAppFunctionalHostKeyTest(SyncAppFunctionalTestBase):
         self.assertIsNone(self.server.hostKey("testuser", "wrongpassword"))
         self.assertIsNone(self.server.hostKey("wronguser", "wrongpassword"))
         self.assertIsNone(self.server.hostKey("wronguser", "testpassword"))
-

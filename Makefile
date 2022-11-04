@@ -24,7 +24,7 @@ tests:
 
 .PHONY: run
 run:
-	@${PYTHON} src/ankisyncd/__main__.py
+	@${PYTHON} -m ankisyncd
 
 # Run scripts using make
 %:
@@ -50,6 +50,10 @@ release: release-branch release-tags
 .PHONY: publish
 publish: build
 	@${POETRY} publish
+
+.PHONY: clean
+clean:
+	@find . -name __pycache__ -not -path */.venv/* -print0 | xargs -0 rm -r
 
 .PHONY: open
 open:

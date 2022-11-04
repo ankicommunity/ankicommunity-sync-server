@@ -1,42 +1,11 @@
-# -*- coding: utf-8 -*-
 import binascii
 import hashlib
-import logging
 import os
 import sqlite3 as sqlite
+from ankisyncd import logging
+from ankisyncd.users.simple_manager import SimpleUserManager
 
-logger = logging.getLogger("ankisyncd.users")
-
-
-class SimpleUserManager:
-    """A simple user manager that always allows any user."""
-
-    def __init__(self, collection_path=''):
-        self.collection_path = collection_path
-
-    def authenticate(self, username, password):
-        """
-        Returns True if this username is allowed to connect with this password.
-        False otherwise. Override this to change how users are authenticated.
-        """
-
-        return True
-
-    def userdir(self, username):
-        """
-        Returns the directory name for the given user. By default, this is just
-        the username. Override this to adjust the mapping between users and
-        their directory.
-        """
-
-        return username
-
-    def _create_user_dir(self, username):
-        user_dir_path = os.path.join(self.collection_path, username)
-        if not os.path.isdir(user_dir_path):
-            logger.info("Creating collection directory for user '{}' at {}"
-                         .format(username, user_dir_path))
-            os.makedirs(user_dir_path)
+logger = logging.get_logger(__name__)
 
 
 class SqliteUserManager(SimpleUserManager):
@@ -54,13 +23,17 @@ class SqliteUserManager(SimpleUserManager):
 
         conn = self._conn()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM sqlite_master "
-                       "WHERE sql LIKE '%user VARCHAR PRIMARY KEY%' "
-                       "AND tbl_name = 'auth'")
+        cursor.execute(
+            "SELECT * FROM sqlite_master "
+            "WHERE sql LIKE '%user VARCHAR PRIMARY KEY%' "
+            "AND tbl_name = 'auth'"
+        )
         res = cursor.fetchone()
         conn.close()
         if res is not None:
-            raise Exception("Outdated database schema, run utils/migrate_user_tables.py")
+            raise Exception(
+                "Outdated database schema, run utils/migrate_user_tables.py"
+            )
 
     # Default to using sqlite3 but overridable for sub-classes using other
     # DB API 2 driver variants
@@ -124,8 +97,7 @@ class SqliteUserManager(SimpleUserManager):
         conn = self._conn()
         cursor = conn.cursor()
         logger.info("Adding user '{}' to auth db.".format(username))
-        cursor.execute(self.fs("INSERT INTO auth VALUES (?, ?)"),
-                       (username, pass_hash))
+        cursor.execute(self.fs("INSERT INTO auth VALUES (?, ?)"), (username, pass_hash))
         conn.commit()
         conn.close()
 
@@ -139,7 +111,9 @@ class SqliteUserManager(SimpleUserManager):
 
         conn = self._conn()
         cursor = conn.cursor()
-        cursor.execute(self.fs("UPDATE auth SET hash=? WHERE username=?"), (hash, username))
+        cursor.execute(
+            self.fs("UPDATE auth SET hash=? WHERE username=?"), (hash, username)
+        )
         conn.commit()
         conn.close()
 
@@ -156,8 +130,9 @@ class SqliteUserManager(SimpleUserManager):
         conn.close()
 
         if db_hash is None:
-            logger.info("Authentication failed for nonexistent user {}."
-                         .format(username))
+            logger.info(
+                "Authentication failed for nonexistent user {}.".format(username)
+            )
             return False
 
         expected_value = str(db_hash[0])
@@ -181,37 +156,21 @@ class SqliteUserManager(SimpleUserManager):
     @staticmethod
     def _create_pass_hash(username, password):
         salt = binascii.b2a_hex(os.urandom(8))
-        pass_hash = (hashlib.sha256((username + password).encode() + salt).hexdigest() +
-                     salt.decode())
+        pass_hash = (
+            hashlib.sha256((username + password).encode() + salt).hexdigest()
+            + salt.decode()
+        )
         return pass_hash
 
     def create_auth_db(self):
         conn = self._conn()
         cursor = conn.cursor()
-        logger.info("Creating auth db at {}."
-                     .format(self.auth_db_path))
-        cursor.execute(self.fs("""CREATE TABLE IF NOT EXISTS auth
-                          (username VARCHAR PRIMARY KEY, hash VARCHAR)"""))
+        logger.info("Creating auth db at {}.".format(self.auth_db_path))
+        cursor.execute(
+            self.fs(
+                """CREATE TABLE IF NOT EXISTS auth
+                          (username VARCHAR PRIMARY KEY, hash VARCHAR)"""
+            )
+        )
         conn.commit()
         conn.close()
-
-
-def get_user_manager(config):
-    if "auth_db_path" in config and config["auth_db_path"]:
-        logger.info("Found auth_db_path in config, using SqliteUserManager for auth")
-        return SqliteUserManager(config['auth_db_path'], config['data_root'])
-    elif "user_manager" in config and config["user_manager"]:  # load from config
-        logger.info("Found user_manager in config, using {} for auth".format(config['user_manager']))
-        import importlib
-        import inspect
-        module_name, class_name = config['user_manager'].rsplit('.', 1)
-        module = importlib.import_module(module_name.strip())
-        class_ = getattr(module, class_name.strip())
-
-        if not SimpleUserManager in inspect.getmro(class_):
-            raise TypeError('''"user_manager" found in the conf file but it doesn''t
-                            inherit from SimpleUserManager''')
-        return class_(config)
-    else:
-        logger.warning("neither auth_db_path nor user_manager set, ankisyncd will accept any password")
-        return  SimpleUserManager()
