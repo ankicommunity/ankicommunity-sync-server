@@ -31,15 +31,10 @@ Linux and macOS) which can sync to a web version (AnkiWeb) and mobile
 versions for Android and iOS.
 
 This is a personal Anki server, which you can sync against instead of
-AnkiWeb. It was originally developed by [David Snopek](https://github.com/dsnopek)
-to support the flashcard functionality on Bibliobird, a web application for
-language learning.
-
-This version is a fork of [jdoe0/ankisyncd](https://github.com/jdoe0/ankisyncd).
-It supports Python 3 and Anki 2.1.
+AnkiWeb. 
 
 [Anki]: https://apps.ankiweb.net/
-[dsnopek's Anki Sync Server]: https://github.com/dsnopek/anki-sync-server
+
 
 <details open><summary>Contents</summary>
 
@@ -254,3 +249,11 @@ sqlite3 is used by default for user data, authentication and session persistence
 persistence requirements (the media DB and files are being worked on). All that is
 required is to extend one of the existing manager classes and then reference those
 classes in the config file. See ankisyncd.conf for example config.
+
+## Acknowledgment
+
+- This server was originally developed by [David Snopek](https://github.com/dsnopek)
+to support the flashcard functionality on Bibliobird, a web application for
+language learning.
+- It was then forked by `jdoe0` to add supports Python 3 and Anki 2.1.
+- It was then forked by [tsudoko](https://github.com/tsudoko) which was the base for this repo.
