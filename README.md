@@ -174,7 +174,7 @@ and put it in `~/Anki/addons`.
 
 ### AnkiDroid
 
-Advanced → Custom sync server
+Advanced → Sync → Custom sync server
 
 Unless you have set up a reverse proxy to handle encrypted connections, use
 `http` as the protocol. The port will be either the default, 27701, or
