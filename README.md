@@ -1,6 +1,6 @@
 <div align="center">
 
-# anki-sync-server
+# ankicommunity-sync-server
 
 
 [![Python version](https://img.shields.io/pypi/pyversions/anki-sync-server)](https://github.com/ankicommunity/anki-sync-server/blob/develop/pyproject.toml)
@@ -33,7 +33,7 @@ Known Issues
 
 We're working hard to update to the new syncing protocol.
 
-In the mean time, we reccomend you check out the offical sync server here:
+In the mean time, we recommend you check out the offical sync server here:
 - [Documentation](https://docs.ankiweb.net/sync-server.html)
 - [Repository](https://github.com/ankitects/anki)
 - [WIP Docker Image](https://github.com/ankitects/anki/pull/2798#issuecomment-1812839066)
