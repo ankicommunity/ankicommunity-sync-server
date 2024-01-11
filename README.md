@@ -24,9 +24,25 @@
 
 </div>
 
-**⚠️ This project is incompatible with anki >=2.1.57 ⚠️**
+------------
 
-You can use the offical sync server instead. See [git repo](https://github.com/ankitects/anki), [doc](https://docs.ankiweb.net/sync-server.html) and [docker-imgae](https://github.com/ankitects/anki/pull/2798#issuecomment-1812839066).
+Known Issues
+------------
+
+**⚠️ This project is incompatible with Anki Desktop >=2.1.57 ⚠️**
+
+We're working hard to update to the new syncing protocol.
+
+In the mean time, we reccomend you check out the offical sync server here:
+- [Documentation](https://docs.ankiweb.net/sync-server.html)
+- [Repository](https://github.com/ankitects/anki)
+- [WIP Docker Image](https://github.com/ankitects/anki/pull/2798#issuecomment-1812839066)
+
+Or reach out to see how you can help support our development [here](https://github.com/ankicommunity/anki-sync-server/issues/158).
+
+Thank you for your understanding. 
+
+------------
 
 
 [Anki][] is a powerful open source flashcard application, which helps you
@@ -56,11 +72,6 @@ AnkiWeb.
     - [Config File](#config-file-ankisyncdconf)
  - [Support for other database backends](#support-for-other-database-backends)
 </details>
-
-Known Issues
-------------
-
-TODO
 
 
 Installing
