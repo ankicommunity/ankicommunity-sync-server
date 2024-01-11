@@ -24,6 +24,11 @@
 
 </div>
 
+**⚠️ This project is incompatible with anki >=2.1.57 ⚠️**
+
+You can use the offical sync server instead. See [git repo](https://github.com/ankitects/anki), [doc](https://docs.ankiweb.net/sync-server.html) and [docker-imgae](https://github.com/ankitects/anki/pull/2798#issuecomment-1812839066).
+
+
 [Anki][] is a powerful open source flashcard application, which helps you
 quickly and easily memorize facts over the long term utilizing a spaced
 repetition algorithm. Anki's main form is a desktop application (for Windows,
