@@ -1,3 +1,6 @@
+> [!WARNING]
+> This project is incompatible with Anki Desktop >=2.1.57 and AnkiDroid >=2.17.0
+
 <div align="center">
 
 # ankicommunity-sync-server
@@ -29,7 +32,7 @@
 Known Issues
 ------------
 
-**⚠️ This project is incompatible with Anki Desktop >=2.1.57 ⚠️**
+**⚠️ This project is incompatible with Anki Desktop >=2.1.57 and AnkiDroid >=2.17.0 ⚠️**
 
 We're working hard to update to the new syncing protocol.
 
